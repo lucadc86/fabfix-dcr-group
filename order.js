@@ -152,8 +152,8 @@ async function syncIncassiFromOrder({ orderId, clientId, payments, paymentStatus
   // Rimuove tutti gli incassi precedenti dell'ordine
   await removeIncassiForOrder({ orderId });
 
-  // ---- Nuovo formato multi-pagamento ----
-  if(Array.isArray(payments) && payments.length > 0){
+  // ---- Nuovo formato multi-pagamento (array esplicito passato) ----
+  if(Array.isArray(payments)){
     for(let i = 0; i < payments.length; i++){
       const pay = payments[i];
       const amt = Number(pay.amount) || 0;

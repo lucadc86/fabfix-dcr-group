@@ -219,7 +219,8 @@ function renderPaymentsUI() {
       <button class="btn btn-light" type="button">Storna</button>
     `;
     item.querySelector('button')?.addEventListener('click', () => {
-      payments.splice(idx, 1);
+      const i = payments.findIndex(p => p.id === pay.id);
+      if(i !== -1) payments.splice(i, 1);
       renderPaymentsUI();
     });
     paymentsListEl.appendChild(item);
@@ -271,7 +272,8 @@ function renderDueUI() {
           <button class="btn btn-light" type="button">Rimuovi</button>
         `;
         item.querySelector('button')?.addEventListener('click', () => {
-          deadlines.splice(idx, 1);
+          const i = deadlines.findIndex(d => d.id === due.id);
+          if(i !== -1) deadlines.splice(i, 1);
           renderDueUI();
         });
         deadlinesListEl.appendChild(item);
