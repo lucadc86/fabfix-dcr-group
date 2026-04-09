@@ -186,18 +186,28 @@
         <div class="card-head">
           <div>
             <div class="title">Scadenze</div>
-            <div class="muted small">Promemoria e importi collegati all'ordine.</div>
+            <div class="muted small">Aggiungi più scadenze per coprire il residuo.</div>
           </div>
           <button id="scadenzeInfoBtn" class="icon-btn icon-btn--sm" aria-label="Info scadenze">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M11 17h2v-6h-2Zm0-8h2V7h-2ZM12 2A10 10 0 1 0 22 12 10 10 0 0 0 12 2Z"/></svg>
           </button>
         </div>
 
-        <div class="pay-row">
-          <span class="muted">Totale scadenze</span>
-          <strong id="miniDueTotal">€ 0,00</strong>
+        <div class="pay-summary">
+          <div class="pay-row">
+            <span class="muted">Residuo da coprire</span>
+            <strong id="dueResidualDisplay">€ 0,00</strong>
+          </div>
+          <div class="pay-row">
+            <span class="muted">Totale scadenze</span>
+            <strong id="miniDueTotal">€ 0,00</strong>
+          </div>
         </div>
 
+        <!-- Lista scadenze -->
+        <div id="deadlinesList" class="payments-list"></div>
+
+        <!-- Form aggiunta scadenza -->
         <div class="row mt">
           <label class="muted small" for="dueDate">Data scadenza</label>
           <input id="dueDate" type="date" class="input" />
@@ -208,9 +218,18 @@
           <input id="dueAmount" type="number" step="0.01" class="input" />
         </div>
 
+        <div class="row mt">
+          <label class="muted small" for="dueNote">Note (opzionale)</label>
+          <input id="dueNote" type="text" class="input" placeholder="es. Prima rata, Saldo..." />
+        </div>
+
         <div class="row mt gap">
           <button id="sendReminderBtn" class="btn btn-light w100" type="button">Invia promemoria</button>
-          <button id="registerIncassoBtn" class="btn btn-primary w100" type="button">Salva scadenza</button>
+          <button id="addDeadlineBtn" class="btn btn-light w100" type="button">+ Aggiungi</button>
+        </div>
+
+        <div class="row mt">
+          <button id="registerIncassoBtn" class="btn btn-primary w100" type="button">Salva scadenze</button>
         </div>
 
         <div id="dueAlert" class="due-alert hidden"></div>
@@ -251,13 +270,17 @@
     <div class="modal-body">
       <label class="muted small">Tipo</label>
       <select id="paymentStatusModal" class="select">
-        <option value="da_incassare">Da incassare</option>
-        <option value="incassato">Incassato</option>
         <option value="acconto">Acconto</option>
+        <option value="incassato">Saldo / Incassato</option>
       </select>
 
       <div class="row mt">
-        <label class="muted small">Importo acconto</label>
+        <label class="muted small">Data pagamento</label>
+        <input id="payDateModal" type="date" class="input" />
+      </div>
+
+      <div class="row mt">
+        <label class="muted small">Importo</label>
         <input id="depositAmountModal" type="number" step="0.01" class="input" placeholder="0,00" />
       </div>
 
@@ -294,44 +317,6 @@
     const alt = byId("openPaymentModalAlt");
     const openMain = byId("registerPaymentBtn");
     if (alt && openMain) alt.addEventListener("click", () => openMain.click());
-
-    // sincronizza i campi del modal con quelli reali usati da order.js
-    const ps = byId("paymentStatus");
-    const da = byId("depositAmount");
-    const pm = byId("paymentMethod");
-    const ib = byId("iban");
-
-    const psM = byId("paymentStatusModal");
-    const daM = byId("depositAmountModal");
-    const pmM = byId("paymentMethodModal");
-    const ibM = byId("ibanModal");
-
-    function syncToModal() {
-      if (psM && ps) psM.value = ps.value;
-      if (daM && da) daM.value = da.value || "";
-      if (pmM && pm) pmM.value = pm.value;
-      if (ibM && ib) ibM.value = ib.value || "";
-    }
-    function syncFromModal() {
-      if (ps && psM) ps.value = psM.value;
-      if (da && daM) da.value = daM.value || "";
-      if (pm && pmM) pm.value = pmM.value;
-      if (ib && ibM) ib.value = ibM.value || "";
-
-      // trigger ricalcoli
-      [ps, da, pm, ib].forEach(el => {
-        if (!el) return;
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-      });
-    }
-
-    // quando apro il modal, copia i valori
-    const btn = byId("registerPaymentBtn");
-    btn?.addEventListener("click", syncToModal);
-
-    // quando applico, copia dal modal ai campi reali
-    byId("paymentModalApply")?.addEventListener("click", syncFromModal);
   </script>
 
   <script type="module" src="/order-ui.js"></script>
