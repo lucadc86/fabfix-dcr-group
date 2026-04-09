@@ -790,11 +790,13 @@ async function loadOrderForEdit() {
       }
       if (d && !Number.isNaN(d.getTime())) {
         dueDateInput.value = d.toISOString().split("T")[0];
+        dueDateInput.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
     if (dueAmountInput) {
       const da = Number(o.dueAmount ?? 0);
       dueAmountInput.value = Number.isFinite(da) && da > 0 ? String(da) : "";
+      dueAmountInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
   } catch (err) {
     console.error("Errore caricamento ordine:", err);
@@ -1114,6 +1116,42 @@ if(registerIncassoBtn){
   };
   registerIncassoBtn.addEventListener('click', (e)=>{ e.preventDefault(); handleSaveDue(); });
   registerIncassoBtn.addEventListener('touchend', (e)=>{ e.preventDefault(); handleSaveDue(); });
+}
+
+// ===============================
+// Scadenze: Invia promemoria WhatsApp
+// ===============================
+const sendReminderBtn = document.getElementById("sendReminderBtn");
+if(sendReminderBtn){
+  const handleSendReminder = async () => {
+    try{
+      const dueIso = dueDateInput?.value ? toDateKey(dueDateInput.value) : null;
+      if(!dueIso){
+        alert("Seleziona una data scadenza prima di inviare il promemoria.");
+        return;
+      }
+      await ensureClientIdFromOrder();
+      const clientName = (clientNameInput?.value || "").trim() || await getClientNameSafe(clientId);
+      const dueAmountRaw = String(dueAmountInput?.value || "").trim();
+      const dueAmountNum = dueAmountRaw ? Number(dueAmountRaw.replace(",", ".")) : 0;
+      const dueDateFormatted = new Date(dueIso).toLocaleDateString("it-IT");
+
+      const lines = [
+        "⏰ PROMEMORIA SCADENZA",
+        clientName ? `Cliente: ${clientName}` : null,
+        `Data scadenza: ${dueDateFormatted}`,
+        (Number.isFinite(dueAmountNum) && dueAmountNum > 0) ? `Importo: ${euro(dueAmountNum)}` : null,
+        orderId ? `Rif. ordine: …${String(orderId).slice(-5).toUpperCase()}` : null,
+      ].filter(Boolean);
+
+      openWhatsAppWithText(lines.join("\n"));
+    }catch(e){
+      console.error("Errore promemoria:", e);
+      alert("❌ Impossibile inviare il promemoria");
+    }
+  };
+  sendReminderBtn.addEventListener("click", (e)=>{ e.preventDefault(); handleSendReminder(); });
+  sendReminderBtn.addEventListener("touchend", (e)=>{ e.preventDefault(); handleSendReminder(); });
 }
 
 // ===============================

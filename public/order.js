@@ -57,22 +57,6 @@ import {
   runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-
-async function cleanTestOrders(){
-  try{
-    const snap = await getDocs(collection(db, "orders"));
-    for(const d of snap.docs){
-      const o = d.data() || {};
-      const nome = (o.clientName || "").toUpperCase();
-      if(nome.includes("HAIR STUDIO MARIA") || nome.includes("PARRUCCHIERE ROSSI")){
-        await deleteDoc(doc(db, "orders", d.id));
-      }
-    }
-  }catch(e){
-    console.error("cleanTestOrders error", e);
-  }
-}
-
 // ===============================
 // INCASSI: sync automatico da ordine
 // ===============================
@@ -471,7 +455,6 @@ if (clientNameInput && clientNameMiniInput) {
 
 // Avviamo preload non appena possibile (in background, non blocca la UI)
 preloadClientAndOrderInfo();
-preloadProductSuggestions();
 
 
 const PRODUCT_DB_KEY = "fabfix:products:db:v1";
@@ -807,11 +790,13 @@ async function loadOrderForEdit() {
       }
       if (d && !Number.isNaN(d.getTime())) {
         dueDateInput.value = d.toISOString().split("T")[0];
+        dueDateInput.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
     if (dueAmountInput) {
       const da = Number(o.dueAmount ?? 0);
       dueAmountInput.value = Number.isFinite(da) && da > 0 ? String(da) : "";
+      dueAmountInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
   } catch (err) {
     console.error("Errore caricamento ordine:", err);
@@ -881,11 +866,10 @@ saveBtn.addEventListener("click", async () => {
     if (noteVal) orderData.note = noteVal;
   }
   // Scadenza
-  const dueIso = dueDateInput?.value ? toDateKey(dueDateInput.value) : null;
-orderData.dueDate = dueIso ? new Date(dueIso) : null;
-orderData.dueAmount = dueAmountInput?.value
-  ? Number(String(dueAmountInput.value).replace(",", "."))
-  : null;
+  if (dueDateInput && dueDateInput.value) {
+    const dueIso = toDateKey(dueDateInput.value);
+    if (dueIso) orderData.dueDate = new Date(dueIso);
+  }
   if (dueAmountInput && dueAmountInput.value) {
     const daVal = Number(String(dueAmountInput.value).replace(',', '.'));
     if (Number.isFinite(daVal) && daVal >= 0) orderData.dueAmount = daVal;
@@ -1135,6 +1119,42 @@ if(registerIncassoBtn){
 }
 
 // ===============================
+// Scadenze: Invia promemoria WhatsApp
+// ===============================
+const sendReminderBtn = document.getElementById("sendReminderBtn");
+if(sendReminderBtn){
+  const handleSendReminder = async () => {
+    try{
+      const dueIso = dueDateInput?.value ? toDateKey(dueDateInput.value) : null;
+      if(!dueIso){
+        alert("Seleziona una data scadenza prima di inviare il promemoria.");
+        return;
+      }
+      await ensureClientIdFromOrder();
+      const clientName = (clientNameInput?.value || "").trim() || await getClientNameSafe(clientId);
+      const dueAmountRaw = String(dueAmountInput?.value || "").trim();
+      const dueAmountNum = dueAmountRaw ? Number(dueAmountRaw.replace(",", ".")) : 0;
+      const dueDateFormatted = new Date(dueIso).toLocaleDateString("it-IT");
+
+      const lines = [
+        "⏰ PROMEMORIA SCADENZA",
+        clientName ? `Cliente: ${clientName}` : null,
+        `Data scadenza: ${dueDateFormatted}`,
+        (Number.isFinite(dueAmountNum) && dueAmountNum > 0) ? `Importo: ${euro(dueAmountNum)}` : null,
+        orderId ? `Rif. ordine: …${String(orderId).slice(-5).toUpperCase()}` : null,
+      ].filter(Boolean);
+
+      openWhatsAppWithText(lines.join("\n"));
+    }catch(e){
+      console.error("Errore promemoria:", e);
+      alert("❌ Impossibile inviare il promemoria");
+    }
+  };
+  sendReminderBtn.addEventListener("click", (e)=>{ e.preventDefault(); handleSendReminder(); });
+  sendReminderBtn.addEventListener("touchend", (e)=>{ e.preventDefault(); handleSendReminder(); });
+}
+
+// ===============================
 // RICEVUTA: Canvas renderer (PNG)
 // ===============================
 async function renderReceiptPngBlob(data){
@@ -1344,8 +1364,11 @@ if(discountPercentEl){ discountPercentEl.addEventListener("input", calculate); d
 // AVVIO PAGINA
 // ===============================
 // ✅ Init
+// 🔥 AVVIO SUGGERIMENTI DOPO INIZIALIZZAZIONE (FIX CRITICO)
+setTimeout(() => {
+  preloadProductSuggestions();
+}, 0);
 (async () => {
-  await cleanTestOrders();
   if (orderId) {
     // Se manca clientId (link vecchio), lo recuperiamo dall'ordine per poter tornare al cliente dopo Salva
     await ensureClientIdFromOrder();
