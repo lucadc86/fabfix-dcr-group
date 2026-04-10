@@ -3,7 +3,8 @@
 
 import { auth, db, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from './firebase.js';
 import {
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut,
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 // ---- Helpers ----
@@ -157,6 +158,26 @@ function ensureFab(){
   btn.innerHTML = '<span>AI</span>';
   btn.addEventListener('click', openModal);
   document.body.appendChild(btn);
+
+  // Pulsante logout piccolo, in basso a sinistra
+  if (!qs('#nav-logout-btn')) {
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'nav-logout-btn';
+    logoutBtn.title = 'Esci';
+    logoutBtn.textContent = '⏏';
+    logoutBtn.style.cssText = [
+      'position:fixed','bottom:18px','left:18px','z-index:9999',
+      'width:44px','height:44px','border-radius:50%','border:none',
+      'background:rgba(255,255,255,.12)','color:#fff','font-size:18px',
+      'cursor:pointer','box-shadow:0 4px 14px rgba(0,0,0,.25)',
+    ].join(';');
+    logoutBtn.addEventListener('click', async () => {
+      if (!confirm('Uscire dal gestionale?')) return;
+      try { await signOut(auth); } catch {}
+      window.location.replace('/login.html');
+    });
+    document.body.appendChild(logoutBtn);
+  }
 }
 
 function openModal(){

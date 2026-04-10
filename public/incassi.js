@@ -1,5 +1,7 @@
 import { firestoreService as fs } from "./services/firestoreService.js";
 import { listExpenses } from "./services/expenseService.js";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getCalendarByMonth,
   getOutstandingTotal,
@@ -343,4 +345,12 @@ $("cardKpiFattMese")?.addEventListener('click', async ()=> {
   openListModal('Ordini del mese', html);
 });
 
-boot().catch((e)=>{ console.error(e); alert('Errore nel caricamento incassi.'); });
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(() => {
+  boot().catch((e) => { console.error(e); alert('Errore nel caricamento incassi.'); });
+});

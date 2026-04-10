@@ -21,6 +21,7 @@
     .totalbar b{ font-size: 20px; }
     .sticky-actions{ position:sticky; bottom: calc(env(safe-area-inset-bottom) + 10px); display:flex; justify-content:flex-end; padding: 10px 0; background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,.6)); z-index:15;} .top-actions{position:sticky; top:calc(env(safe-area-inset-top) + 76px); z-index:16; justify-content:flex-end; background:rgba(255,255,255,.96); backdrop-filter: blur(8px); border-bottom:1px solid rgba(0,0,0,.06);} .compact th,.compact td{ padding:6px 8px; font-size:12px; } .compact .qty{ width:72px; } .lisap-meta{ font-size:11px; opacity:.72; margin-top:2px; } .fixed-actions{position:fixed; right:16px; bottom:16px; z-index:60; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; max-width:min(820px, calc(100vw - 32px)); background:rgba(255,255,255,.97); border:1px solid rgba(0,0,0,.08); border-radius:18px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.16);} @media (max-width:760px){ .fixed-actions{left:10px; right:10px; bottom:10px; justify-content:space-between;} .fixed-actions .btn{flex:1 1 calc(50% - 8px);} }
   </style>
+  <script type="module" src="/auth-guard.js"></script>
 </head>
 <body>
   <header class="top-bar incassi-topbar lisap-topbar">

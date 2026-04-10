@@ -3,6 +3,8 @@ import { getYearlyIncomesTotal } from './services/incomeService.js';
 import { getIncassiKpis } from './services/kpiService.js';
 import { listDeadlines } from './services/deadlineService.js';
 import { firestoreService as fs } from './services/firestoreService.js';
+import { auth } from './firebase.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 const elFatt = document.getElementById('homeFatturato');
 const elFattSub = document.getElementById('homeFatturatoSub');
@@ -38,13 +40,9 @@ async function loadHomeSummary(){
   }
 
   try{
-    const [incAnno, incassiKpi] = await Promise.all([
-      getYearlyIncomesTotal(year),
-      getIncassiKpis(),
-    ]);
+    const incAnno = await getYearlyIncomesTotal(year);
     if(elInc) elInc.textContent = itMoney(incAnno);
-    if(elIncSub) elIncSub.textContent = '';
-    if(elIncSub) elIncSub.style.display = 'none';
+    if(elIncSub) elIncSub.textContent = `Totale annuo incassato ${year}`;
   }catch(err){
     console.warn('Home incassi error', err);
   }
@@ -58,4 +56,10 @@ async function loadHomeSummary(){
   }
 }
 
-loadHomeSummary();
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(() => loadHomeSummary());

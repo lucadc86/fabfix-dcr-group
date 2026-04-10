@@ -1,5 +1,7 @@
 import { firestoreService as fs } from "./services/firestoreService.js?v=69fix";
 import { listOrders } from "./services/orderService.js?v=69fix";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ===============================
 // Helpers
@@ -74,20 +76,19 @@ function loadProductDb(){
 function orderRows(raw){
   if (Array.isArray(raw?.rows)) return raw.rows;
   if (Array.isArray(raw?.items)) return raw.items;
-  if (Array.isArray(raw?.products)) return raw.products;
   return [];
 }
 function buildProductDbFromOrders(orders){
   const map = new Map();
   (orders||[]).forEach((o)=>{
     orderRows(o).forEach((r)=>{
-      const name = String(r.product || r.name || r.description || r.descrizione || r.desc || '').trim();
+      const name = String(r.product || r.description || r.descrizione || r.name || '').trim();
       if(!name) return;
       const key = normName(name);
       const prev = map.get(key) || { name, normalizedName:key, soldQty:0, salesCount:0, lastPrice:0, updatedAtISO:null };
-      prev.soldQty += Number(r.qty||0);
+      prev.soldQty += Number(r.qty || r.quantita || 0);
       prev.salesCount += 1;
-      prev.lastPrice = Number(r.price || prev.lastPrice || 0);
+      prev.lastPrice = Number(r.price || r.prezzo || prev.lastPrice || 0);
       const d = orderDate(o);
       prev.updatedAtISO = d ? d.toISOString() : prev.updatedAtISO;
       map.set(key, prev);
@@ -526,10 +527,22 @@ function clickOrEnter(el, fn){
 
 clickOrEnter(document.getElementById("cardOrdersYear"), openOrdersYear);
 
-// Boot
-loadAll().catch(err => {
-  console.error(err);
-  alert('Errore nel caricamento dei clienti.');
+// Boot — attendi che Firebase Auth ripristini la sessione (async) prima di
+// leggere Firestore; senza questo le regole vedono l'utente come non autenticato.
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => {
+      unsub();
+      resolve(user);
+    });
+  });
+}
+
+waitForAuth().then(() => {
+  loadAll().catch(err => {
+    console.error(err);
+    alert('Errore nel caricamento dei clienti.');
+  });
 });
 
 

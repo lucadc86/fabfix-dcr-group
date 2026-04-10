@@ -57,6 +57,12 @@ const paidValueEl = qs("paidValue");
 const residualValueEl = qs("residualValue");
 const paymentsListEl = qs("paymentsListNew");
 const payResidualHidden = qs("payResidual");
+const payTotalEl = qs("payTotal");
+
+const miniDueTotalEl = qs("miniDueTotal");
+const dueAmountInputEl = qs("dueAmount");
+const dueDateInputEl = qs("dueDate");
+const dueAlertEl = qs("dueAlert");
 
 function calcPaidResidual(){
   const total = parseEuroLikeText(grandTotalEl?.textContent);
@@ -78,6 +84,7 @@ function calcPaidResidual(){
 function renderPaymentsUI(){
   const { total, paid, residual, status } = calcPaidResidual();
 
+  if(payTotalEl) payTotalEl.textContent = fmtEUR(total);
   if(paidValueEl) paidValueEl.textContent = fmtEUR(paid);
   if(residualValueEl) residualValueEl.textContent = fmtEUR(residual);
   if(payResidualHidden) payResidualHidden.textContent = fmtEUR(residual);
@@ -126,3 +133,31 @@ if(grandTotalEl) obs.observe(grandTotalEl, {childList:true,subtree:true});
   qs(id)?.addEventListener("input", renderPaymentsUI);
 });
 renderPaymentsUI();
+
+// ---- Scadenze: miniDueTotal + dueAlert ----
+function renderDueUI(){
+  const amount = parseFloat(String(dueAmountInputEl?.value || "0").replace(",", ".")) || 0;
+  if(miniDueTotalEl) miniDueTotalEl.textContent = fmtEUR(amount);
+
+  if(!dueAlertEl) return;
+  const dueVal = dueDateInputEl?.value;
+  if(dueVal && amount > 0){
+    const dueDate = new Date(dueVal);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    dueDate.setHours(0,0,0,0);
+    if(dueDate < today){
+      const diffDays = Math.round((today - dueDate) / 86400000);
+      dueAlertEl.textContent = `⚠️ Scadenza scaduta da ${diffDays} giorn${diffDays === 1 ? "o" : "i"}`;
+      dueAlertEl.classList.remove("hidden");
+      return;
+    }
+  }
+  dueAlertEl.textContent = "";
+  dueAlertEl.classList.add("hidden");
+}
+
+dueAmountInputEl?.addEventListener("input", renderDueUI);
+dueAmountInputEl?.addEventListener("change", renderDueUI);
+dueDateInputEl?.addEventListener("change", renderDueUI);
+renderDueUI();

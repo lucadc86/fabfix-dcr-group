@@ -11,7 +11,9 @@ import {
   deleteDoc,
   updateDoc,
   serverTimestamp,
+  auth,
 } from './firebase.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ===============================
 // Helpers
@@ -272,13 +274,13 @@ function renderClientProducts(){
   const map = new Map();
   (_orders||[]).forEach((o)=>{
     (Array.isArray(o.rows)?o.rows:[]).forEach((r)=>{
-      const name = String(r.product||r.name||r.description||r.descrizione||r.desc||'').trim();
+      const name = String(r.product || r.description || r.descrizione || r.name || r.desc || '').trim();
       if(!name) return;
       const key = name.toUpperCase().replace(/\s+/g,' ');
       const prev = map.get(key) || { name, qty:0, orders:0, lastPrice:0 };
-      prev.qty += Number(r.qty||0);
+      prev.qty += Number(r.qty || r.quantita || 0);
       prev.orders += 1;
-      prev.lastPrice = Number(r.price||prev.lastPrice||0);
+      prev.lastPrice = Number(r.price || r.prezzo || prev.lastPrice || 0);
       map.set(key, prev);
     });
   });
@@ -429,7 +431,13 @@ function createOrder(){
 // ===============================
 // Init
 // ===============================
-(async function init(){
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(async () => {
   try{
     await loadClient();
     await loadOrdersForClient();
@@ -441,4 +449,4 @@ function createOrder(){
     console.error(e);
     alert('Errore nel caricamento della scheda cliente.');
   }
-})();
+});

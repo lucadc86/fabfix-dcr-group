@@ -6,11 +6,14 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
+    // Qualsiasi utente autenticato è considerato staff/admin.
+    // App ad uso interno mono-utente: chiunque abbia un account Firebase può accedere.
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.role == 'admin';
+      return isAuthenticated();
     }
     function isStaff() {
-      return isAuthenticated() && request.auth.token.role in ['admin', 'staff'];
+      return isAuthenticated();
     }
     function isPortalClient(clientId) {
       return isAuthenticated() && (
@@ -21,7 +24,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, create, update: if request.auth.uid == userId || isAdmin();
+      // Ogni utente può leggere il proprio documento (necessario per verificare il ruolo).
+      allow read: if request.auth.uid == userId;
+      allow create, update: if request.auth.uid == userId || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -76,6 +81,40 @@ service cloud.firestore {
     }
 
     match /incassi/{incassoId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /expenses/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /expensesHistory/{docId} {
+      allow read, create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /scadenze/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /scadenzeHistory/{docId} {
+      allow read, create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /suppliers/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /payments/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /priceRequests/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /agendaEvents/{docId} {
       allow read, create, update, delete: if isStaff();
     }
 

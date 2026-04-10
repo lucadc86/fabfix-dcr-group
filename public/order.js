@@ -42,7 +42,7 @@ function updatePaymentUI(){
   return { status, deposit, residual, total };
 }
 
-import { db } from "./firebase.js";
+import { db, auth } from "./firebase.js";
 import {
   collection,
   addDoc,
@@ -56,22 +56,7 @@ import {
   updateDoc,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-
-async function cleanTestOrders(){
-  try{
-    const snap = await getDocs(collection(db, "orders"));
-    for(const d of snap.docs){
-      const o = d.data() || {};
-      const nome = (o.clientName || "").toUpperCase();
-      if(nome.includes("HAIR STUDIO MARIA") || nome.includes("PARRUCCHIERE ROSSI")){
-        await deleteDoc(doc(db, "orders", d.id));
-      }
-    }
-  }catch(e){
-    console.error("cleanTestOrders error", e);
-  }
-}
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ===============================
 // INCASSI: sync automatico da ordine
@@ -159,12 +144,47 @@ async function createIncassoRecord({ orderId, clientId, dateKey, amount, kind, n
   }
 }
 
-async function syncIncassiFromOrder({ orderId, clientId, paymentStatus, total, deposit, dateKey }){
+async function syncIncassiFromOrder({ orderId, clientId, payments, paymentStatus, total, deposit, dateKey }){
   if(!orderId) return;
 
-  const status = paymentStatus || "da_incassare";
   const dayKey = dateKey || toDateKey(new Date());
   const clientName = await getClientNameSafe(clientId);
+
+  // Rimuove tutti gli incassi precedenti dell'ordine
+  await removeIncassiForOrder({ orderId });
+
+  // ---- Nuovo formato multi-pagamento (array esplicito con almeno un pagamento) ----
+  // IMPORTANTE: il controllo payments.length > 0 è necessario per permettere al
+  // fallback legacy (sotto) di gestire ordini con paymentStatus = "incassato"/"acconto"
+  // quando nessun pagamento è stato aggiunto tramite il modal multi-pagamento.
+  // Senza questa condizione, un array vuoto [] entrerebbe nel ramo, cancellerebbe
+  // tutti gli incassi dell'ordine e uscirebbe senza crearne di nuovi.
+  if(Array.isArray(payments) && payments.length > 0){
+    for(let i = 0; i < payments.length; i++){
+      const pay = payments[i];
+      const amt = Number(pay.amount) || 0;
+      if(amt <= 0) continue;
+      const incassoId = `${orderId}__pay_${i}`;
+      await setDoc(doc(db, "incassi", incassoId), {
+        date: pay.date || dayKey,
+        source: "ordine",
+        orderId,
+        clientId: clientId || null,
+        clientName: clientName || null,
+        kind: pay.type || "acconto",
+        paymentType: pay.type || "acconto",
+        amount: amt,
+        method: pay.method || null,
+        reference: pay.reference || null,
+        note: `${clientName || 'Cliente'} • ${euro(amt)} • ${pay.type || 'acconto'}`,
+        updatedAt: new Date()
+      }, { merge: true });
+    }
+    return;
+  }
+
+  // ---- Fallback legacy (mono-pagamento) ----
+  const status = paymentStatus || "da_incassare";
   const base = {
     date: dayKey,
     source: "ordine",
@@ -174,40 +194,54 @@ async function syncIncassiFromOrder({ orderId, clientId, paymentStatus, total, d
     updatedAt: new Date()
   };
 
-  const saldoId = `${orderId}__saldo`;
-  const incassoLegacyId = `${orderId}__incasso`;
-  const accontoId = `${orderId}__acconto`;
-
   if(status === "incassato"){
     const amount = Number(total) || 0;
-    await setDoc(doc(db, "incassi", saldoId), {
+    await setDoc(doc(db, "incassi", `${orderId}__saldo`), {
       ...base,
       kind: "saldo",
       paymentType: "saldo",
       amount,
       note: `${clientName || 'Cliente'} • ${euro(amount)} • saldo`
     }, { merge:true });
-    await deleteDoc(doc(db, "incassi", incassoLegacyId)).catch(()=>{});
-    await deleteDoc(doc(db, "incassi", accontoId)).catch(()=>{});
   }else if(status === "acconto"){
     const dep = Number(deposit) || 0;
     if(dep > 0){
-      await setDoc(doc(db, "incassi", accontoId), {
+      await setDoc(doc(db, "incassi", `${orderId}__acconto`), {
         ...base,
         kind: "acconto",
         paymentType: "acconto",
         amount: dep,
         note: `${clientName || 'Cliente'} • ${euro(dep)} • acconto`
       }, { merge:true });
-    }else{
-      await deleteDoc(doc(db, "incassi", accontoId)).catch(()=>{});
     }
-    await deleteDoc(doc(db, "incassi", saldoId)).catch(()=>{});
-    await deleteDoc(doc(db, "incassi", incassoLegacyId)).catch(()=>{});
-  }else{
-    await deleteDoc(doc(db, "incassi", saldoId)).catch(()=>{});
-    await deleteDoc(doc(db, "incassi", incassoLegacyId)).catch(()=>{});
-    await deleteDoc(doc(db, "incassi", accontoId)).catch(()=>{});
+  }
+}
+
+async function syncDeadlinesToScadenze(orderId, deadlines){
+  if(!orderId || !Array.isArray(deadlines) || !deadlines.length) return;
+
+  // Soft-delete delle scadenze precedenti collegate a questo ordine
+  try{
+    const q = query(collection(db, "scadenze"), where("orderId", "==", orderId));
+    const snap = await getDocs(q);
+    await Promise.allSettled(
+      snap.docs.map(d => setDoc(doc(db, "scadenze", d.id), { isDeleted: true }, { merge: true }))
+    );
+  }catch(e){ console.warn("cleanup scadenze for order failed:", e); }
+
+  // Crea le nuove scadenze
+  for(let i = 0; i < deadlines.length; i++){
+    const due = deadlines[i];
+    if(!due.date || !(Number(due.amount) > 0)) continue;
+    const scadenzaId = `${orderId}__due_${i}`;
+    await setDoc(doc(db, "scadenze", scadenzaId), {
+      date: due.date,
+      amount: Number(due.amount),
+      note: due.note || "",
+      orderId,
+      isDeleted: false,
+      updatedAt: new Date()
+    }, { merge: true });
   }
 }
 
@@ -364,7 +398,6 @@ function buildReceiptHtml({ clientName, dateStr, total, statusLabel, deposit, re
   `;
 }
 async function buildOrderReceiptText({ orderId, clientId }){
-  // Leggiamo i dati direttamente da Firestore (così è sempre coerente)
   const oSnap = await getDoc(doc(db, "orders", orderId));
   if(!oSnap.exists()) throw new Error("Ordine non trovato");
   const o = oSnap.data() || {};
@@ -375,34 +408,42 @@ async function buildOrderReceiptText({ orderId, clientId }){
       const cSnap = await getDoc(doc(db, "clients", clientId));
       if(cSnap.exists()) clientName = (cSnap.data()?.name || "").trim();
     }
-  }catch(e){ /* non blocchiamo la ricevuta */ }
+  }catch(e){}
 
   const dt = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt instanceof Date ? o.createdAt : null);
   const dateStr = dt ? dt.toLocaleDateString('it-IT') : (document.getElementById('orderDate')?.value || "");
 
   const total = (typeof o.total === 'number') ? o.total : (typeof o.grandTotal === 'number' ? o.grandTotal : getTotalFromUI());
-  const status = o.paymentStatus || paymentStatusEl?.value || "";
-  const deposit = (typeof o.depositAmount === 'number') ? o.depositAmount : Number(String(depositAmountEl?.value||"0").replace(",","."));
-  const residual = (typeof o.residual === 'number') ? o.residual : Math.max(0, total - (Number.isFinite(deposit)?deposit:0));
 
-  const statusLabel = {
-    "incassato": "Incassato",
-    "acconto": "Acconto",
-    "da_incassare": "Da incassare"
-  }[status] || status;
-
-  const orderLink = `${location.origin}${location.pathname.replace(/[^/]+$/, '')}order.html?orderId=${encodeURIComponent(orderId)}${clientId ? `&clientId=${encodeURIComponent(clientId)}` : ''}`;
+  // Usa array pagamenti se disponibili
+  const paymentsArr = Array.isArray(o.payments) ? o.payments : [];
+  const totalPaid = paymentsArr.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const residualAmt = Math.max(0, total - totalPaid);
 
   const lines = [
     "RICEVUTA",
     clientName ? `Cliente: ${clientName}` : null,
     dateStr ? `Data: ${dateStr}` : null,
     `Totale ordine: ${euro(total)}`,
-    statusLabel ? `Stato pagamento: ${statusLabel}` : null,
-    (status === 'acconto') ? `Acconto: ${euro(Number.isFinite(deposit)?deposit:0)}\nResiduo: ${euro(residual)}` : null,
-    (status === 'da_incassare') ? `Da incassare: ${euro(total)}` : null,
-    (status === 'incassato') ? `Pagato: ${euro(total)}` : null,
   ].filter(Boolean);
+
+  if(paymentsArr.length > 0){
+    lines.push(`Pagato: ${euro(totalPaid)}`);
+    paymentsArr.forEach((p, i) => {
+      const dStr = p.date ? new Date(p.date + 'T00:00:00').toLocaleDateString('it-IT') : '';
+      lines.push(`  ${i+1}. ${p.method || ''} ${euro(p.amount)} ${dStr ? `(${dStr})` : ''} — ${p.type || ''}`.trim());
+    });
+    if(residualAmt > 0) lines.push(`Residuo: ${euro(residualAmt)}`);
+  }else{
+    const status = o.paymentStatus || "";
+    const deposit = (typeof o.depositAmount === 'number') ? o.depositAmount : Number(String(depositAmountEl?.value||"0").replace(",","."));
+    const residual = (typeof o.residual === 'number') ? o.residual : Math.max(0, total - (Number.isFinite(deposit)?deposit:0));
+    const statusLabel = { "incassato": "Incassato", "acconto": "Acconto", "da_incassare": "Da incassare" }[status] || status;
+    if(statusLabel) lines.push(`Stato pagamento: ${statusLabel}`);
+    if(status === 'acconto') lines.push(`Acconto: ${euro(deposit)}\nResiduo: ${euro(residual)}`);
+    if(status === 'da_incassare') lines.push(`Da incassare: ${euro(total)}`);
+    if(status === 'incassato') lines.push(`Pagato: ${euro(total)}`);
+  }
 
   return lines.join("\n");
 }
@@ -471,7 +512,6 @@ if (clientNameInput && clientNameMiniInput) {
 
 // Avviamo preload non appena possibile (in background, non blocca la UI)
 preloadClientAndOrderInfo();
-preloadProductSuggestions();
 
 
 const PRODUCT_DB_KEY = "fabfix:products:db:v1";
@@ -774,7 +814,7 @@ async function loadOrderForEdit() {
 
     calculate();
 
-    // --- Pagamenti (retro-compatibile) ---
+    // --- Backward compat: mantieni i campi legacy per updatePaymentUI ---
     if (paymentStatusEl) {
       paymentStatusEl.value = o.paymentStatus || "da_incassare";
     }
@@ -797,22 +837,46 @@ async function loadOrderForEdit() {
       const num = `${year}-${suffix5}`;
       setOrderNumberUI(num);
     }
-    if (dueDateInput) {
-      // supporto per stored dueDate: può essere stringa ISO, Timestamp o Date
-      let d = null;
-      if (o.dueDate?.toDate) d = o.dueDate.toDate();
-      else if (o.dueDate instanceof Date) d = o.dueDate;
-      else if (typeof o.dueDate === 'string') {
-        d = new Date(o.dueDate);
-      }
-      if (d && !Number.isNaN(d.getTime())) {
-        dueDateInput.value = d.toISOString().split("T")[0];
+
+    // --- Multi-pagamento e multi-scadenza ---
+    // Leggiamo l'array salvato (nuovo formato)
+    let savedPayments = Array.isArray(o.payments) ? o.payments : [];
+    let savedDeadlines = Array.isArray(o.deadlines) ? o.deadlines : [];
+
+    // Backward compat: se payments vuoto, sintetizza dal vecchio formato
+    if (!savedPayments.length && o.paymentStatus && o.paymentStatus !== "da_incassare") {
+      const dep = Number(o.depositAmount ?? 0);
+      const orderTotal = Number(o.total ?? 0);
+      const orderDateISO = o.createdAt?.toDate
+        ? o.createdAt.toDate().toISOString().split("T")[0]
+        : (orderDateInput?.value || new Date().toISOString().split("T")[0]);
+      if (o.paymentStatus === "incassato" && orderTotal > 0) {
+        savedPayments = [{ id: "legacy", amount: orderTotal, method: "Bonifico Bancario", reference: "", date: orderDateISO, type: "incassato" }];
+      } else if (o.paymentStatus === "acconto" && dep > 0) {
+        savedPayments = [{ id: "legacy", amount: dep, method: "Bonifico Bancario", reference: "", date: orderDateISO, type: "acconto" }];
       }
     }
-    if (dueAmountInput) {
-      const da = Number(o.dueAmount ?? 0);
-      dueAmountInput.value = Number.isFinite(da) && da > 0 ? String(da) : "";
+
+    // Backward compat: se deadlines vuoto, sintetizza dal vecchio formato
+    if (!savedDeadlines.length && o.dueAmount > 0 && o.dueDate) {
+      let dueDateISO = null;
+      if (o.dueDate?.toDate) dueDateISO = o.dueDate.toDate().toISOString().split("T")[0];
+      else if (o.dueDate instanceof Date) dueDateISO = o.dueDate.toISOString().split("T")[0];
+      else if (typeof o.dueDate === 'string') dueDateISO = o.dueDate.slice(0, 10);
+      if (dueDateISO) {
+        savedDeadlines = [{ id: "legacy", amount: Number(o.dueAmount), date: dueDateISO, note: "" }];
+      }
     }
+
+    // Inizializza la UI multi-pagamento (order-ui.js potrebbe non essere ancora caricato,
+    // ma poiché questo è async e order-ui.js è un modulo deferred, sarà pronto)
+    if (window.__fabfix?.init) {
+      window.__fabfix.init({ payments: savedPayments, deadlines: savedDeadlines });
+    } else {
+      // Fallback: salva i dati per l'init ritardato
+      window.__fabfix_pending_init = { payments: savedPayments, deadlines: savedDeadlines };
+    }
+
   } catch (err) {
     console.error("Errore caricamento ordine:", err);
     alert("Errore caricamento ordine");
@@ -837,122 +901,148 @@ saveBtn.addEventListener("click", async () => {
   });
 
   if (rows.length === 0) {
-    alert("❌ Inserisci almeno una riga valida");
+    alert("\u274c Inserisci almeno una riga valida");
     return;
   }
 
-  // ✅ clientId obbligatorio (struttura stabile clienti↔ordini)
-  // Se stiamo creando un nuovo ordine, deve arrivare dall’URL.
-  // Se stiamo modificando, proviamo prima a recuperarlo dall’ordine (link vecchio) e blocchiamo se ancora mancante.
   if(!clientId){
     await ensureClientIdFromOrder();
   }
   if(!clientId){
-    alert("❌ Cliente non collegato. Apri l’ordine dalla scheda cliente (clientId mancante).");
+    alert("\u274c Cliente non collegato. Apri l'ordine dalla scheda cliente (clientId mancante).");
     return;
   }
 
-	const pay = updatePaymentUI() || { status: "da_incassare", deposit: 0, residual: 0 };
-	const uiClientName = String((clientNameInput?.value || clientNameMiniInput?.value || '').trim());
+  // Leggi pagamenti e scadenze dalla UI multi
+  const fab = window.__fabfix;
+  const paymentsArr = fab?.getPayments() || [];
+  const deadlinesArr = fab?.getDeadlines() || [];
+
+  const orderTotal = parseEuroLike(grandTotalEl.textContent);
+
+  // Calcola campi legacy per backward compat
+  let paymentStatus = "da_incassare";
+  let depositAmount = 0;
+  let residual = orderTotal;
+  if(paymentsArr.length > 0){
+    const totalPaid = paymentsArr.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    if(totalPaid >= orderTotal && orderTotal > 0){
+      paymentStatus = "incassato";
+      depositAmount = orderTotal;
+      residual = 0;
+    }else if(totalPaid > 0){
+      paymentStatus = "acconto";
+      depositAmount = totalPaid;
+      residual = Math.max(0, orderTotal - totalPaid);
+    }
+  }else{
+    const pay = updatePaymentUI() || { status: "da_incassare", deposit: 0, residual: orderTotal };
+    paymentStatus = pay.status || "da_incassare";
+    depositAmount = Number(pay.deposit || 0);
+    residual = Number(pay.residual ?? orderTotal);
+  }
+
+  const uiClientName = String((clientNameInput?.value || clientNameMiniInput?.value || "").trim());
   const safeClientName = uiClientName || await getClientNameSafe(clientId);
 
-	const orderData = {
-	  rows,
-	  subtotal: parseEuroLike(subTotalEl.textContent),
-	  total: parseEuroLike(grandTotalEl.textContent),
-	  iva: ivaCheck.checked,
-	  // Pagamenti
-	  paymentStatus: pay.status || "da_incassare",
-	  depositAmount: Number(pay.deposit || 0),
-	  residual: Number(pay.residual || 0),
-	  clientName: safeClientName || ''
-	};
+  const orderData = {
+    rows,
+    subtotal: parseEuroLike(subTotalEl.textContent),
+    total: orderTotal,
+    iva: ivaCheck.checked,
+    paymentStatus,
+    depositAmount,
+    residual,
+    payments: paymentsArr,
+    deadlines: deadlinesArr,
+    clientName: safeClientName || ""
+  };
 
-	// Data ordine (serve anche per l'auto-incasso)
-	const dateKey = toDateKey(orderDateInput?.value);
-	const createdAtDate = dateKey ? new Date(dateKey) : (orderDateInput?.value ? new Date(orderDateInput.value) : new Date());
-	// Manteniamo createdAt aggiornato anche in modifica: è la data "di competenza" per incassi/statistiche
-	orderData.createdAt = createdAtDate;
+  const dateKey = toDateKey(orderDateInput?.value);
+  const createdAtDate = dateKey ? new Date(dateKey) : (orderDateInput?.value ? new Date(orderDateInput.value) : new Date());
+  orderData.createdAt = createdAtDate;
 
-  // Campi custom (UI avanzata)
-  // Note ordine
-  if (document.getElementById('orderNote')) {
-    const noteVal = String(document.getElementById('orderNote').value || '').trim();
+  if (document.getElementById("orderNote")) {
+    const noteVal = String(document.getElementById("orderNote").value || "").trim();
     if (noteVal) orderData.note = noteVal;
   }
-  // Scadenza
-  const dueIso = dueDateInput?.value ? toDateKey(dueDateInput.value) : null;
-orderData.dueDate = dueIso ? new Date(dueIso) : null;
-orderData.dueAmount = dueAmountInput?.value
-  ? Number(String(dueAmountInput.value).replace(",", "."))
-  : null;
-  if (dueAmountInput && dueAmountInput.value) {
-    const daVal = Number(String(dueAmountInput.value).replace(',', '.'));
-    if (Number.isFinite(daVal) && daVal >= 0) orderData.dueAmount = daVal;
+
+  // Mantieni dueDate/dueAmount legacy (prende dalla prima scadenza)
+  if(deadlinesArr.length > 0){
+    const firstDue = deadlinesArr[0];
+    if(firstDue.date) orderData.dueDate = new Date(firstDue.date);
+    if(firstDue.amount > 0) orderData.dueAmount = firstDue.amount;
   }
 
   try {
     let savedOrderId = orderId;
 
-    // ✅ clientId sempre persistito sull’ordine
     orderData.clientId = clientId;
 
     if (orderId) {
       await updateDoc(doc(db, "orders", orderId), { ...orderData });
     } else {
-      orderData.clientId = clientId;
       const ref = await addDoc(collection(db, "orders"), orderData);
       savedOrderId = ref.id;
     }
 
     updateProductDatabaseFromRows(rows);
 
-    // 🔥 AUTO-INCASSO: quando segni Incassato o Acconto, inseriamo automaticamente l'importo negli INCASSI
-    // Usa la data ordine come "giorno giusto".
+    // \u{1F525} Sync incassi (multi-pagamento)
     await ensureClientIdFromOrder();
     await syncIncassiFromOrder({
       orderId: savedOrderId,
       clientId,
-      paymentStatus: orderData.paymentStatus,
-      total: orderData.total,
-      deposit: orderData.depositAmount,
+      payments: paymentsArr,
+      paymentStatus,
+      total: orderTotal,
+      deposit: depositAmount,
       dateKey: dateKey || toDateKey(createdAtDate)
     });
 
-    // 🔔 Inserisci un evento automatico in agenda per questo ordine cliente
+    // \u{1F4C5} Sync scadenze (multi-scadenza)
     try{
-      // Data inizio = createdAtDate (o date dell'ordine), durate 1 ora
+      await syncDeadlinesToScadenze(savedOrderId, deadlinesArr);
+    }catch(e){ console.warn("syncDeadlinesToScadenze failed:", e); }
+
+    // \u{1F514} Evento agenda per l'ordine
+    try{
       await addDoc(collection(db, "agendaEvents"), {
-        title: clientId ? `Ordine cliente` : `Ordine cliente`,
+        title: "Ordine cliente",
         start: createdAtDate,
         end: createdAtDate,
         allDay: true
       });
-    }catch(e){ console.warn('agendaEvents add fail (order)', e); }
+    }catch(e){ console.warn("agendaEvents add fail (order)", e); }
 
-      // 🔔 Se è stata specificata una scadenza (dueDate), creiamo anche un evento promemoria in agenda
-      try{
-        if(orderData.dueDate){
-          await addDoc(collection(db, 'agendaEvents'), {
-            title: clientId ? `Scadenza ordine` : `Scadenza ordine`,
-            start: orderData.dueDate,
-            end: orderData.dueDate,
-            allDay: true
+    // \u{1F514} Evento agenda per ogni scadenza
+    try{
+      for(const due of deadlinesArr){
+        if(due.date){
+          await addDoc(collection(db, "agendaEvents"), {
+            title: "Scadenza ordine",
+            start: new Date(due.date),
+            end: new Date(due.date),
+            allDay: true,
+            orderId: savedOrderId,
+            type: "dueDate"
           });
         }
-      }catch(e){ console.warn('agendaEvents dueDate add fail', e); }
+      }
+    }catch(e){ console.warn("agendaEvents deadlines fail", e); }
 
-    alert(orderId ? "✅ Ordine aggiornato" : "✅ Ordine salvato");
+    alert(orderId ? "\u2705 Ordine aggiornato" : "\u2705 Ordine salvato");
 
     if(clientId && clientId !== "null" && clientId !== "undefined"){
-      window.location.href = clientId ? `client.html?clientId=${clientId}` : "clients.html";
-    } else {
       window.location.href = `client.html?clientId=${clientId}`;
+    } else {
+      window.location.href = "clients.html";
     }
   } catch (err) {
     console.error("Errore salvataggio ordine:", err);
-    alert("❌ Errore salvataggio ordine");
+    alert("\u274c Errore salvataggio ordine");
   }
+})
 });
 
 // 📲 Condividi ricevuta su WhatsApp (iPhone/Android/Desktop)
@@ -1081,57 +1171,99 @@ if(shareImgBtn){
 }
 
 // ===============================
-// Scadenze: salva SOLO la scadenza sull'ordine (NON crea incassi)
+// Scadenze: salva le scadenze dall'array UI sull'ordine e su Firestore
 // ===============================
 if(registerIncassoBtn){
   const handleSaveDue = async () => {
     try{
       if(!orderId){
-        alert("Prima salva l'ordine, poi puoi memorizzare la scadenza.");
+        alert("Prima salva l'ordine, poi puoi memorizzare le scadenze.");
         return;
       }
       await ensureClientIdFromOrder();
 
-      const dueIso = dueDateInput?.value ? toDateKey(dueDateInput.value) : null;
-      const dueAmountRaw = String(dueAmountInput?.value || "").trim();
-      const dueAmountNum = dueAmountRaw === "" ? null : Number(dueAmountRaw.replace(',', '.'));
-
-      if(!dueIso){
-        alert("Seleziona una data scadenza.");
-        return;
-      }
-      if(dueAmountNum === null || !Number.isFinite(dueAmountNum) || dueAmountNum < 0){
-        alert("Inserisci un importo scadenza valido.");
+      const deadlinesArr = window.__fabfix?.getDeadlines() || [];
+      if(!deadlinesArr.length){
+        alert("Aggiungi almeno una scadenza prima di salvare.");
         return;
       }
 
-      // Aggiorna solo i campi scadenza, senza toccare incassi.
+      // Mantieni dueDate/dueAmount legacy (prende dalla prima scadenza)
+      const legacy = {};
+      const firstDue = deadlinesArr[0];
+      if(firstDue.date) legacy.dueDate = new Date(firstDue.date);
+      if(firstDue.amount > 0) legacy.dueAmount = firstDue.amount;
+
       await updateDoc(doc(db, 'orders', orderId), {
-        dueDate: new Date(dueIso),
-        dueAmount: dueAmountNum,
+        deadlines: deadlinesArr,
+        ...legacy,
         updatedAt: new Date()
       });
 
-      // Evento agenda per promemoria (safe). Non eliminiamo eventi vecchi per non perdere dati.
-      try{
-        await addDoc(collection(db, 'agendaEvents'), {
-          title: 'Scadenza ordine',
-          start: new Date(dueIso),
-          end: new Date(dueIso),
-          allDay: true,
-          orderId,
-          type: 'dueDate'
-        });
-      }catch(e){ console.warn('agendaEvents dueDate add fail (manual save)', e); }
+      // Sync su scadenze collection
+      await syncDeadlinesToScadenze(orderId, deadlinesArr);
 
-      alert('✅ Scadenza salvata');
+      // Evento agenda per ogni scadenza (safe)
+      try{
+        for(const due of deadlinesArr){
+          if(due.date){
+            await addDoc(collection(db, 'agendaEvents'), {
+              title: 'Scadenza ordine',
+              start: new Date(due.date),
+              end: new Date(due.date),
+              allDay: true,
+              orderId,
+              type: 'dueDate'
+            });
+          }
+        }
+      }catch(e){ console.warn('agendaEvents dueDate add fail', e); }
+
+      alert('✅ Scadenze salvate');
     }catch(e){
-      console.error('Errore salvataggio scadenza', e);
-      alert('❌ Errore salvataggio scadenza');
+      console.error('Errore salvataggio scadenze', e);
+      alert('❌ Errore salvataggio scadenze');
     }
   };
   registerIncassoBtn.addEventListener('click', (e)=>{ e.preventDefault(); handleSaveDue(); });
   registerIncassoBtn.addEventListener('touchend', (e)=>{ e.preventDefault(); handleSaveDue(); });
+}
+
+// ===============================
+// Scadenze: Invia promemoria WhatsApp (multi-scadenza)
+// ===============================
+const sendReminderBtn = document.getElementById("sendReminderBtn");
+if(sendReminderBtn){
+  const handleSendReminder = async () => {
+    try{
+      const deadlinesArr = window.__fabfix?.getDeadlines() || [];
+      if(!deadlinesArr.length){
+        alert("Aggiungi prima almeno una scadenza.");
+        return;
+      }
+      await ensureClientIdFromOrder();
+      const clientName = (clientNameInput?.value || "").trim() || await getClientNameSafe(clientId);
+
+      const lines = [
+        "⏰ PROMEMORIA SCADENZE",
+        clientName ? `Cliente: ${clientName}` : null,
+        orderId ? `Rif. ordine: …${String(orderId).slice(-5).toUpperCase()}` : null,
+        "",
+      ].filter(v => v !== null);
+
+      deadlinesArr.forEach((due, i) => {
+        const dateStr = due.date ? new Date(due.date + "T00:00:00").toLocaleDateString("it-IT") : "N/D";
+        lines.push(`${i + 1}. ${dateStr} — ${euro(due.amount)}${due.note ? ` (${due.note})` : ""}`);
+      });
+
+      openWhatsAppWithText(lines.join("\n"));
+    }catch(e){
+      console.error("Errore promemoria:", e);
+      alert("❌ Impossibile inviare il promemoria");
+    }
+  };
+  sendReminderBtn.addEventListener("click", (e)=>{ e.preventDefault(); handleSendReminder(); });
+  sendReminderBtn.addEventListener("touchend", (e)=>{ e.preventDefault(); handleSendReminder(); });
 }
 
 // ===============================
@@ -1344,14 +1476,21 @@ if(discountPercentEl){ discountPercentEl.addEventListener("input", calculate); d
 // AVVIO PAGINA
 // ===============================
 // ✅ Init
-(async () => {
-  await cleanTestOrders();
+// 🔥 AVVIO SUGGERIMENTI DOPO INIZIALIZZAZIONE (FIX CRITICO)
+setTimeout(() => {
+  preloadProductSuggestions();
+}, 0);
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(async () => {
   if (orderId) {
-    // Se manca clientId (link vecchio), lo recuperiamo dall'ordine per poter tornare al cliente dopo Salva
     await ensureClientIdFromOrder();
     loadOrderForEdit();
   } else {
-    // Nuovo ordine: clientId obbligatorio
     if(!clientId){
       alert("❌ Seleziona prima un cliente.");
       window.location.href = "clients.html";
@@ -1359,7 +1498,7 @@ if(discountPercentEl){ discountPercentEl.addEventListener("input", calculate); d
     }
     addRow();
   }
-})();
+});
 async function ensureClientIdFromOrder(){
   // Se l'URL non porta clientId (bug / link vecchio), proviamo a recuperarlo dall'ordine
   if (clientId || !orderId) return;
