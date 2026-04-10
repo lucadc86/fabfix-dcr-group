@@ -166,7 +166,7 @@ function renderOrders(orders){
     const rows = Array.isArray(o.rows) ? o.rows : [];
     if (rows.length) {
       const parts = rows.slice(0, 3).map(r => {
-        const p = r.product || 'Prodotto';
+        const p = r.product || r.desc || r.description || r.descrizione || 'Prodotto';
         const q = r.qty != null ? `x${r.qty}` : '';
         return `${p} ${q}`.trim();
       });

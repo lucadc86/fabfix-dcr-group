@@ -199,6 +199,11 @@
           <strong id="miniDueTotal">€ 0,00</strong>
         </div>
 
+        <div class="pay-row">
+          <span class="muted">Residuo da saldare</span>
+          <strong id="dueResidualDisplay">€ 0,00</strong>
+        </div>
+
         <div class="row mt">
           <label class="muted small" for="dueDate">Data scadenza</label>
           <input id="dueDate" type="date" class="input" />
@@ -209,9 +214,20 @@
           <input id="dueAmount" type="number" step="0.01" class="input" />
         </div>
 
+        <div class="row mt">
+          <label class="muted small" for="dueNote">Nota (opz.)</label>
+          <input id="dueNote" type="text" class="input" placeholder="Note..." />
+        </div>
+
+        <div class="row mt">
+          <button id="addDeadlineBtn" class="btn btn-light w100" type="button">+ Aggiungi scadenza</button>
+        </div>
+
+        <div id="deadlinesList" class="payments-list"></div>
+
         <div class="row mt gap">
           <button id="sendReminderBtn" class="btn btn-light w100" type="button">Invia promemoria</button>
-          <button id="registerIncassoBtn" class="btn btn-primary w100" type="button">Salva scadenza</button>
+          <button id="registerIncassoBtn" class="btn btn-primary w100" type="button">Salva scadenze</button>
         </div>
 
         <div id="dueAlert" class="due-alert hidden"></div>
@@ -270,6 +286,11 @@
           <option value="Carta">Carta</option>
           <option value="Altro">Altro</option>
         </select>
+      </div>
+
+      <div class="row mt">
+        <label class="muted small">Data pagamento</label>
+        <input id="payDateModal" type="date" class="input" />
       </div>
 
       <div class="row mt">

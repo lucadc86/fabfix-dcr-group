@@ -510,6 +510,15 @@ if (clientNameInput && clientNameMiniInput) {
   sync();
 }
 
+// Rende il campo nome cliente cliccabile come link alla scheda cliente (il collegamento)
+if (clientNameInput) {
+  clientNameInput.style.cursor = "pointer";
+  clientNameInput.title = "Apri scheda cliente";
+  clientNameInput.addEventListener("click", () => {
+    if (clientId) window.location.href = `/client.html?clientId=${encodeURIComponent(clientId)}`;
+  });
+}
+
 // Avviamo preload non appena possibile (in background, non blocca la UI)
 preloadClientAndOrderInfo();
 
@@ -1496,6 +1505,12 @@ waitForAuth().then(async () => {
       window.location.href = "clients.html";
       return;
     }
+    // Popola il nome cliente ora che l'autenticazione è pronta
+    try {
+      const name = await getClientNameSafe(clientId);
+      if (name && clientNameInput) clientNameInput.value = name;
+      if (name && clientNameMiniInput) clientNameMiniInput.value = name;
+    } catch(e) { /* ignoriamo */ }
     addRow();
   }
 });
