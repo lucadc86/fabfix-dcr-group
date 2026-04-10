@@ -42,7 +42,7 @@ function updatePaymentUI(){
   return { status, deposit, residual, total };
 }
 
-import { db } from "./firebase.js";
+import { db, auth } from "./firebase.js";
 import {
   collection,
   addDoc,
@@ -56,6 +56,7 @@ import {
   updateDoc,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ===============================
 // INCASSI: sync automatico da ordine
@@ -1479,13 +1480,17 @@ if(discountPercentEl){ discountPercentEl.addEventListener("input", calculate); d
 setTimeout(() => {
   preloadProductSuggestions();
 }, 0);
-(async () => {
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(async () => {
   if (orderId) {
-    // Se manca clientId (link vecchio), lo recuperiamo dall'ordine per poter tornare al cliente dopo Salva
     await ensureClientIdFromOrder();
     loadOrderForEdit();
   } else {
-    // Nuovo ordine: clientId obbligatorio
     if(!clientId){
       alert("❌ Seleziona prima un cliente.");
       window.location.href = "clients.html";
@@ -1493,7 +1498,7 @@ setTimeout(() => {
     }
     addRow();
   }
-})();
+});
 async function ensureClientIdFromOrder(){
   // Se l'URL non porta clientId (bug / link vecchio), proviamo a recuperarlo dall'ordine
   if (clientId || !orderId) return;

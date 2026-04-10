@@ -1,5 +1,7 @@
 import { firestoreService as fs } from "./services/firestoreService.js";
 import { getCalendarByMonth, getYearlyIncomesTotal, getManualDaySnapshot, parseEntriesFromFreeText, listIncomesByDay } from "./services/incomeService.js";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const euro = (n) => new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(Number(n)||0);
 const $ = (id) => document.getElementById(id);
@@ -185,4 +187,12 @@ deleteBtn?.addEventListener('click', deleteManual);
 prevBtn?.addEventListener('click', ()=>{ cursor.setMonth(cursor.getMonth()-1); renderMonth(); });
 nextBtn?.addEventListener('click', ()=>{ cursor.setMonth(cursor.getMonth()+1); renderMonth(); });
 
-loadClients().then(renderMonth).catch((e)=>{ console.error(e); alert('Errore caricamento calendario incassi.'); });
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(() => {
+  loadClients().then(renderMonth).catch((e) => { console.error(e); alert('Errore caricamento calendario incassi.'); });
+});

@@ -1,5 +1,7 @@
 import { firestoreService as fs } from "./services/firestoreService.js";
 import { listDeadlines, upsertDeadline, softDeleteDeadline } from "./services/deadlineService.js";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // =========================================================
 // Utils
@@ -233,4 +235,10 @@ deleteBtn?.addEventListener("click", async ()=>{
   await boot();
 });
 
-boot();
+function waitForAuth() {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
+  });
+}
+
+waitForAuth().then(() => { boot(); });
