@@ -79,6 +79,40 @@ service cloud.firestore {
       allow read, create, update, delete: if isStaff();
     }
 
+    match /expenses/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /expensesHistory/{docId} {
+      allow read, create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /scadenze/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /scadenzeHistory/{docId} {
+      allow read, create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /suppliers/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /payments/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /priceRequests/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /agendaEvents/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
