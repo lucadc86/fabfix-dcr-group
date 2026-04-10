@@ -1052,7 +1052,6 @@ saveBtn.addEventListener("click", async () => {
     alert("\u274c Errore salvataggio ordine");
   }
 })
-});
 
 // 📲 Condividi ricevuta su WhatsApp (iPhone/Android/Desktop)
 if(shareBtn){
