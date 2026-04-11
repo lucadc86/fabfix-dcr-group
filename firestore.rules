@@ -106,6 +106,18 @@ service cloud.firestore {
       allow read, create, update, delete: if isStaff();
     }
 
+    match /suppliers/{supplierId}/invoices/{invoiceId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /suppliers/{supplierId}/orders/{orderId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /lisapOrders/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
     match /payments/{docId} {
       allow read, create, update, delete: if isStaff();
     }
