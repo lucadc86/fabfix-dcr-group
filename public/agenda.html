@@ -42,32 +42,23 @@
 
     /* ─── KPI strip ─── */
     .kpi-strip{
-      display:flex;gap:12px;flex-wrap:wrap;
+      display:flex;gap:10px;flex-wrap:wrap;
       padding:80px 16px 0;
       max-width:1400px;margin:0 auto;
     }
     .kpi-card{
-      flex:1;min-width:160px;
+      flex:1;min-width:140px;
       background:#fff;border:1px solid var(--line);border-radius:14px;
-      padding:14px 16px;box-shadow:0 4px 12px rgba(0,0,0,.05);
+      padding:12px 14px;box-shadow:0 4px 12px rgba(0,0,0,.05);
     }
     .kpi-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
     .kpi-value{font-size:20px;font-weight:900;color:var(--text)}
     .kpi-value.positive{color:#16a34a}
     .kpi-value.negative{color:#dc2626}
 
-    /* ─── Overdue banner ─── */
-    .overdue-banner{
-      max-width:1400px;margin:12px auto 0;padding:0 16px;
-    }
-    .overdue-banner .overdue-inner{
-      background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;
-      padding:12px 16px;display:none;gap:10px;align-items:flex-start;
-    }
-    .overdue-banner .overdue-inner.visible{display:flex}
-    .overdue-icon{font-size:20px;flex-shrink:0}
-    .overdue-list{flex:1;font-size:13px;line-height:1.5}
-    .overdue-list strong{color:#dc2626}
+    /* ─── Overdue banner ─── (hidden – not used)
+    .overdue-banner{ display:none }
+    */
 
     /* ─── Filter toggles ─── */
     .filter-strip{
@@ -187,18 +178,6 @@
 
     /* ─── Calendar card container ─── */
     .cal-card{padding:0;overflow:hidden}
-    .cal-legend{
-      display:flex;gap:6px;flex-wrap:wrap;
-      padding:10px 14px;background:#f8fafc;
-      border-bottom:1px solid #e5e7eb;align-items:center;
-    }
-    .cal-legend-label{font-size:11px;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-right:2px}
-    .cal-legend-item{
-      font-size:11px;font-weight:700;color:#374151;
-      background:#fff;border:1.5px solid #e5e7eb;
-      border-radius:999px;padding:3px 10px;
-      display:inline-flex;align-items:center;gap:4px;
-    }
     .cal-hint{
       padding:8px 14px;background:#fffbeb;border-bottom:1px solid #fde68a;
       font-size:12px;color:#92400e;display:flex;align-items:center;gap:6px;
@@ -344,6 +323,7 @@
       .fc .fc-button-primary{padding:6px 9px !important;font-size:12px !important}
       .fc .fc-toolbar.fc-header-toolbar{padding:10px 12px 8px;gap:6px}
       .fc .fc-daygrid-day{min-height:60px}
+      .fc .fc-timeGridWeek-button,.fc .fc-timeGridDay-button{display:none !important}
     }
 
     /* ─── Modal ─── */
@@ -414,9 +394,17 @@
       .sidebar-col{grid-row:2}
       .hist-section{grid-row:3}
     }
+    @media (max-width:600px){
+      .kpi-strip{gap:8px;padding:74px 10px 0}
+      .kpi-card{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px);padding:10px 12px}
+      .kpi-label{font-size:10px}
+      .kpi-value{font-size:16px}
+      .filter-strip{padding:0 10px;gap:6px}
+      .filter-btn{padding:5px 10px;font-size:11px}
+      .page-content{padding:10px 10px 20px}
+    }
     @media (max-width:560px){
       .top-bar{height:58px}
-      .kpi-strip{padding-top:74px}
     }
 
     /* ─── Print ─── */
@@ -460,7 +448,7 @@
   <!-- KPI strip -->
   <div class="kpi-strip">
     <div class="kpi-card">
-      <div class="kpi-label">Incassi mese</div>
+      <div class="kpi-label">Incassato mensile</div>
       <div class="kpi-value" id="kpiIncassi">—</div>
     </div>
     <div class="kpi-card">
@@ -468,27 +456,23 @@
       <div class="kpi-value" id="kpiScadenze">—</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Ordini aperti</div>
-      <div class="kpi-value" id="kpiOrdini">—</div>
+      <div class="kpi-label">Fatturato mese clienti</div>
+      <div class="kpi-value" id="kpiFatturato">—</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Saldo (mese)</div>
-      <div class="kpi-value" id="kpiSaldo">—</div>
+      <div class="kpi-label">Ordini fornitori</div>
+      <div class="kpi-value" id="kpiFornitore">—</div>
     </div>
-  </div>
-
-  <!-- Overdue banner -->
-  <div class="overdue-banner">
-    <div class="overdue-inner" id="overdueBanner">
-      <span class="overdue-icon">⚠️</span>
-      <div class="overdue-list" id="overdueList"></div>
+    <div class="kpi-card">
+      <div class="kpi-label">Saldo netto</div>
+      <div class="kpi-value" id="kpiSaldo">—</div>
     </div>
   </div>
 
   <!-- Filter toggles -->
   <div class="filter-strip">
     <span class="filter-lbl">Filtra:</span>
-    <button class="filter-btn" data-type="promemoria">🟣 Promemoria</button>
+    <button class="filter-btn off" data-type="promemoria">🟣 Promemoria</button>
     <button class="filter-btn" data-type="ordine">🔵 Ordini</button>
     <button class="filter-btn" data-type="incasso">🟢 Incassi</button>
     <button class="filter-btn" data-type="scadenza">🔴 Scadenze</button>
@@ -502,15 +486,6 @@
     <!-- Calendar -->
     <div class="calendar-col">
       <div class="card cal-card">
-        <!-- Legenda tipi evento -->
-        <div class="cal-legend" aria-label="Legenda tipi evento">
-          <span class="cal-legend-label">Legenda:</span>
-          <span class="cal-legend-item" style="border-color:#c4b5fd;color:#5b21b6">🟣 Promemoria</span>
-          <span class="cal-legend-item" style="border-color:#93c5fd;color:#1e40af">🔵 Ordini</span>
-          <span class="cal-legend-item" style="border-color:#86efac;color:#166534">🟢 Incassi</span>
-          <span class="cal-legend-item" style="border-color:#fca5a5;color:#991b1b">🔴 Scadenze</span>
-          <span class="cal-legend-item" style="border-color:#fdba74;color:#9a3412">🟠 Spese</span>
-        </div>
         <!-- Suggerimento uso -->
         <div class="cal-hint">💡 <span>Clicca su un giorno per aggiungere un promemoria &bull; Clicca un evento per i dettagli &bull; Trascina per spostare</span></div>
         <div id="calendar"></div>
@@ -655,7 +630,7 @@
     let clientsById = new Map();
     let clientsByNormName = new Map();
     let allCalendarEvents = [];  // full merged event list
-    let activeFilters = new Set(['promemoria','ordine','incasso','scadenza','spesa']);
+    let activeFilters = new Set(['ordine','incasso','scadenza','spesa']);  // promemoria off by default
     let histData = [];  // for historical table
     let histSort = { col: 'date', asc: false };
 
@@ -789,7 +764,7 @@
     // ─── KPI loader ───
     async function loadKPIs(){
       const {y,m}=nowMonth();
-      let incassiMese=0, scadenzeMese=0, ordiniAperti=0, speseMese=0;
+      let incassiMese=0, scadenzeMese=0, fatturatoMese=0, speseMese=0;
 
       try{
         const snap=await getDocs(collection(db,'incassi'));
@@ -815,8 +790,10 @@
         const snap=await getDocs(collection(db,'orders'));
         snap.forEach(d=>{
           const data=d.data()||{};
-          if(data.isDeleted||data.status==='completed'||data.status==='cancelled') return;
-          ordiniAperti++;
+          if(data.isDeleted) return;
+          const dt=extractDate(data,d.id);
+          const iso=dt?dt.toISOString().slice(0,10):null;
+          if(isSameMonth(iso,y,m)) fatturatoMese+=resolveAmount(data,['total','grandTotal','importo']);
         });
       }catch(e){console.warn('kpi orders',e);}
 
@@ -830,43 +807,15 @@
         });
       }catch(e){console.warn('kpi spese',e);}
 
-      const saldo=incassiMese-speseMese;
+      const saldo=incassiMese-scadenzeMese-speseMese;
 
       document.getElementById('kpiIncassi').textContent=eur(incassiMese);
       document.getElementById('kpiScadenze').textContent=eur(scadenzeMese);
-      document.getElementById('kpiOrdini').textContent=ordiniAperti;
+      document.getElementById('kpiFatturato').textContent=eur(fatturatoMese);
+      document.getElementById('kpiFornitore').textContent=eur(speseMese);
       const saldoEl=document.getElementById('kpiSaldo');
       saldoEl.textContent=eur(saldo);
       saldoEl.className='kpi-value '+(saldo>=0?'positive':'negative');
-    }
-
-    // ─── Overdue alerts ───
-    function buildOverdueAlerts(events){
-      const today=new Date();
-      today.setHours(0,0,0,0);
-      const overdue=events.filter(ev=>{
-        if(ev.extendedProps?.readonly) return false; // only custom promemoria
-        const st=ev.start?new Date(ev.start):null;
-        return st&&st<today;
-      });
-      // Also check external scadenze/deadlines
-      const overdueExt=events.filter(ev=>{
-        if(!ev.extendedProps?.readonly) return false;
-        const lt=ev.extendedProps?.sourceType;
-        if(lt!=='scadenza') return false;
-        const st=ev.start?new Date(ev.start):null;
-        return st&&st<today;
-      });
-      const all=[...overdue,...overdueExt];
-      const banner=document.getElementById('overdueBanner');
-      const list=document.getElementById('overdueList');
-      if(!all.length){banner.classList.remove('visible');return;}
-      banner.classList.add('visible');
-      const items=all.slice(0,5).map(ev=>{
-        const d=ev.start?new Date(ev.start).toLocaleDateString('it-IT'):'';
-        return `<strong>${ev.title||'Evento'}</strong> (${d})`;
-      });
-      list.innerHTML=items.join(' &bull; ')+(all.length>5?` <em>+${all.length-5} altri</em>`:'');
     }
 
     // ─── Upcoming events sidebar ───
@@ -874,15 +823,18 @@
       const today=new Date();
       today.setHours(0,0,0,0);
       const in7=new Date(today.getTime()+7*24*60*60*1000);
+      const UPCOMING_TYPES=new Set(['scadenza','appuntamento']);
       const upcoming=events
         .filter(ev=>{
           const st=ev.start?new Date(ev.start):null;
-          return st&&st>=today&&st<=in7;
+          if(!st||st<today||st>in7) return false;
+          const type=ev.extendedProps?.sourceType||ev.extendedProps?.type||'promemoria';
+          return UPCOMING_TYPES.has(type);
         })
         .sort((a,b)=>new Date(a.start)-new Date(b.start))
         .slice(0,10);
       const el=document.getElementById('upcomingList');
-      if(!upcoming.length){el.innerHTML='<div class="sidebar-empty">Nessun evento nei prossimi 7 giorni</div>';return;}
+      if(!upcoming.length){el.innerHTML='<div class="sidebar-empty">Nessuna scadenza nei prossimi 7 giorni</div>';return;}
       const bgMap={promemoria:'#ede9fe',appuntamento:'#ede9fe',scadenza:'#fee2e2',ordine:'#dbeafe',incasso:'#dcfce7',spesa:'#ffedd5',altro:'#f3f4f6'};
       const iconMap={promemoria:'🟣',appuntamento:'📌',scadenza:'🔴',ordine:'🔵',incasso:'🟢',spesa:'🟠',altro:'⚪'};
       el.innerHTML=upcoming.map(ev=>{
@@ -1033,7 +985,8 @@
     // ─── Filter toggles ───
     document.querySelectorAll('.filter-btn').forEach(btn=>{
       const type=btn.dataset.type;
-      activeFilters.add(type);
+      // Initialize visual state from activeFilters
+      if(!activeFilters.has(type)) btn.classList.add('off');
       btn.addEventListener('click',()=>{
         if(activeFilters.has(type)){activeFilters.delete(type);btn.classList.add('off');}
         else{activeFilters.add(type);btn.classList.remove('off');}
@@ -1253,7 +1206,6 @@
         calendar.addEventSource(allCalendarEvents);
         applyFilters();
 
-        buildOverdueAlerts(allCalendarEvents);
         buildUpcoming(allCalendarEvents);
         rebuildHistData(allCalendarEvents);
       });
