@@ -179,6 +179,8 @@ removePhotoBtn?.addEventListener("click", () => {
 photoFileInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if(!file) return;
+  // Enforce 10 MB limit
+  if(file.size > 10 * 1024 * 1024){ alert("File troppo grande. Dimensione massima consentita: 10 MB."); photoFileInput.value = ""; return; }
   photoFile = file;
   photoPreviewName.textContent = file.name;
   if(file.type.startsWith("image/")){
@@ -353,12 +355,19 @@ function renderInvoiceTable(){
       <span class="inv-date">${formatDate(inv.date)}</span>
       <span class="inv-due ${dueCls}">${dueText}</span>
       <span class="inv-amt">${eur(inv.total || inv.amount)}</span>
+      <!-- inv.total is the VAT-inclusive total for new invoices; inv.amount is kept for backward compatibility with old invoices that only stored the base amount -->
       <span class="status-pill ${statusCls}">${statusLabel}</span>
       <div class="inv-actions-cell">
         ${inv.photoUrl ? `<button class="act-btn photo-btn-sm" title="Visualizza foto" data-photo="${inv.photoUrl}">📷</button>` : ""}
         <button class="act-btn" title="Modifica" data-edit="${inv.id}">✏️</button>
         ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-pay="${inv.id}">✅</button>` : ""}
         <button class="act-btn del-btn" title="Elimina" data-del="${inv.id}">🗑️</button>
+      </div>
+      <!-- Mobile: compact action row always visible on small screens -->
+      <div class="inv-actions-mobile">
+        <button class="act-btn" title="Modifica" data-edit-m="${inv.id}">✏️</button>
+        ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-pay-m="${inv.id}">✅</button>` : ""}
+        <button class="act-btn del-btn" title="Elimina" data-del-m="${inv.id}">🗑️</button>
       </div>
     `;
 
@@ -383,6 +392,22 @@ function renderInvoiceTable(){
       await loadInvoices();
     });
 
+    row.querySelector("[data-edit-m]")?.addEventListener("click", (e) => {
+      e.stopPropagation(); startEdit(inv);
+    });
+    row.querySelector("[data-pay-m]")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if(!confirm("Segna questa fattura come pagata?")) return;
+      await updateDoc(doc(collection(db,"suppliers",supplierId,"invoices"), inv.id), { status:"pagata" });
+      await loadInvoices();
+    });
+    row.querySelector("[data-del-m]")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if(!confirm("Eliminare questa fattura?")) return;
+      await deleteDoc(doc(collection(db,"suppliers",supplierId,"invoices"), inv.id));
+      await loadInvoices();
+    });
+
     invoiceList.appendChild(row);
   });
 }
@@ -395,7 +420,7 @@ function startEdit(inv){
   invoiceNumberInput.value  = inv.invoiceNumber || "";
   invoiceDateInput.value    = inv.date || todayISO();
   invoiceDueDateInput.value = inv.dueDate || "";
-  invoiceAmountInput.value  = inv.amount || "";
+  invoiceAmountInput.value  = inv.amount || ""; // base amount (imponibile); total is recalculated via computeInvoiceTotal()
   invoiceVatInput.value     = String(inv.vat ?? 22);
   invoiceDescInput.value    = inv.description || "";
   if(invoiceCategoryInput) invoiceCategoryInput.value = inv.category || "";

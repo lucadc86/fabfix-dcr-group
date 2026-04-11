@@ -91,7 +91,8 @@
           </div>
         </div>
 
-        <!-- hidden inputs keep JS compatibility -->
+        <!-- hidden inputs: keep JS backward-compatibility for computeAutoAmount() which writes .value on these fields
+             and for saveManual() which reads them via getElementById('manualAmount') and getElementById('amount') -->
         <input id="manualAmount" type="hidden">
         <input id="amount" type="hidden">
       </div>

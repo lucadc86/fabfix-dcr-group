@@ -235,11 +235,18 @@
   .inv-row > .inv-amt,
   .inv-row > .status-pill,
   .inv-row > .inv-actions-cell{display:none;}
-  .inv-row{cursor:default;}
-  /* show status inline */
+  /* mobile action row and status badge shown inline */
+  .inv-actions-mobile{display:flex !important;}
   .inv-info .inv-status-mobile{display:flex !important;margin-top:3px;}
 }
 .inv-info .inv-status-mobile{display:none;}
+/* mobile action row: hidden by default, visible on small screens */
+.inv-actions-mobile{
+  display:none;
+  grid-column:1/-1;
+  gap:6px;
+  padding:4px 0 2px;
+}
 
 @media(max-width:480px){
   .supplier-main{padding:14px 12px;}
