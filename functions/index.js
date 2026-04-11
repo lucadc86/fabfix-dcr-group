@@ -196,7 +196,7 @@ exports.analyzeInvoice = onRequest(
               ],
             },
           ],
-          max_tokens: 512,
+          max_tokens: 1024,
           temperature: 0,
         };
 
@@ -216,8 +216,26 @@ exports.analyzeInvoice = onRequest(
         const raw = data?.choices?.[0]?.message?.content || '';
         // GPT models sometimes wrap JSON in markdown code fences (e.g. ```json ... ```)
         // despite explicit instructions not to. Strip them before parsing.
-        const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+        let jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+        // Fallback: extract first JSON object found in the response
+        if (!jsonStr.startsWith('{')) {
+          const first = jsonStr.indexOf('{');
+          const last = jsonStr.lastIndexOf('}');
+          if (first !== -1 && last !== -1 && last > first) {
+            jsonStr = jsonStr.slice(first, last + 1);
+          }
+        }
         const parsed = safeJsonParse(jsonStr, {});
+        // Normalize vat field: ensure it's a number (some models return "22%" or "22,0")
+        if (parsed.vat != null) {
+          const vatNum = parseFloat(String(parsed.vat).replace(/%/g, '').replace(',', '.'));
+          parsed.vat = Number.isFinite(vatNum) ? vatNum : null;
+        }
+        // Normalize amount: ensure it's a number
+        if (parsed.amount != null) {
+          const amtNum = parseFloat(String(parsed.amount).replace(',', '.'));
+          parsed.amount = Number.isFinite(amtNum) ? amtNum : null;
+        }
         res.status(200).json(parsed);
       } catch (err) {
         logger.error('analyzeInvoice error', err);

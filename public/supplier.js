@@ -210,6 +210,7 @@ photoFileInput?.addEventListener("change", async (e) => {
 // ── OCR auto-fill ─────────────────────────────────────
 async function runOcrAutoFill(file){
   if(ocrOverlay) ocrOverlay.classList.remove("hidden");
+  let fieldsFilledCount = 0;
   try {
     const base64 = await fileToBase64(file);
     const res = await fetch("/api/analyze-invoice", {
@@ -219,21 +220,26 @@ async function runOcrAutoFill(file){
     });
     if(!res.ok) throw new Error(`Risposta server non valida (${res.status}): impossibile analizzare la fattura`);
     const data = await res.json();
-    if(data.invoiceNumber && !invoiceNumberInput.value)  invoiceNumberInput.value  = data.invoiceNumber;
-    if(data.date          && !invoiceDateInput.value)    invoiceDateInput.value    = data.date;
-    if(data.dueDate       && !invoiceDueDateInput.value) invoiceDueDateInput.value = data.dueDate;
+    if(data.invoiceNumber && !invoiceNumberInput.value)  { invoiceNumberInput.value  = data.invoiceNumber; fieldsFilledCount++; }
+    if(data.date          && !invoiceDateInput.value)    { invoiceDateInput.value    = data.date; fieldsFilledCount++; }
+    if(data.dueDate       && !invoiceDueDateInput.value) { invoiceDueDateInput.value = data.dueDate; fieldsFilledCount++; }
     if(data.amount != null && !(parseFloat(invoiceAmountInput.value) > 0)){
       invoiceAmountInput.value = String(data.amount);
       computeInvoiceTotal();
+      fieldsFilledCount++;
     }
     if(data.vat != null){
       const vatStr = String(data.vat);
       const opt = invoiceVatInput?.querySelector(`option[value="${vatStr}"]`);
-      if(opt){ invoiceVatInput.value = vatStr; computeInvoiceTotal(); }
+      if(opt){ invoiceVatInput.value = vatStr; computeInvoiceTotal(); fieldsFilledCount++; }
     }
-    if(data.description && !invoiceDescInput.value) invoiceDescInput.value = data.description;
+    if(data.description && !invoiceDescInput.value) { invoiceDescInput.value = data.description; fieldsFilledCount++; }
+    if(fieldsFilledCount === 0){
+      console.warn("OCR: nessun campo riconosciuto dalla fattura.");
+    }
   } catch(err){
     console.warn("OCR fallito:", err);
+    alert("⚠️ Lettura automatica fattura non riuscita. Compila i campi manualmente.\n\nDettaglio: " + (err?.message || err));
   } finally {
     if(ocrOverlay) ocrOverlay.classList.add("hidden");
   }

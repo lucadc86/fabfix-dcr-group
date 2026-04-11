@@ -328,23 +328,46 @@ async function loadClient(){
 async function loadOrdersForClient(){
   if (!clientId) return;
 
-  // Prefer by clientId
-  let snaps;
+  const seen = new Set();
+  const allOrders = [];
+
+  // Query 1: by clientId (preferred, modern format)
   try {
-    const q1 = query(
-      collection(db, 'orders'),
-      where('clientId', '==', clientId),
-      orderBy('createdAt', 'desc')
-    );
-    snaps = await getDocs(q1);
+    let snaps;
+    try {
+      const q1 = query(
+        collection(db, 'orders'),
+        where('clientId', '==', clientId),
+        orderBy('createdAt', 'desc')
+      );
+      snaps = await getDocs(q1);
+    } catch (e) {
+      // Fallback without orderBy (index might be missing)
+      snaps = await getDocs(query(collection(db, 'orders'), where('clientId', '==', clientId)));
+    }
+    snaps.docs.forEach(d => {
+      if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ __id: d.id, ...d.data() }); }
+    });
   } catch (e) {
-    const q2 = query(collection(db, 'orders'), where('clientId', '==', clientId));
-    snaps = await getDocs(q2);
+    console.warn('loadOrdersForClient: query by clientId failed', e);
   }
 
-  _orders = snaps.docs.map(d => ({ __id: d.id, ...d.data() }));
+  // Query 2: by clientName (legacy fallback for old orders without clientId)
+  const clientName = _clientData?.name;
+  if (clientName) {
+    try {
+      const qLeg = await getDocs(query(collection(db, 'orders'), where('clientName', '==', clientName)));
+      qLeg.docs.forEach(d => {
+        if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ __id: d.id, ...d.data() }); }
+      });
+    } catch (e) {
+      console.warn('loadOrdersForClient: legacy query by clientName failed', e);
+    }
+  }
 
-  // Sort safely if needed
+  _orders = allOrders;
+
+  // Sort by date descending
   _orders.sort((a, b) => {
     const da = toDateSafe(a.createdAt);
     const dbb = toDateSafe(b.createdAt);
