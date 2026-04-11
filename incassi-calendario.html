@@ -42,30 +42,67 @@
   <!-- Popup giorno: riepilogo automatico + modifica manuale -->
   <div class="incassi-popup" id="popup">
     <div class="popup-box">
+
+      <!-- HEADER -->
       <div class="popup-head">
-        <div class="popup-title" id="popupDate">—</div>
+        <div class="popup-head-left">
+          <span class="popup-head-label">📅 Incassi del giorno</span>
+          <div class="popup-title" id="popupDate">—</div>
+        </div>
         <button class="popup-close" id="closeBtn" aria-label="Chiudi">✕</button>
       </div>
+
+      <!-- BODY -->
       <div class="popup-body">
+
+        <!-- AUTO-INCASSI -->
+        <div class="popup-section-label">✅ Incassi da ordini (automatici)</div>
         <div class="auto-box">
-          <div class="auto-box-title">Incassi registrati del giorno</div>
-          <div id="autoSummary" class="auto-summary">Nessun incasso automatico registrato.</div>
+          <div class="auto-box-total" id="autoBoxTotalRow" style="display:none">
+            <span class="auto-box-title">Totale automatico del giorno</span>
+            <span class="auto-summary" id="autoSummary">—</span>
+          </div>
           <div id="autoEntries" class="auto-entries"></div>
+          <div id="autoEmpty" class="auto-entry" style="color:#6b7280;font-size:13px;font-style:italic">Nessun incasso automatico registrato.</div>
         </div>
+
         <datalist id="clientsDatalist"></datalist>
-        <label class="lbl">Dettaglio incasso manuale</label>
-        <div id="manualEntriesTable" class="entries-table"></div>
-        <button class="btn add-entry-btn" type="button" id="addEntryBtn">+ Aggiungi</button>
-        <label class="lbl">Totale manuale (auto-calcolato)</label>
-        <input id="manualAmount" type="text" inputmode="decimal" placeholder="0,00" readonly>
-        <label class="lbl">Importo totale giorno (auto-calcolato)</label>
-        <input id="amount" type="text" inputmode="decimal" placeholder="0,00" readonly>
-        <div class="hint">Somma automatica degli importi inseriti nelle righe sopra. Il totale giorno include anche gli incassi automatici da ordini.</div>
+
+        <!-- MANUALI -->
+        <div class="popup-section-label">✏️ Incassi manuali</div>
+        <div class="entries-wrapper">
+          <div class="entries-thead">
+            <span>Cliente</span><span>Importo €</span><span></span>
+          </div>
+          <div id="manualEntriesTable" class="entries-table"></div>
+        </div>
+        <button class="add-entry-btn" type="button" id="addEntryBtn">＋ Aggiungi riga</button>
+
+        <!-- TOTALI -->
+        <div class="popup-totals">
+          <div class="popup-total-row">
+            <span class="popup-total-label">Totale manuale</span>
+            <span class="popup-total-val" id="manualAmountDisplay">€ 0,00</span>
+          </div>
+          <hr class="popup-total-sep">
+          <div class="popup-total-row grand">
+            <span class="popup-total-label">💰 Totale giorno</span>
+            <span class="popup-total-val" id="totalDayDisplay">€ 0,00</span>
+          </div>
+        </div>
+
+        <!-- hidden inputs: keep JS backward-compatibility for computeAutoAmount() which writes .value on these fields
+             and for saveManual() which reads them via getElementById('manualAmount') and getElementById('amount') -->
+        <input id="manualAmount" type="hidden">
+        <input id="amount" type="hidden">
       </div>
+
+      <!-- ACTIONS -->
       <div class="popup-actions">
-        <button class="btn primary" id="saveBtn">Salva</button>
-        <button class="btn danger" id="deleteBtn">Elimina</button>
+        <button class="btn-save-popup" id="saveBtn">💾 Salva incassi</button>
+        <button class="btn-delete-popup" id="deleteBtn">🗑️ Elimina</button>
       </div>
+
     </div>
   </div>
 

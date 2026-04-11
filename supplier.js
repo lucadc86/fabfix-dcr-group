@@ -11,205 +11,503 @@ import {
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const params = new URLSearchParams(window.location.search);
 let supplierId = params.get("supplierId") || null;
 
-const supplierNameTitle = document.getElementById("supplierNameTitle");
-const nameInput  = document.getElementById("name");
-const emailInput = document.getElementById("email");
-const phoneInput = document.getElementById("phone");
-const cityInput  = document.getElementById("city");
-const vatInput  = document.getElementById("vat");
+// ── DOM refs ─────────────────────────────────────────
+const supplierNameTitle   = document.getElementById("supplierNameTitle");
+const supplierVatBadge    = document.getElementById("supplierVatBadge");
+const nameInput           = document.getElementById("name");
+const emailInput          = document.getElementById("email");
+const phoneInput          = document.getElementById("phone");
+const cityInput           = document.getElementById("city");
+const vatInput            = document.getElementById("vat");
+const supplierCategory    = document.getElementById("supplierCategory");
+const saveSupplierBtn     = document.getElementById("saveSupplier");
+const toggleSupplierFormBtn = document.getElementById("toggleSupplierFormBtn");
+const supplierFormCard    = document.getElementById("supplierFormCard");
 
-const saveSupplierBtn = document.getElementById("saveSupplier");
+const invStatsGrid        = document.getElementById("invStatsGrid");
+const statCountYear       = document.getElementById("statCountYear");
+const statTotalYear       = document.getElementById("statTotalYear");
+const statDaPagare        = document.getElementById("statDaPagare");
+const statScadute         = document.getElementById("statScadute");
 
-const totalYearEl  = document.getElementById("totalYear");
-const invoiceList  = document.getElementById("invoiceList");
+const urgentSection       = document.getElementById("urgentSection");
+const urgentList          = document.getElementById("urgentList");
 
-const addInvoiceBtn    = document.getElementById("addInvoiceBtn");
-const invoiceForm      = document.getElementById("invoiceForm");
-const saveInvoiceBtn    = document.getElementById("saveInvoiceBtn");
-const cancelInvoiceBtn  = document.getElementById("cancelInvoiceBtn");
+const addInvoiceBtn       = document.getElementById("addInvoiceBtn");
+const addPhotoInvoiceBtn  = document.getElementById("addPhotoInvoiceBtn");
+const invoiceForm         = document.getElementById("invoiceForm");
+const invoiceFormTitle    = document.getElementById("invoiceFormTitle");
+const saveInvoiceBtn      = document.getElementById("saveInvoiceBtn");
+const cancelInvoiceBtn    = document.getElementById("cancelInvoiceBtn");
 
-const invoiceDateInput  = document.getElementById("invoiceDate");
-const invoiceAmountInput = document.getElementById("invoiceAmount");
+const invoiceNumberInput  = document.getElementById("invoiceNumber");
+const invoiceDateInput    = document.getElementById("invoiceDate");
+const invoiceDueDateInput = document.getElementById("invoiceDueDate");
+const invoiceAmountInput  = document.getElementById("invoiceAmount");
+const invoiceVatInput     = document.getElementById("invoiceVat");
+const invoiceTotalDisplay = document.getElementById("invoiceTotalDisplay");
+const invoiceDescInput    = document.getElementById("invoiceDesc");
+const invoiceCategoryInput= document.getElementById("invoiceCategory");
+const invoiceStatusInput  = document.getElementById("invoiceStatus");
+const invoiceNotesInput   = document.getElementById("invoiceNotes");
+
+const photoFileInput      = document.getElementById("photoFileInput");
+const triggerPhotoBtn     = document.getElementById("triggerPhotoBtn");
+const photoUploadInner    = document.getElementById("photoUploadInner");
+const photoPreviewInner   = document.getElementById("photoPreviewInner");
+const photoPreviewImg     = document.getElementById("photoPreviewImg");
+const photoPreviewName    = document.getElementById("photoPreviewName");
+const removePhotoBtn      = document.getElementById("removePhotoBtn");
+
+const invSearch           = document.getElementById("invSearch");
+const filterPills         = document.querySelectorAll(".filter-pill");
+const invoiceTableWrap    = document.getElementById("invoiceTableWrap");
+const invoiceList         = document.getElementById("invoiceList");
+const invoiceEmptyState   = document.getElementById("invoiceEmptyState");
+
+const photoModal          = document.getElementById("photoModal");
+const photoModalBackdrop  = document.getElementById("photoModalBackdrop");
+const photoModalClose     = document.getElementById("photoModalClose");
+const photoModalImg       = document.getElementById("photoModalImg");
 
 let editingInvoiceId = null;
+let allInvoices = [];
+let activeFilter = "all";
+let photoFile = null;
+let existingPhotoUrl = null;
 
-function eur(n){
-  const v = Number(n || 0);
-  return v.toFixed(2);
+const storage = getStorage();
+
+// ── Helpers ───────────────────────────────────────────
+function eur(n){ return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0); }
+function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function formatDate(iso){ if(!iso) return "—"; const [y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; }
+function daysDiff(isoDate){ const t=new Date(isoDate+" 00:00:00").getTime(); return Math.round((t-Date.now())/(1000*60*60*24)); }
+
+function getStatusInfo(inv){
+  const s = inv.status || "da-pagare";
+  if(s === "pagata") return { label:"✅ Pagata", cls:"pagata" };
+  if(s === "pagata-parz") return { label:"⚡ Parz.", cls:"pagata-parz" };
+  if(!inv.dueDate) return { label:"🔵 Da pagare", cls:"da-pagare" };
+  const diff = daysDiff(inv.dueDate);
+  if(diff < 0) return { label:"🔴 Scaduta", cls:"scaduta" };
+  if(diff <= 14) return { label:"🟡 In scadenza", cls:"in-scadenza" };
+  return { label:"🔵 Da pagare", cls:"da-pagare" };
 }
 
-function todayISO(){
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const dd = String(d.getDate()).padStart(2,"0");
-  return `${yyyy}-${mm}-${dd}`;
+function getDueCls(dueDate){
+  if(!dueDate) return "none";
+  const diff = daysDiff(dueDate);
+  if(diff < 0) return "overdue";
+  if(diff <= 14) return "soon";
+  return "ok";
 }
 
-function setInvoiceFormVisible(visible){
-  invoiceForm.classList.toggle("hidden", !visible);
-}
+// ── Toggle fornitore form ─────────────────────────────
+toggleSupplierFormBtn?.addEventListener("click", () => {
+  const hidden = supplierFormCard.classList.toggle("hidden");
+  toggleSupplierFormBtn.textContent = hidden ? "Modifica" : "Chiudi";
+});
 
-function requireSupplierSaved(){
-  if(!supplierId){
-    alert("Prima salva il fornitore, poi puoi aggiungere le fatture.");
-    return false;
-  }
-  return true;
-}
-
+// ── Supplier CRUD ─────────────────────────────────────
 async function loadSupplier(){
   if(!supplierId){
     supplierNameTitle.textContent = "Nuovo fornitore";
+    if(supplierFormCard) supplierFormCard.classList.remove("hidden");
     return;
   }
-
   const snap = await getDoc(doc(db, "suppliers", supplierId));
-  if(!snap.exists()){
-    supplierNameTitle.textContent = "Fornitore";
-    return;
-  }
-
+  if(!snap.exists()){ supplierNameTitle.textContent = "Fornitore"; return; }
   const s = snap.data();
-  const name = (s.name || "Fornitore").toString();
-
-  supplierNameTitle.textContent = name.toUpperCase();
+  supplierNameTitle.textContent = (s.name || "Fornitore").toUpperCase();
+  if(supplierVatBadge) supplierVatBadge.textContent = s.vat || "";
   nameInput.value  = s.name  || "";
   emailInput.value = s.email || "";
   phoneInput.value = s.phone || "";
   cityInput.value  = s.city  || "";
-  vatInput.value  = s.vat  || "";
+  vatInput.value   = s.vat   || "";
+  if(supplierCategory) supplierCategory.value = s.category || "";
+  // collapse form on load if already saved
+  if(supplierFormCard) supplierFormCard.classList.add("hidden");
+  if(toggleSupplierFormBtn) toggleSupplierFormBtn.textContent = "Modifica";
 }
 
-saveSupplierBtn.addEventListener("click", async () => {
+saveSupplierBtn?.addEventListener("click", async () => {
   const data = {
-    name:  nameInput.value.trim(),
-    email: emailInput.value.trim(),
-    phone: phoneInput.value.trim(),
-    city:  cityInput.value.trim(),
-    vat:  vatInput.value.trim()
+    name:     nameInput.value.trim(),
+    email:    emailInput.value.trim(),
+    phone:    phoneInput.value.trim(),
+    city:     cityInput.value.trim(),
+    vat:      vatInput.value.trim(),
+    category: supplierCategory?.value || ""
   };
-
-  if(!data.name){
-    alert("Inserisci nome fornitore");
-    return;
-  }
-
+  if(!data.name){ alert("Inserisci nome fornitore"); return; }
   if(supplierId){
     await updateDoc(doc(db, "suppliers", supplierId), data);
     supplierNameTitle.textContent = data.name.toUpperCase();
-    alert("Fornitore aggiornato");
-  }else{
-    // crea nuovo doc e rimanda sulla pagina con id
-    const ref = await addDoc(collection(db, "suppliers"), {
-      ...data,
-      total: 0
-    });
+    if(supplierVatBadge) supplierVatBadge.textContent = data.vat;
+    if(supplierFormCard) supplierFormCard.classList.add("hidden");
+    if(toggleSupplierFormBtn) toggleSupplierFormBtn.textContent = "Modifica";
+  } else {
+    const ref = await addDoc(collection(db, "suppliers"), { ...data, total: 0 });
     supplierId = ref.id;
     window.location.href = `supplier.html?supplierId=${encodeURIComponent(supplierId)}`;
   }
 });
 
-/* ---------- FATTURE ---------- */
+// ── Photo upload logic ────────────────────────────────
+triggerPhotoBtn?.addEventListener("click", () => photoFileInput?.click());
+removePhotoBtn?.addEventListener("click", () => {
+  photoFile = null;
+  existingPhotoUrl = null;
+  photoFileInput.value = "";
+  photoUploadInner?.classList.remove("hidden");
+  photoPreviewInner?.classList.add("hidden");
+});
 
-addInvoiceBtn.addEventListener("click", () => {
-  if(!requireSupplierSaved()) return;
+photoFileInput?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if(!file) return;
+  // Enforce 10 MB limit
+  if(file.size > 10 * 1024 * 1024){ alert("File troppo grande. Dimensione massima consentita: 10 MB."); photoFileInput.value = ""; return; }
+  photoFile = file;
+  photoPreviewName.textContent = file.name;
+  if(file.type.startsWith("image/")){
+    const reader = new FileReader();
+    reader.onload = (ev) => { photoPreviewImg.src = ev.target.result; };
+    reader.readAsDataURL(file);
+  } else {
+    photoPreviewImg.src = "";
+    photoPreviewImg.alt = "PDF allegato";
+  }
+  photoUploadInner?.classList.add("hidden");
+  photoPreviewInner?.classList.remove("hidden");
+});
 
+async function uploadPhotoFile(suppId, invId){
+  if(!photoFile) return existingPhotoUrl || null;
+  const ext = photoFile.name.split(".").pop();
+  const path = `suppliers/${suppId}/invoices/${invId}/fattura.${ext}`;
+  const sRef = storageRef(storage, path);
+  await uploadBytes(sRef, photoFile);
+  return await getDownloadURL(sRef);
+}
+
+// ── Invoice form controls ─────────────────────────────
+function computeInvoiceTotal(){
+  const base = parseFloat(invoiceAmountInput?.value) || 0;
+  const vat  = parseFloat(invoiceVatInput?.value) || 0;
+  const total = base * (1 + vat / 100);
+  if(invoiceTotalDisplay) invoiceTotalDisplay.value = total > 0 ? `€ ${total.toFixed(2).replace(".",",")}` : "";
+}
+invoiceAmountInput?.addEventListener("input", computeInvoiceTotal);
+invoiceVatInput?.addEventListener("change", computeInvoiceTotal);
+
+function resetForm(){
   editingInvoiceId = null;
+  photoFile = null;
+  existingPhotoUrl = null;
+  if(invoiceFormTitle) invoiceFormTitle.textContent = "✏️ Nuova fattura fornitore";
+  invoiceNumberInput.value = "";
   invoiceDateInput.value = todayISO();
+  invoiceDueDateInput.value = "";
   invoiceAmountInput.value = "";
-  setInvoiceFormVisible(true);
-});
+  invoiceVatInput.value = "22";
+  invoiceTotalDisplay.value = "";
+  invoiceDescInput.value = "";
+  if(invoiceCategoryInput) invoiceCategoryInput.value = "";
+  invoiceStatusInput.value = "da-pagare";
+  invoiceNotesInput.value = "";
+  if(photoFileInput) photoFileInput.value = "";
+  photoUploadInner?.classList.remove("hidden");
+  photoPreviewInner?.classList.add("hidden");
+}
 
-cancelInvoiceBtn.addEventListener("click", () => {
-  setInvoiceFormVisible(false);
-});
-
-saveInvoiceBtn.addEventListener("click", async () => {
+function openForm(scrollTo = true){
   if(!requireSupplierSaved()) return;
+  invoiceForm.classList.remove("hidden");
+  if(scrollTo) invoiceForm.scrollIntoView({ behavior:"smooth", block:"start" });
+}
 
-  const date = invoiceDateInput.value;
-  const amount = Number(invoiceAmountInput.value);
+function requireSupplierSaved(){
+  if(!supplierId){ alert("Prima salva il fornitore, poi puoi aggiungere le fatture."); return false; }
+  return true;
+}
 
-  if(!date || Number.isNaN(amount)){
-    alert("Compila data e importo");
-    return;
-  }
+addInvoiceBtn?.addEventListener("click", () => { resetForm(); openForm(); });
+addPhotoInvoiceBtn?.addEventListener("click", () => {
+  resetForm(); openForm();
+  setTimeout(() => photoFileInput?.click(), 400);
+});
+cancelInvoiceBtn?.addEventListener("click", () => invoiceForm.classList.add("hidden"));
+
+saveInvoiceBtn?.addEventListener("click", async () => {
+  if(!requireSupplierSaved()) return;
+  const date   = invoiceDateInput.value;
+  const amount = parseFloat(invoiceAmountInput.value);
+  if(!date || Number.isNaN(amount) || amount <= 0){ alert("Compila data e importo validi."); return; }
+
+  const vat     = parseFloat(invoiceVatInput?.value) || 0;
+  const total   = parseFloat((amount * (1 + vat / 100)).toFixed(2));
+  const payload = {
+    invoiceNumber: invoiceNumberInput?.value.trim() || "",
+    date,
+    dueDate:       invoiceDueDateInput?.value || "",
+    amount,
+    vat,
+    total,
+    description:   invoiceDescInput?.value.trim() || "",
+    category:      invoiceCategoryInput?.value || "",
+    status:        invoiceStatusInput?.value || "da-pagare",
+    notes:         invoiceNotesInput?.value.trim() || "",
+    photoUrl:      existingPhotoUrl || null,
+    updatedAt:     new Date().toISOString()
+  };
 
   const ref = collection(db, "suppliers", supplierId, "invoices");
+  let invId = editingInvoiceId;
 
-  if(editingInvoiceId){
-    await updateDoc(doc(ref, editingInvoiceId), { date, amount });
-  }else{
-    await addDoc(ref, { date, amount });
+  if(invId){
+    await updateDoc(doc(ref, invId), payload);
+  } else {
+    const newRef = await addDoc(ref, { ...payload, createdAt: new Date().toISOString() });
+    invId = newRef.id;
   }
 
-  setInvoiceFormVisible(false);
-  editingInvoiceId = null;
+  // upload photo if present
+  if(photoFile){
+    try {
+      const url = await uploadPhotoFile(supplierId, invId);
+      payload.photoUrl = url;
+      await updateDoc(doc(ref, invId), { photoUrl: url });
+    } catch(e){ console.warn("Foto non caricata:", e); }
+  }
 
-  await loadInvoices(); // ricarica e aggiorna totale
+  invoiceForm.classList.add("hidden");
+  editingInvoiceId = null;
+  await loadInvoices();
 });
 
-async function loadInvoices(){
-  invoiceList.innerHTML = "";
+// ── Filters ───────────────────────────────────────────
+filterPills.forEach(pill => {
+  pill.addEventListener("click", () => {
+    filterPills.forEach(p => p.classList.remove("active"));
+    pill.classList.add("active");
+    activeFilter = pill.dataset.filter || "all";
+    renderInvoiceTable();
+  });
+});
+invSearch?.addEventListener("input", renderInvoiceTable);
 
-  if(!supplierId){
-    totalYearEl.textContent = "0.00";
+// ── Photo modal ───────────────────────────────────────
+function openPhotoModal(url){
+  if(!photoModal || !url) return;
+  photoModalImg.src = url;
+  photoModal.classList.remove("hidden");
+}
+photoModalClose?.addEventListener("click", () => photoModal.classList.add("hidden"));
+photoModalBackdrop?.addEventListener("click", () => photoModal.classList.add("hidden"));
+
+// ── Render invoice table ──────────────────────────────
+function renderInvoiceTable(){
+  const search = (invSearch?.value || "").toLowerCase().trim();
+  const filtered = allInvoices.filter(inv => {
+    const { cls } = getStatusInfo(inv);
+    const matchFilter = activeFilter === "all" || cls === activeFilter;
+    const matchSearch = !search
+      || (inv.invoiceNumber||"").toLowerCase().includes(search)
+      || (inv.description||"").toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  invoiceList.innerHTML = "";
+  if(!filtered.length){
+    invoiceEmptyState?.classList.remove("hidden");
     return;
   }
+  invoiceEmptyState?.classList.add("hidden");
 
-  const ref = collection(db, "suppliers", supplierId, "invoices");
-  const q = query(ref, orderBy("date", "desc"));
-  const snap = await getDocs(q);
-
-  let total = 0;
-
-  snap.forEach((docSnap) => {
-    const inv = docSnap.data();
-    const id = docSnap.id;
-
-    const amount = Number(inv.amount || 0);
-    total += amount;
+  filtered.forEach(inv => {
+    const { label: statusLabel, cls: statusCls } = getStatusInfo(inv);
+    const dueCls = getDueCls(inv.dueDate);
+    const dueText = inv.dueDate ? formatDate(inv.dueDate) : "—";
 
     const row = document.createElement("div");
-    row.className = "invoice-row";
+    row.className = "inv-row";
     row.innerHTML = `
-      <div class="inv-left">
-        <span class="inv-date">${inv.date || ""}</span>
-        <span class="inv-amount">€ ${eur(amount)}</span>
+      <span class="inv-num">${inv.invoiceNumber ? `#${inv.invoiceNumber}` : "—"}</span>
+      <div class="inv-info">
+        <div class="inv-desc">${inv.description || "Fattura del "+formatDate(inv.date)}</div>
+        <div class="inv-supplier-sub">${inv.category ? `📂 ${inv.category}` : ""}</div>
+        <div class="inv-status-mobile"><span class="status-pill ${statusCls}">${statusLabel}</span></div>
       </div>
-      <div class="inv-actions">
-        <button class="icon-btn edit-btn" title="Modifica">✏️</button>
-        <button class="icon-btn delete-btn" title="Elimina">🗑️</button>
+      <span class="inv-date">${formatDate(inv.date)}</span>
+      <span class="inv-due ${dueCls}">${dueText}</span>
+      <span class="inv-amt">${eur(inv.total || inv.amount)}</span>
+      <!-- inv.total is the VAT-inclusive total for new invoices; inv.amount is kept for backward compatibility with old invoices that only stored the base amount -->
+      <span class="status-pill ${statusCls}">${statusLabel}</span>
+      <div class="inv-actions-cell">
+        ${inv.photoUrl ? `<button class="act-btn photo-btn-sm" title="Visualizza foto" data-photo="${inv.photoUrl}">📷</button>` : ""}
+        <button class="act-btn" title="Modifica" data-edit="${inv.id}">✏️</button>
+        ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-pay="${inv.id}">✅</button>` : ""}
+        <button class="act-btn del-btn" title="Elimina" data-del="${inv.id}">🗑️</button>
+      </div>
+      <!-- Mobile: compact action row always visible on small screens -->
+      <div class="inv-actions-mobile">
+        <button class="act-btn" title="Modifica" data-edit-m="${inv.id}">✏️</button>
+        ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-pay-m="${inv.id}">✅</button>` : ""}
+        <button class="act-btn del-btn" title="Elimina" data-del-m="${inv.id}">🗑️</button>
       </div>
     `;
 
-    row.querySelector(".edit-btn").addEventListener("click", (e) => {
+    row.querySelector("[data-photo]")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      editingInvoiceId = id;
-      invoiceDateInput.value = inv.date || todayISO();
-      invoiceAmountInput.value = Number(inv.amount || 0);
-      setInvoiceFormVisible(true);
+      openPhotoModal(e.currentTarget.dataset.photo);
+    });
+    row.querySelector("[data-edit]")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      startEdit(inv);
+    });
+    row.querySelector("[data-pay]")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if(!confirm("Segna questa fattura come pagata?")) return;
+      await updateDoc(doc(collection(db,"suppliers",supplierId,"invoices"), inv.id), { status:"pagata" });
+      await loadInvoices();
+    });
+    row.querySelector("[data-del]")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if(!confirm("Eliminare questa fattura?")) return;
+      await deleteDoc(doc(collection(db,"suppliers",supplierId,"invoices"), inv.id));
+      await loadInvoices();
     });
 
-    row.querySelector(".delete-btn").addEventListener("click", async (e) => {
+    row.querySelector("[data-edit-m]")?.addEventListener("click", (e) => {
+      e.stopPropagation(); startEdit(inv);
+    });
+    row.querySelector("[data-pay-m]")?.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if(!confirm("Eliminare fattura?")) return;
-      await deleteDoc(doc(ref, id));
+      if(!confirm("Segna questa fattura come pagata?")) return;
+      await updateDoc(doc(collection(db,"suppliers",supplierId,"invoices"), inv.id), { status:"pagata" });
+      await loadInvoices();
+    });
+    row.querySelector("[data-del-m]")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if(!confirm("Eliminare questa fattura?")) return;
+      await deleteDoc(doc(collection(db,"suppliers",supplierId,"invoices"), inv.id));
       await loadInvoices();
     });
 
     invoiceList.appendChild(row);
   });
+}
 
-  totalYearEl.textContent = eur(total);
+function startEdit(inv){
+  if(!requireSupplierSaved()) return;
+  editingInvoiceId = inv.id;
+  existingPhotoUrl = inv.photoUrl || null;
+  if(invoiceFormTitle) invoiceFormTitle.textContent = "✏️ Modifica fattura";
+  invoiceNumberInput.value  = inv.invoiceNumber || "";
+  invoiceDateInput.value    = inv.date || todayISO();
+  invoiceDueDateInput.value = inv.dueDate || "";
+  invoiceAmountInput.value  = inv.amount || ""; // base amount (imponibile); total is recalculated via computeInvoiceTotal()
+  invoiceVatInput.value     = String(inv.vat ?? 22);
+  invoiceDescInput.value    = inv.description || "";
+  if(invoiceCategoryInput) invoiceCategoryInput.value = inv.category || "";
+  invoiceStatusInput.value  = inv.status || "da-pagare";
+  invoiceNotesInput.value   = inv.notes || "";
+  computeInvoiceTotal();
+  photoFile = null;
+  if(inv.photoUrl){
+    photoPreviewImg.src = inv.photoUrl;
+    photoPreviewName.textContent = "Foto allegata";
+    photoUploadInner?.classList.add("hidden");
+    photoPreviewInner?.classList.remove("hidden");
+  } else {
+    photoUploadInner?.classList.remove("hidden");
+    photoPreviewInner?.classList.add("hidden");
+  }
+  openForm();
+}
 
-  // aggiorna anche il totale sul fornitore (serve per la lista fornitori)
-  await updateDoc(doc(db, "suppliers", supplierId), { total });
+// ── Load & stats ──────────────────────────────────────
+async function loadInvoices(){
+  invoiceList.innerHTML = "";
+  if(!supplierId){ return; }
+
+  const ref = collection(db, "suppliers", supplierId, "invoices");
+  const q   = query(ref, orderBy("date","desc"));
+  const snap = await getDocs(q);
+
+  const currentYear = new Date().getFullYear().toString();
+  let totalYear = 0, countYear = 0, daPagare = 0, scadute = 0;
+  const urgent = [];
+
+  allInvoices = [];
+  snap.forEach(docSnap => {
+    const inv = { id: docSnap.id, ...docSnap.data() };
+    allInvoices.push(inv);
+    const amount = Number(inv.total || inv.amount || 0);
+    if((inv.date||"").startsWith(currentYear)){
+      totalYear += amount; countYear++;
+    }
+    const { cls } = getStatusInfo(inv);
+    if(cls === "da-pagare" || cls === "in-scadenza" || cls === "pagata-parz") daPagare += amount;
+    if(cls === "scaduta"){ scadute += amount; urgent.push(inv); }
+    else if(cls === "in-scadenza"){ urgent.push(inv); }
+  });
+
+  // Stats
+  if(allInvoices.length){
+    invStatsGrid?.style.setProperty("display","grid");
+  }
+  if(statCountYear)  statCountYear.textContent  = countYear;
+  if(statTotalYear)  statTotalYear.textContent   = eur(totalYear);
+  if(statDaPagare)   statDaPagare.textContent    = eur(daPagare);
+  if(statScadute)    statScadute.textContent     = eur(scadute);
+
+  // Urgent
+  if(urgent.length){
+    urgentSection?.style.setProperty("display","block");
+    urgentList.innerHTML = `<div class="scad-head">⚠️ Pagamenti in scadenza o scaduti</div>`;
+    urgent.forEach(inv => {
+      const { cls } = getStatusInfo(inv);
+      const diff = inv.dueDate ? daysDiff(inv.dueDate) : null;
+      const dueLabel = diff !== null
+        ? (diff < 0 ? `Scaduta il ${formatDate(inv.dueDate)}` : `Scade il ${formatDate(inv.dueDate)}`)
+        : `Fattura del ${formatDate(inv.date)}`;
+      const dueCls = cls === "scaduta" ? "overdue" : "soon";
+      const row = document.createElement("div");
+      row.className = "scad-row";
+      row.innerHTML = `
+        <div class="scad-info">
+          <div class="scad-supplier">${inv.description || (inv.invoiceNumber ? `#${inv.invoiceNumber}` : "Fattura")}</div>
+          <div class="scad-detail">${inv.invoiceNumber ? `Fattura #${inv.invoiceNumber} · ` : ""}${formatDate(inv.date)}</div>
+        </div>
+        <div class="scad-right">
+          <div class="scad-due ${dueCls}">${dueLabel}</div>
+          <div class="scad-amt">${eur(inv.total || inv.amount)}</div>
+        </div>`;
+      urgentList.appendChild(row);
+    });
+  } else {
+    if(urgentSection) urgentSection.style.display = "none";
+  }
+
+  // update supplier total
+  await updateDoc(doc(db,"suppliers",supplierId), { total: totalYear });
+
+  renderInvoiceTable();
 }
 
 /* Init */

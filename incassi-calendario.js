@@ -55,12 +55,20 @@ function renderAutoEntries(entries = []){
   if(!autoEntries || !autoSummary) return;
   const autoOnly = entries.filter((e)=>String(e.source||'').toLowerCase()==='ordine' || e.orderId);
   popupAutoTotal = Number(autoOnly.reduce((sum,e)=>sum+(Number(e.amount)||0),0).toFixed(2));
+
+  const autoEmpty = document.getElementById('autoEmpty');
+  const autoBoxTotalRow = document.getElementById('autoBoxTotalRow');
+
   if(!autoOnly.length){
-    autoSummary.textContent = 'Nessun incasso automatico registrato.';
+    autoSummary.textContent = '—';
     autoEntries.innerHTML = '';
+    if(autoEmpty) autoEmpty.style.display = '';
+    if(autoBoxTotalRow) autoBoxTotalRow.style.display = 'none';
     return;
   }
-  autoSummary.textContent = `Totale automatico del giorno: ${euro(popupAutoTotal)}`;
+  if(autoEmpty) autoEmpty.style.display = 'none';
+  if(autoBoxTotalRow) autoBoxTotalRow.style.display = '';
+  autoSummary.textContent = `${euro(popupAutoTotal)}`;
   autoEntries.innerHTML = autoOnly.map((e)=>{
     const label = kindLabel(e.paymentType || e.kind);
     return `<div class="auto-entry">
@@ -91,7 +99,7 @@ function createEntryRow(clientName, amount) {
   const nameInput = document.createElement('input');
   nameInput.type = 'text';
   nameInput.className = 'entry-name';
-  nameInput.placeholder = 'Nome cliente';
+  nameInput.placeholder = 'Nome cliente…';
   nameInput.setAttribute('list', 'clientsDatalist');
   nameInput.autocomplete = 'off';
   nameInput.value = clientName || '';
@@ -147,6 +155,13 @@ function computeAutoAmount(){
   if (manualAmountEl) manualAmountEl.value = manualTotal > 0 ? formatInputAmount(manualTotal) : '';
   const totalDay = Number((popupAutoTotal + manualTotal).toFixed(2));
   if (amountEl) amountEl.value = formatInputAmount(totalDay);
+
+  // update display labels
+  const manualDisplay = document.getElementById('manualAmountDisplay');
+  const totalDisplay = document.getElementById('totalDayDisplay');
+  if(manualDisplay) manualDisplay.textContent = `€ ${manualTotal > 0 ? formatInputAmount(manualTotal) : '0,00'}`;
+  if(totalDisplay) totalDisplay.textContent = `€ ${formatInputAmount(totalDay) || '0,00'}`;
+
   return { entries, manualTotal: Number(manualTotal.toFixed(2)), totalDay };
 }
 

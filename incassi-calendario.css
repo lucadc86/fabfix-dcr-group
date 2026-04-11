@@ -1,3 +1,4 @@
+/* ── LAYOUT BASE ─────────────────────────────── */
 .page{padding:14px; max-width:980px; margin:0 auto;}
 .topbar{display:flex; align-items:center; gap:12px; padding:12px 14px; position:sticky; top:0; background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border-bottom:1px solid rgba(15,23,42,.10); z-index:5;}
 .backbtn{width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; text-decoration:none; background:var(--brand); color:#fff; font-weight:900;}
@@ -36,61 +37,166 @@
 
 .hint{margin-top:12px; font-size:12px; color:var(--text-muted);}
 
-/* Popup (stile simile alla dashboard) */
-.incassi-popup{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+/* ── POPUP OVERLAY ────────────────────────────── */
+.incassi-popup{position:fixed;inset:0;background:rgba(2,6,23,.60);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999;backdrop-filter:blur(4px)}
 .incassi-popup.show{display:flex}
-.popup-box{width:100%;max-width:620px;background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:18px;box-shadow:0 18px 45px rgba(2,6,23,.18);overflow:hidden}
-.popup-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid rgba(15,23,42,.12)}
-.popup-title{font-weight:1000;font-size:18px;color:#0b1220}
-.popup-close{border:1px solid rgba(15,23,42,.12);background:#fff;color:#0b1220;border-radius:12px;padding:6px 10px;cursor:pointer}
-.popup-body{padding:12px 14px}
-.lbl{display:block;color:#475569;font-size:12px;font-weight:900;margin:10px 0 6px}
-textarea,input{width:100%;box-sizing:border-box;background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:14px;color:#0b1220;padding:12px;font-size:15px;outline:none}
-textarea{min-height:120px;resize:none}
-.popup-actions{display:flex;gap:10px;justify-content:flex-start;padding:12px 14px 14px;border-top:1px solid rgba(15,23,42,.12)}
+.popup-box{
+  width:100%;max-width:620px;
+  background:#fff;
+  border-radius:20px;
+  box-shadow:0 24px 60px rgba(2,6,23,.22);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  max-height:calc(100dvh - 36px);
+}
+
+/* ── POPUP HEADER ─────────────────────────────── */
+.popup-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;
+  background:linear-gradient(135deg,#1e40af 0%,#2563eb 100%);
+  color:#fff;
+  flex-shrink:0;
+}
+.popup-head-left{display:flex;flex-direction:column;gap:2px}
+.popup-head-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.80}
+.popup-title{font-size:20px;font-weight:900;color:#fff}
+.popup-close{
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.30);
+  color:#fff;border-radius:10px;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;
+  flex-shrink:0;
+}
+.popup-close:hover{background:rgba(255,255,255,.30)}
+
+/* ── POPUP BODY ───────────────────────────────── */
+.popup-body{padding:16px 20px;overflow-y:auto;flex:1}
+
+/* Section dividers */
+.popup-section-label{
+  font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;
+  color:#6b7280;margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.popup-section-label::after{content:'';flex:1;height:1px;background:#e5e7eb}
+
+/* ── AUTO-INCASSI BOX ─────────────────────────── */
+.auto-box{
+  background:linear-gradient(180deg,#f0f7ff 0%,#e8f2ff 100%);
+  border:1px solid #bfdbfe;border-radius:16px;
+  overflow:hidden;margin-bottom:16px;
+}
+.auto-box-total{
+  padding:10px 14px;border-bottom:1px solid #bfdbfe;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.auto-box-title{font-weight:800;font-size:13px;color:#1e40af}
+.auto-summary{font-size:15px;font-weight:900;color:#1e40af}
+.auto-entries{display:flex;flex-direction:column;gap:0}
+.auto-entry{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid #dbeafe;background:#fff;gap:10px;
+}
+.auto-entry:last-child{border-bottom:none}
+.auto-entry-main{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.auto-entry-name{font-weight:900;color:#111827;font-size:14px;line-height:1.2}
+.auto-entry-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.auto-order{font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auto-entry-amt{font-weight:900;white-space:nowrap;color:#1e40af;font-size:15px;text-align:right}
+.kind-pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;background:#eef5ff;color:#234}
+.kind-pill.acconto{background:#fef3c7;color:#92400e}
+.kind-pill.saldo,.kind-pill.incassato,.kind-pill.incasso{background:#dcfce7;color:#166534}
+
+/* ── ENTRIES TABLE ────────────────────────────── */
+.entries-wrapper{
+  border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;margin-bottom:10px;
+}
+.entries-thead{
+  display:grid;grid-template-columns:1fr 110px 36px;
+  background:#f9fafb;border-bottom:1px solid #e5e7eb;
+  padding:8px 12px;gap:8px;
+}
+.entries-thead span{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280}
+.entries-table{display:flex;flex-direction:column}
+.entry-row{
+  display:grid;grid-template-columns:1fr 110px 36px;
+  padding:6px 12px;gap:8px;border-bottom:1px solid #f3f4f6;align-items:center;
+  background:#fff;
+}
+.entry-row:last-child{border-bottom:none}
+.entry-name,.entry-amt{
+  width:100%;border:1px solid #e5e7eb;border-radius:8px;
+  padding:7px 10px;font-size:13px;background:#f9fafb;outline:none;color:#111827;
+  box-sizing:border-box;
+}
+.entry-name:focus,.entry-amt:focus{border-color:#3b82f6;background:#fff}
+.entry-del{
+  width:32px;height:32px;border-radius:8px;border:1px solid #fecaca;
+  background:#fef2f2;color:#ef4444;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.add-entry-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;padding:9px 14px;border:1.5px dashed #bfdbfe;
+  background:#f0f9ff;border-radius:10px;color:#2563eb;
+  font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;
+}
+.add-entry-btn:hover{background:#dbeafe;border-color:#93c5fd}
+
+/* ── TOTALS BOX ───────────────────────────────── */
+.popup-totals{
+  background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;
+  padding:12px 14px;display:flex;flex-direction:column;gap:6px;
+  margin-bottom:4px;
+}
+.popup-total-row{display:flex;align-items:center;justify-content:space-between}
+.popup-total-label{font-size:12px;font-weight:700;color:#6b7280}
+.popup-total-val{font-size:15px;font-weight:900;color:#111827}
+.popup-total-sep{border:none;border-top:1px solid #e5e7eb;margin:2px 0}
+.popup-total-row.grand .popup-total-label{font-size:13px;color:#1e40af;font-weight:800}
+.popup-total-row.grand .popup-total-val{font-size:20px;color:#1e40af;font-weight:900}
+
+/* keep lbl for hint */
+.lbl{display:none}
+
+/* ── POPUP ACTIONS ────────────────────────────── */
+.popup-actions{
+  display:flex;gap:10px;
+  padding:14px 20px;
+  border-top:1px solid #f1f5f9;
+  background:#fff;
+  flex-shrink:0;
+}
+.btn-save-popup{
+  flex:1;padding:12px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;
+  font-size:14px;font-weight:800;cursor:pointer;
+}
+.btn-save-popup:hover{opacity:.92}
+.btn-delete-popup{
+  padding:12px 16px;border-radius:12px;
+  border:1px solid #fecaca;background:#fef2f2;color:#ef4444;
+  font-size:14px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-delete-popup:hover{background:#fee2e2}
+
+/* keep existing btn classes for calendar nav */
+.btn.primary{border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.10)}
+.btn.danger{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.10)}
 
 @media (max-width:520px){
   .page{padding:10px;}
   .cal-title{min-width:180px;font-size:16px}
   .day-row{padding:7px 9px}
 }
-
-.auto-box{background:#f5f8ff;border:1px solid #d8e3ff;border-radius:16px;padding:12px;margin-bottom:14px}
-.auto-box-title{font-weight:800;margin-bottom:8px}
-.auto-summary{font-size:13px;color:#35518c;margin-bottom:8px}
-.auto-entries{display:flex;flex-direction:column;gap:8px}
-.auto-entry{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #e6ecfb}
-.auto-entry-main{display:flex;flex-direction:column;gap:4px}
-.auto-entry-name{font-weight:700}
-.auto-entry-meta{font-size:12px;color:#556987}
-.auto-entry-amt{font-weight:800;white-space:nowrap}
-.kind-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#eef5ff;color:#234}
-.kind-pill.acconto{background:#fff4d6;color:#7a5600}
-.kind-pill.saldo,.kind-pill.incassato{background:#dcfce7;color:#166534}
-
-
-.auto-box{background:linear-gradient(180deg,#f8fbff 0%,#f4f7ff 100%);border:1px solid #dbe6ff;border-radius:18px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
-.auto-box-title{font-weight:900;margin-bottom:6px;color:#0f172a;font-size:18px}
-.auto-summary{font-size:14px;color:#4b638d;margin-bottom:10px}
-.auto-entries{display:flex;flex-direction:column;gap:10px}
-.auto-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #e3ebfb;box-shadow:0 1px 0 rgba(15,23,42,.02)}
-.auto-entry-main{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
-.auto-entry-name{font-weight:900;color:#111827;font-size:15px;line-height:1.2}
-.auto-entry-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#556987}
-.auto-order{color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.auto-entry-amt{font-weight:1000;white-space:nowrap;color:#0b1220;font-size:16px;text-align:right}
-.kind-pill{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;background:#eef5ff;color:#234}
-.kind-pill.acconto{background:#fff4d6;color:#7a5600}
-.kind-pill.saldo,.kind-pill.incassato,.kind-pill.incasso{background:#dcfce7;color:#166534}
 @media (max-width:640px){
-  .incassi-popup{padding:10px}
-  .popup-box{width:min(100%, 420px);max-width:min(100%, 420px);max-height:calc(100dvh - 20px);border-radius:20px;display:flex;flex-direction:column}
-  .popup-head{padding:12px 12px}
-  .popup-title{font-size:16px}
-  .popup-body{padding:12px;overflow:auto;max-height:calc(100dvh - 170px)}
-  .popup-actions{position:sticky;bottom:0;background:#fff;padding:10px 12px 12px}
-  textarea{min-height:96px}
-  .auto-box-title{font-size:16px}
-  .auto-entry{align-items:flex-start;flex-direction:column}
-  .auto-entry-amt{font-size:18px;text-align:left}
+  .incassi-popup{padding:8px}
+  .popup-box{border-radius:18px;max-height:calc(100dvh - 16px)}
+  .popup-head{padding:14px 16px}
+  .popup-title{font-size:17px}
+  .popup-body{padding:12px 14px}
+  .popup-actions{padding:12px 14px 14px}
+  .auto-entry{flex-direction:column;align-items:flex-start}
+  .auto-entry-amt{font-size:16px}
 }
