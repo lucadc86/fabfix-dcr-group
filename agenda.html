@@ -85,9 +85,10 @@
       grid-template-columns:1fr 320px;
       grid-template-rows:auto;
       gap:16px;
+      min-width:0;
     }
-    .calendar-col{grid-column:1;grid-row:1}
-    .sidebar-col{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:12px}
+    .calendar-col{grid-column:1;grid-row:1;min-width:0;overflow:hidden}
+    .sidebar-col{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:12px;min-width:0}
 
     /* ─── Card ─── */
     .card{
@@ -402,6 +403,25 @@
       .filter-strip{padding:0 10px;gap:6px}
       .filter-btn{padding:5px 10px;font-size:11px}
       .page-content{padding:10px 10px 20px}
+    }
+    @media (max-width:480px){
+      /* Comprimi il calendario sul piccolo schermo iPhone */
+      .fc .fc-toolbar.fc-header-toolbar{flex-direction:column;align-items:flex-start;gap:6px;padding:8px 10px 6px}
+      .fc .fc-toolbar-chunk{gap:4px}
+      .fc .fc-toolbar-title{font-size:14px !important}
+      .fc .fc-button-primary{padding:5px 8px !important;font-size:11px !important}
+      .fc .fc-daygrid-day{min-height:44px !important}
+      .fc .fc-daygrid-day-number{font-size:11px !important;width:22px;height:22px}
+      .fc .fc-event .fc-event-title{font-size:9px !important}
+      /* Nascondi bottoni vista non necessari */
+      .fc .fc-listMonth-button,.fc .fc-timeGridWeek-button,.fc .fc-timeGridDay-button{display:none !important}
+      /* KPI a 2 per riga compatti */
+      .kpi-card{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px)}
+      /* Nessun scroll orizzontale */
+      .page-content{padding:8px 8px 16px}
+      .card{padding:10px}
+      .hist-tbl{font-size:11px}
+      .hist-tbl th,.hist-tbl td{padding:6px 8px}
     }
     @media (max-width:560px){
       .top-bar{height:58px}
@@ -764,7 +784,7 @@
     // ─── KPI loader ───
     async function loadKPIs(){
       const {y,m}=nowMonth();
-      let incassiMese=0, scadenzeMese=0, fatturatoMese=0, speseMese=0;
+      let incassiMese=0, scadenzeMese=0, fatturatoMese=0, speseMese=0, fornitoreMese=0;
 
       try{
         const snap=await getDocs(collection(db,'incassi'));
@@ -807,12 +827,29 @@
         });
       }catch(e){console.warn('kpi spese',e);}
 
+      // KPI Ordini Fornitori: somma fatture inserite nel mese in ordini fornitori
+      try{
+        const suppSnap=await getDocs(collection(db,'suppliers'));
+        await Promise.all(suppSnap.docs.map(async suppDoc=>{
+          try{
+            const invSnap=await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+            invSnap.forEach(d=>{
+              const data=d.data()||{};
+              const iso=data.dateISO||dateISO(data.date||data.invoiceDate)||null;
+              if(isSameMonth(iso,y,m)){
+                fornitoreMese+=Number(data.totalWithVat||data.total||data.importo||0);
+              }
+            });
+          }catch(_){}
+        }));
+      }catch(e){console.warn('kpi fornitori',e);}
+
       const saldo=incassiMese-scadenzeMese-speseMese;
 
       document.getElementById('kpiIncassi').textContent=eur(incassiMese);
       document.getElementById('kpiScadenze').textContent=eur(scadenzeMese);
       document.getElementById('kpiFatturato').textContent=eur(fatturatoMese);
-      document.getElementById('kpiFornitore').textContent=eur(speseMese);
+      document.getElementById('kpiFornitore').textContent=eur(fornitoreMese);
       const saldoEl=document.getElementById('kpiSaldo');
       saldoEl.textContent=eur(saldo);
       saldoEl.className='kpi-value '+(saldo>=0?'positive':'negative');

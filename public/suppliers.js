@@ -3,10 +3,18 @@ import {
   collection,
   getDocs,
   doc,
+  addDoc,
   query,
   orderBy,
+  serverTimestamp,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const suppliersListEl = document.getElementById("suppliersList");
 const grandTotalEl = document.getElementById("grandTotal");
@@ -165,3 +173,181 @@ function renderSuppliersChart(list){
   });
 }
 window.addEventListener('resize', () => renderSuppliersChart(suppliersCache));
+
+// ── STORICO ORDINI FORNITORI ─────────────────────────────────────────
+const storage = getStorage();
+let ordersHistory = {}; // { supplierId: { name, orders: [] } }
+
+function eurFmt(n){
+  return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(Number(n)||0);
+}
+
+async function loadOrdersHistory(){
+  const list = document.getElementById('ordersHistoryList');
+  if(!list) return;
+  try{
+    const snap = await getDocs(collection(db,'suppliers'));
+    ordersHistory = {};
+    await Promise.all(snap.docs.map(async suppDoc => {
+      const name = String(suppDoc.data().name||'Senza nome');
+      const ordersSnap = await getDocs(query(collection(db,'suppliers',suppDoc.id,'invoices'), orderBy('dateISO','desc')));
+      const orders = ordersSnap.docs.map(d=>({id:d.id,...d.data()}));
+      ordersHistory[suppDoc.id] = { name, orders };
+    }));
+    renderOrdersHistory();
+    populateSupplierSelect();
+  }catch(e){
+    console.warn('loadOrdersHistory',e);
+    if(list) list.innerHTML='<div style="color:#dc2626;padding:8px">Errore caricamento storico ordini.</div>';
+  }
+}
+
+function renderOrdersHistory(){
+  const list = document.getElementById('ordersHistoryList');
+  if(!list) return;
+  const entries = Object.entries(ordersHistory).filter(([,v])=>v.orders.length>0);
+  if(!entries.length){
+    list.innerHTML='<div style="color:#9ca3af;font-style:italic;padding:12px 0;">Nessun ordine registrato. Usa il pulsante <strong>＋ Nuovo ordine</strong> per iniziare.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(([supplierId,{name,orders}])=>{
+    const total = orders.reduce((s,o)=>s+Number(o.totalWithVat||o.total||o.importo||0),0);
+    const rows = orders.slice(0,5).map(o=>{
+      const date = o.dateISO||o.invoiceDate||'—';
+      const amount = Number(o.totalWithVat||o.total||o.importo||0);
+      const desc = String(o.description||o.desc||o.note||'—').slice(0,40);
+      const photoBtn = o.photoUrl ? `<a href="${o.photoUrl}" target="_blank" style="font-size:11px;color:#1f4fd8;text-decoration:none;font-weight:700;">📷 Foto</a>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;">
+        <span style="min-width:86px;color:#374151;font-weight:600;">${date}</span>
+        <span style="flex:1;color:#475569;">${desc}</span>
+        <span style="font-weight:800;color:#1f4fd8;white-space:nowrap;">${eurFmt(amount)}</span>
+        ${photoBtn}
+      </div>`;
+    }).join('');
+    const moreCount = orders.length > 5 ? `<div style="padding:6px 12px;font-size:12px;color:#6b7280;font-style:italic;">+ altri ${orders.length-5} ordini → <a href="supplier.html?supplierId=${encodeURIComponent(supplierId)}" style="color:#1f4fd8;text-decoration:none;font-weight:700;">Apri scheda fornitore</a></div>` : '';
+    return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.05);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;">
+        <div>
+          <div style="font-weight:900;font-size:15px;color:#0f172a;">${name}</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px;">${orders.length} ordini registrati</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-weight:900;font-size:16px;color:#1f4fd8;">${eurFmt(total)}</span>
+          <a href="supplier.html?supplierId=${encodeURIComponent(supplierId)}" style="font-size:12px;background:#eef2ff;color:#1f4fd8;border-radius:8px;padding:5px 10px;text-decoration:none;font-weight:700;">Apri →</a>
+        </div>
+      </div>
+      ${rows}
+      ${moreCount}
+    </div>`;
+  }).join('');
+}
+
+function populateSupplierSelect(){
+  const sel = document.getElementById('qoSupplier');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Seleziona fornitore —</option>' +
+    Object.entries(ordersHistory).map(([id,{name}])=>`<option value="${id}">${name}</option>`).join('');
+}
+
+// Quick order form
+const addOrderGlobalBtn = document.getElementById('addOrderGlobalBtn');
+const quickOrderForm = document.getElementById('quickOrderForm');
+const qoCancelBtn = document.getElementById('qoCancelBtn');
+const qoSaveBtn = document.getElementById('qoSaveBtn');
+const qoPhotoInput = document.getElementById('qoPhotoInput');
+
+if(addOrderGlobalBtn){
+  addOrderGlobalBtn.addEventListener('click',()=>{
+    quickOrderForm.style.display = quickOrderForm.style.display==='none' ? 'block' : 'none';
+    // set today as default date
+    const dateEl = document.getElementById('qoDate');
+    if(dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
+  });
+}
+if(qoCancelBtn){
+  qoCancelBtn.addEventListener('click',()=>{
+    quickOrderForm.style.display='none';
+    document.getElementById('qoSupplier').value='';
+    document.getElementById('qoDate').value='';
+    document.getElementById('qoAmount').value='';
+    document.getElementById('qoDesc').value='';
+    document.getElementById('qoPhotoInput').value='';
+    document.getElementById('qoPhotoPreview').style.display='none';
+    document.getElementById('qoPhotoPlaceholder').style.display='block';
+  });
+}
+
+if(qoPhotoInput){
+  qoPhotoInput.addEventListener('change',()=>{
+    const file = qoPhotoInput.files[0];
+    if(!file) return;
+    const preview = document.getElementById('qoPhotoPreview');
+    const placeholder = document.getElementById('qoPhotoPlaceholder');
+    const img = document.getElementById('qoPhotoImg');
+    const name = document.getElementById('qoPhotoName');
+    name.textContent = file.name;
+    if(file.type.startsWith('image/')){
+      const reader = new FileReader();
+      reader.onload = e => { img.src=e.target.result; img.style.display='block'; };
+      reader.readAsDataURL(file);
+    } else {
+      img.style.display='none';
+    }
+    preview.style.display='block';
+    placeholder.style.display='none';
+  });
+}
+
+if(qoSaveBtn){
+  qoSaveBtn.addEventListener('click', async ()=>{
+    const supplierId = document.getElementById('qoSupplier').value;
+    const dateVal = document.getElementById('qoDate').value;
+    const amount = parseFloat(document.getElementById('qoAmount').value||'0');
+    const desc = document.getElementById('qoDesc').value.trim();
+    if(!supplierId){ alert('Seleziona un fornitore'); return; }
+    if(!dateVal){ alert('Inserisci la data'); return; }
+    if(!amount || amount<=0){ alert('Inserisci un importo valido'); return; }
+
+    qoSaveBtn.disabled = true;
+    qoSaveBtn.textContent = 'Salvataggio…';
+    try{
+      let photoUrl = null;
+      const file = qoPhotoInput ? qoPhotoInput.files[0] : null;
+      if(file){
+        const ext = file.name.split('.').pop();
+        const path = `suppliers/${supplierId}/orders/${Date.now()}.${ext}`;
+        const sRef = storageRef(storage, path);
+        const snap = await uploadBytes(sRef, file);
+        photoUrl = await getDownloadURL(snap.ref);
+      }
+      await addDoc(collection(db,'suppliers',supplierId,'invoices'),{
+        dateISO: dateVal,
+        description: desc||'Ordine fornitore',
+        total: amount,
+        totalWithVat: amount,
+        invoiceDate: dateVal,
+        status: 'da-pagare',
+        photoUrl: photoUrl||null,
+        createdAt: serverTimestamp()
+      });
+      alert('✅ Ordine salvato');
+      quickOrderForm.style.display='none';
+      document.getElementById('qoSupplier').value='';
+      document.getElementById('qoDate').value='';
+      document.getElementById('qoAmount').value='';
+      document.getElementById('qoDesc').value='';
+      if(qoPhotoInput) qoPhotoInput.value='';
+      document.getElementById('qoPhotoPreview').style.display='none';
+      document.getElementById('qoPhotoPlaceholder').style.display='block';
+      await loadOrdersHistory();
+    }catch(err){
+      console.error('qoSave error',err);
+      alert('❌ Errore: '+(err.message||err));
+    }finally{
+      qoSaveBtn.disabled=false;
+      qoSaveBtn.textContent='💾 Salva ordine';
+    }
+  });
+}
+
+loadOrdersHistory();
