@@ -27,6 +27,9 @@
   .pv-row .pv-mini{width:78px;min-width:78px;border-radius:12px;border:1px solid rgba(0,0,0,.10);padding:10px 10px;text-align:center;font-weight:800;}
   .pv-row .pv-total{margin-left:auto;font-weight:900;min-width:92px;text-align:right;}
   .pv-row .pv-del{width:44px;min-width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+
+  /* Storico ordini fornitore: stato inline su mobile */
+  .order-items-status{display:flex !important;}
 }
 
 /* di default su desktop il contenitore mobile è nascosto */
