@@ -6,7 +6,7 @@
 .supplier-topbar-sub{font-size:11px;opacity:.80;font-weight:600;}
 
 /* ── MAIN LAYOUT ──────────────────────────────── */
-.supplier-main{max-width:900px;margin:0 auto;padding:20px 16px;}
+.supplier-main{max-width:900px;margin:0 auto;padding:90px 16px 20px;}
 
 /* ── SECTION HEADER ──────────────────────────── */
 .sup-section-head{

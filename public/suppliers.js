@@ -2,8 +2,10 @@ import { db } from "./firebase.js";
 import {
   collection,
   getDocs,
+  doc,
   query,
-  orderBy
+  orderBy,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const suppliersListEl = document.getElementById("suppliersList");
@@ -98,6 +100,44 @@ newSupplierBtn.addEventListener("click", (e) => {
 searchInput.addEventListener("input", applyFilter);
 
 loadSuppliers();
+
+// ── Mark ALL invoices from ALL suppliers as paid ──────
+const markAllSuppliersInvoicesPaidBtn = document.getElementById("markAllSuppliersInvoicesPaidBtn");
+markAllSuppliersInvoicesPaidBtn?.addEventListener("click", async () => {
+  if(!confirm("Segna TUTTE le fatture di TUTTI i fornitori come pagate?")) return;
+  try {
+    const suppSnap = await getDocs(collection(db, "suppliers"));
+    const invRefs = suppSnap.docs.map(suppDoc =>
+      collection(db, "suppliers", suppDoc.id, "invoices")
+    );
+    const invSnaps = await Promise.all(invRefs.map(ref => getDocs(ref)));
+
+    // Collect all updates (Firestore batch limit: 500 ops per batch)
+    const unpaidInvoiceRefs = [];
+    invSnaps.forEach((invSnap, i) => {
+      invSnap.forEach(invDoc => {
+        if((invDoc.data().status || "da-pagare") !== "pagata"){
+          unpaidInvoiceRefs.push(doc(invRefs[i], invDoc.id));
+        }
+      });
+    });
+
+    if(unpaidInvoiceRefs.length === 0){ alert("Tutte le fatture sono già segnate come pagate."); return; }
+
+    // Commit in chunks of 500
+    const FIRESTORE_BATCH_LIMIT = 500;
+    for(let i = 0; i < unpaidInvoiceRefs.length; i += FIRESTORE_BATCH_LIMIT){
+      const batch = writeBatch(db);
+      unpaidInvoiceRefs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach(ref => batch.update(ref, { status: "pagata" }));
+      await batch.commit();
+    }
+
+    alert(`✅ ${unpaidInvoiceRefs.length} fattura/e segnata/e come pagata.`);
+  } catch(err) {
+    console.error("Errore durante il salvataggio:", err);
+    alert("❌ Errore durante il salvataggio: " + (err?.message || err));
+  }
+});
 
 let suppliersChart;
 function renderSuppliersChart(list){

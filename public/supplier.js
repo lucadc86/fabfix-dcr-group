@@ -86,7 +86,8 @@ const ocrOverlay          = document.getElementById("ocrOverlay");
 const ordersHistorySection= document.getElementById("ordersHistorySection");
 const ordersHistoryBody   = document.getElementById("ordersHistoryBody");
 const toggleOrdersBtn     = document.getElementById("toggleOrdersBtn");
-const markAllPaidBtn      = document.getElementById("markAllPaidBtn");
+const markAllPaidBtn          = document.getElementById("markAllPaidBtn");
+const markAllInvoicesPaidBtn  = document.getElementById("markAllInvoicesPaidBtn");
 const ordersList          = document.getElementById("ordersList");
 const ordersEmptyState    = document.getElementById("ordersEmptyState");
 
@@ -547,6 +548,10 @@ async function loadInvoices(){
   if(statDaPagare)   statDaPagare.textContent    = eur(daPagare);
   if(statScadute)    statScadute.textContent     = eur(scadute);
 
+  // Show "mark all invoices paid" button only when there are unpaid invoices
+  const hasUnpaidInvoices = allInvoices.some(inv => (inv.status || "da-pagare") !== "pagata");
+  if(markAllInvoicesPaidBtn) markAllInvoicesPaidBtn.style.display = hasUnpaidInvoices ? "inline-flex" : "none";
+
   // Urgent
   if(urgent.length){
     urgentSection?.style.setProperty("display","block");
@@ -593,6 +598,41 @@ toggleOrdersBtn?.addEventListener("click", () => {
 });
 
 markAllPaidBtn?.addEventListener("click", markAllOrdersPaid);
+markAllInvoicesPaidBtn?.addEventListener("click", markAllInvoicesPaid);
+
+// ── Mark all supplier invoices as paid ────────────────
+async function markAllInvoicesPaid(){
+  if(!supplierId) return;
+  if(!confirm("Segna TUTTE le fatture di questo fornitore come pagate?")) return;
+  try {
+    const invRef = collection(db, "suppliers", supplierId, "invoices");
+    const snap = await getDocs(invRef);
+
+    // Collect unpaid invoice refs
+    const unpaidInvoiceRefs = [];
+    snap.forEach(docSnap => {
+      if(docSnap.data().status !== "pagata"){
+        unpaidInvoiceRefs.push(doc(invRef, docSnap.id));
+      }
+    });
+
+    if(unpaidInvoiceRefs.length === 0){ alert("Tutte le fatture sono già segnate come pagate."); return; }
+
+    // Commit in chunks of 500 (Firestore batch limit)
+    const FIRESTORE_BATCH_LIMIT = 500;
+    for(let i = 0; i < unpaidInvoiceRefs.length; i += FIRESTORE_BATCH_LIMIT){
+      const batch = writeBatch(db);
+      unpaidInvoiceRefs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach(ref => batch.update(ref, { status: "pagata" }));
+      await batch.commit();
+    }
+
+    alert(`✅ ${unpaidInvoiceRefs.length} fattura/e segnata/e come pagata.`);
+    await loadInvoices();
+  } catch(err) {
+    console.error("Errore durante il salvataggio:", err);
+    alert("❌ Errore durante il salvataggio: " + (err?.message || err));
+  }
+}
 
 // ── Mark all supplier orders as paid ─────────────────
 async function markAllOrdersPaid(){
