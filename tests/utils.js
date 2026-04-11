@@ -34,3 +34,11 @@ export function joinClientsOrders(clients, orders) {
   const orphans = orders.filter((o) => o.clientId && !ids.has(o.clientId)).map((o) => o.id);
   return { ok: orphans.length === 0, orphans };
 }
+
+/**
+ * Pure helper that mirrors the supplier.js markAllInvoicesPaid batch logic.
+ * Given a list of invoice objects, returns the IDs that need to be updated to "pagata".
+ */
+export function getUnpaidInvoiceIds(invoices) {
+  return invoices.filter(inv => (inv.status || "da-pagare") !== "pagata").map(inv => inv.id);
+}
