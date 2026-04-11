@@ -166,7 +166,7 @@ function getTableEntries() {
   rows.forEach((row) => {
     const clientName = String(row.querySelector('.entry-name')?.value || '').trim();
     const amount = parseLocaleAmount(row.querySelector('.entry-amt')?.value || '');
-    if (clientName || amount > 0) {
+    if (clientName && amount > 0) {
       entries.push({ clientName, clientId: '', amount: Number(amount.toFixed(2)), note: `${clientName} ${amount}` });
     }
   });
