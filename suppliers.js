@@ -106,18 +106,20 @@ const markAllSuppliersInvoicesPaidBtn = document.getElementById("markAllSupplier
 markAllSuppliersInvoicesPaidBtn?.addEventListener("click", async () => {
   if(!confirm("Segna TUTTE le fatture di TUTTI i fornitori come pagate?")) return;
   const suppSnap = await getDocs(collection(db, "suppliers"));
+  const invRefs = suppSnap.docs.map(suppDoc =>
+    collection(db, "suppliers", suppDoc.id, "invoices")
+  );
+  const invSnaps = await Promise.all(invRefs.map(ref => getDocs(ref)));
   const batch = writeBatch(db);
   let count = 0;
-  for(const suppDoc of suppSnap.docs){
-    const invRef = collection(db, "suppliers", suppDoc.id, "invoices");
-    const invSnap = await getDocs(invRef);
+  invSnaps.forEach((invSnap, i) => {
     invSnap.forEach(invDoc => {
       if((invDoc.data().status || "da-pagare") !== "pagata"){
-        batch.update(doc(invRef, invDoc.id), { status: "pagata" });
+        batch.update(doc(invRefs[i], invDoc.id), { status: "pagata" });
         count++;
       }
     });
-  }
+  });
   if(count === 0){ alert("Tutte le fatture sono già segnate come pagate."); return; }
   await batch.commit();
   alert(`✅ ${count} fattura/e segnata/e come pagata.`);
