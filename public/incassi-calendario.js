@@ -1,5 +1,5 @@
 import { firestoreService as fs } from "./services/firestoreService.js";
-import { getCalendarByMonth, getYearlyIncomesTotal, getManualDaySnapshot, parseEntriesFromFreeText, listIncomesByDay } from "./services/incomeService.js";
+import { getCalendarByMonth, getYearlyIncomesTotal, getManualDaySnapshot, listIncomesByDay } from "./services/incomeService.js";
 import { auth } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -13,11 +13,10 @@ const totMese = $("totMese");
 const totAnno = $("totAnno");
 const popup = $("popup");
 const popupDate = $("popupDate");
-const noteEl = $("note");
 const amountEl = $("amount");
 const manualAmountEl = $("manualAmount");
-const clientEl = $("manualClient");
 const clientsDatalist = $("clientsDatalist");
+const manualEntriesTable = $("manualEntriesTable");
 const closeBtn = $("closeBtn");
 const saveBtn = $("saveBtn");
 const deleteBtn = $("deleteBtn");
@@ -83,32 +82,89 @@ function closePopup(){
   delete popup.dataset.day;
 }
 
+// ── Structured manual-entries table ─────────────────────────────────────────
+
+function createEntryRow(clientName, amount) {
+  const row = document.createElement('div');
+  row.className = 'entry-row';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'entry-name';
+  nameInput.placeholder = 'Nome cliente';
+  nameInput.setAttribute('list', 'clientsDatalist');
+  nameInput.autocomplete = 'off';
+  nameInput.value = clientName || '';
+
+  const amtInput = document.createElement('input');
+  amtInput.type = 'text';
+  amtInput.inputMode = 'decimal';
+  amtInput.className = 'entry-amt';
+  amtInput.placeholder = '0,00';
+  amtInput.value = amount ? formatInputAmount(amount) : '';
+
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'entry-del';
+  delBtn.textContent = '×';
+  delBtn.addEventListener('click', () => { row.remove(); computeAutoAmount(); });
+
+  nameInput.addEventListener('input', computeAutoAmount);
+  amtInput.addEventListener('input', computeAutoAmount);
+
+  row.appendChild(nameInput);
+  row.appendChild(amtInput);
+  row.appendChild(delBtn);
+  return row;
+}
+
+function addEntryRow(clientName, amount) {
+  if (!manualEntriesTable) return;
+  manualEntriesTable.appendChild(createEntryRow(clientName, amount));
+}
+
+function clearEntryTable() {
+  if (manualEntriesTable) manualEntriesTable.innerHTML = '';
+}
+
+function getTableEntries() {
+  if (!manualEntriesTable) return [];
+  const rows = manualEntriesTable.querySelectorAll('.entry-row');
+  const entries = [];
+  rows.forEach((row) => {
+    const clientName = String(row.querySelector('.entry-name')?.value || '').trim();
+    const amount = parseLocaleAmount(row.querySelector('.entry-amt')?.value || '');
+    if (clientName && amount > 0) {
+      entries.push({ clientName, clientId: '', amount: Number(amount.toFixed(2)), note: `${clientName} ${amount}` });
+    }
+  });
+  return entries;
+}
+
 function computeAutoAmount(){
-  const entries = parseEntriesFromFreeText(noteEl?.value || '', clients);
-  const manualFromNotes = Number(entries.reduce((s, x) => s + (Number(x.amount)||0), 0).toFixed(2));
-  const manualTyped = parseLocaleAmount(manualAmountEl?.value || '');
-  const manualTotal = manualFromNotes > 0 ? manualFromNotes : manualTyped;
-  if (manualAmountEl && manualFromNotes > 0) {
-    manualAmountEl.value = formatInputAmount(manualFromNotes);
-  }
+  const entries = getTableEntries();
+  const manualTotal = Number(entries.reduce((s, x) => s + (Number(x.amount) || 0), 0).toFixed(2));
+  if (manualAmountEl) manualAmountEl.value = manualTotal > 0 ? formatInputAmount(manualTotal) : '';
   const totalDay = Number((popupAutoTotal + manualTotal).toFixed(2));
   if (amountEl) amountEl.value = formatInputAmount(totalDay);
   return { entries, manualTotal: Number(manualTotal.toFixed(2)), totalDay };
 }
 
-noteEl?.addEventListener('input', computeAutoAmount);
-manualAmountEl?.addEventListener('input', computeAutoAmount);
+$('addEntryBtn')?.addEventListener('click', () => { addEntryRow('', ''); });
 
 async function openPopup(day){
   popup.dataset.day = day;
   popupDate.textContent = day;
-  clientEl.value='';
+  clearEntryTable();
   const [snap, allEntries] = await Promise.all([
     getManualDaySnapshot(day),
     listIncomesByDay(day)
   ]);
-  noteEl.value = snap.noteText || '';
-  if (manualAmountEl) manualAmountEl.value = formatInputAmount(snap.total || 0);
+  if (snap.rows && snap.rows.length) {
+    snap.rows.forEach((r) => addEntryRow(r.clientName || '', r.amount || 0));
+  } else {
+    addEntryRow('', '');
+  }
   renderAutoEntries(allEntries);
   computeAutoAmount();
   popup.classList.add('show');
@@ -118,7 +174,9 @@ popup?.addEventListener('click', (e)=>{ if(e.target===popup) closePopup(); });
 
 async function loadClients(){
   clients = await fs.getAll('clients');
-  clientsDatalist.innerHTML = clients.map(c=>`<option value="${String(c.name || c.nome || '').replace(/"/g,'&quot;')}"></option>`).join('');
+  if (clientsDatalist) {
+    clientsDatalist.innerHTML = clients.map(c=>`<option value="${String(c.name || c.nome || '').replace(/"/g,'&quot;')}"></option>`).join('');
+  }
 }
 
 async function renderMonth(){
@@ -144,31 +202,22 @@ async function renderMonth(){
 async function saveManual(){
   const day = popup.dataset.day;
   if(!day) return;
-  let { entries, manualTotal } = computeAutoAmount();
-  const clientName = String(clientEl.value || '').trim();
-  const amount = parseLocaleAmount((manualAmountEl || amountEl).value || '');
+  const { entries, manualTotal } = computeAutoAmount();
+  const validEntries = entries.filter((e) => e.clientName || e.amount > 0);
 
-  if (!entries.length && clientName && amount > 0) {
-    entries = [{ clientName, clientId:'', amount, note:`${clientName} ${amount}` }];
-    manualTotal = amount;
-  }
-
-  const hasManualData = entries.length > 0 || manualTotal > 0 || clientName.length > 0 || String(noteEl?.value || '').trim().length > 0;
-
-  if (!hasManualData) {
-    closePopup();
-    await renderMonth();
+  if (!validEntries.length) {
+    alert('Inserisci almeno una riga con nome cliente e importo.');
     return;
   }
 
-  if (!entries.length || !(manualTotal > 0)) {
-    alert('Inserisci almeno una riga nel dettaglio oppure cliente + importo.');
+  if (!(manualTotal > 0)) {
+    alert('Inserisci almeno un importo valido.');
     return;
   }
 
-  const note = entries.map((e)=>`${e.clientName} ${String(e.amount).replace('.', ',')}`).join('\n');
-  await fs.set('incassi', day, { date: day, note, amount: manualTotal, entries, source:'manuale', updatedAt: fs.serverTimestamp() }, { merge:true });
-  await fs.add('incassiHistory', { action:'SAVE_MANUALE_DAY', day, amount: manualTotal, entries, at: fs.serverTimestamp() });
+  const note = validEntries.map((e)=>`${e.clientName} ${String(e.amount).replace('.', ',')}`).join('\n');
+  await fs.set('incassi', day, { date: day, note, amount: manualTotal, entries: validEntries, source:'manuale', updatedAt: fs.serverTimestamp() }, { merge:true });
+  await fs.add('incassiHistory', { action:'SAVE_MANUALE_DAY', day, amount: manualTotal, entries: validEntries, at: fs.serverTimestamp() });
   closePopup();
   await renderMonth();
 }
@@ -196,3 +245,4 @@ function waitForAuth() {
 waitForAuth().then(() => {
   loadClients().then(renderMonth).catch((e) => { console.error(e); alert('Errore caricamento calendario incassi.'); });
 });
+

@@ -191,6 +191,13 @@
 textarea,input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;color:var(--ink);padding:12px;font-size:15px;outline:none}
 textarea{min-height:120px;resize:none}
 .hint{margin-top:8px;color:var(--muted);font-size:12px}
+.entries-table{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.entry-row{display:flex;align-items:center;gap:6px}
+.entry-row .entry-name{flex:2;min-width:0}
+.entry-row .entry-amt{flex:1;min-width:0}
+.entry-row .entry-del{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.entry-row .entry-del:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+.add-entry-btn{margin-top:2px;padding:8px 14px;font-size:13px;border-radius:10px}
 .popup-actions{display:flex;gap:10px;justify-content:flex-start;padding:12px 14px 14px;border-top:1px solid var(--line)}
 
 @media (max-width: 980px){

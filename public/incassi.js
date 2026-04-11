@@ -10,7 +10,6 @@ import {
   listIncomesByDay,
   listIncomesByMonth,
   getManualDaySnapshot,
-  parseEntriesFromFreeText,
 } from "./services/incomeService.js?v=69fix";
 import { getIncassiKpis } from "./services/kpiService.js";
 
@@ -44,7 +43,8 @@ const els = {
   statusText: $("statusText"), statIncassiCount: $("statIncassiCount"), statOrdersCount: $("statOrdersCount"),
   btnApriCalendarioTop: $("btnApriCalendarioTop"), btnNuovoIncasso: $("btnNuovoIncasso"), popup: $("popup"),
   popupDate: $("popupDate"), closeBtn: $("closeBtn"), saveBtn: $("saveBtn"), deleteBtn: $("deleteBtn"),
-  note: $("note"), amount: $("amount"), manualClient: $("manualClient"), clientsDatalist: $("clientsDatalist"),
+  amount: $("amount"), manualAmount: $("manualAmount"),
+  clientsDatalist: $("clientsDatalist"), manualEntriesTable: $("manualEntriesTable"),
   listModal: $("listModal"), listModalTitle: $("listModalTitle"), listModalBody: $("listModalBody"), listModalClose: $("listModalClose"),
 };
 
@@ -114,30 +114,86 @@ async function loadData() {
   cache.rawIncassi = rawIncassi || [];
 }
 
-function computeAutoAmount(){
-  const entries = parseEntriesFromFreeText(els.note?.value || '', cache.clients || []);
-  const manualFromNotes = Number(entries.reduce((s, x) => s + (Number(x.amount)||0), 0).toFixed(2));
-  const manualTyped = parseLocaleAmount(els.manualAmount?.value || '');
-  const manualTotal = manualFromNotes > 0 ? manualFromNotes : manualTyped;
-  if (els.manualAmount && manualFromNotes > 0) {
-    els.manualAmount.value = formatInputAmount(manualFromNotes);
-  }
+// ── Structured manual-entries table ────────────────────────────────────────
+
+function createEntryRow(clientName, amount) {
+  const row = document.createElement('div');
+  row.className = 'entry-row';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'entry-name';
+  nameInput.placeholder = 'Nome cliente';
+  nameInput.setAttribute('list', 'clientsDatalist');
+  nameInput.autocomplete = 'off';
+  nameInput.value = clientName || '';
+
+  const amtInput = document.createElement('input');
+  amtInput.type = 'text';
+  amtInput.inputMode = 'decimal';
+  amtInput.className = 'entry-amt';
+  amtInput.placeholder = '0,00';
+  amtInput.value = amount ? formatInputAmount(amount) : '';
+
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'entry-del';
+  delBtn.textContent = '×';
+  delBtn.addEventListener('click', () => { row.remove(); computeAutoAmount(); });
+
+  nameInput.addEventListener('input', computeAutoAmount);
+  amtInput.addEventListener('input', computeAutoAmount);
+
+  row.appendChild(nameInput);
+  row.appendChild(amtInput);
+  row.appendChild(delBtn);
+  return row;
+}
+
+function addEntryRow(clientName, amount) {
+  if (!els.manualEntriesTable) return;
+  els.manualEntriesTable.appendChild(createEntryRow(clientName, amount));
+}
+
+function clearEntryTable() {
+  if (els.manualEntriesTable) els.manualEntriesTable.innerHTML = '';
+}
+
+function getTableEntries() {
+  if (!els.manualEntriesTable) return [];
+  const rows = els.manualEntriesTable.querySelectorAll('.entry-row');
+  const entries = [];
+  rows.forEach((row) => {
+    const clientName = String(row.querySelector('.entry-name')?.value || '').trim();
+    const amount = parseLocaleAmount(row.querySelector('.entry-amt')?.value || '');
+    if (clientName && amount > 0) {
+      entries.push({ clientName, clientId: '', amount: Number(amount.toFixed(2)), note: `${clientName} ${amount}` });
+    }
+  });
+  return entries;
+}
+
+function computeAutoAmount() {
+  const entries = getTableEntries();
+  const manualTotal = Number(entries.reduce((s, x) => s + (Number(x.amount) || 0), 0).toFixed(2));
+  if (els.manualAmount) els.manualAmount.value = manualTotal > 0 ? formatInputAmount(manualTotal) : '';
   const totalDay = Number((popupAutoTotal + manualTotal).toFixed(2));
   if (els.amount) els.amount.value = formatInputAmount(totalDay);
   return { entries, manualTotal: Number(manualTotal.toFixed(2)), totalDay };
 }
 
-els.manualAmount = $('manualAmount');
-els.note?.addEventListener('input', computeAutoAmount);
-els.manualAmount?.addEventListener('input', computeAutoAmount);
+$('addEntryBtn')?.addEventListener('click', () => { addEntryRow('', ''); });
 
 async function openDayPopup(dayISO){
   els.popup.dataset.day = dayISO;
   els.popupDate.textContent = dayISO;
-  els.manualClient.value = "";
+  clearEntryTable();
   const [snap, allEntries] = await Promise.all([getManualDaySnapshot(dayISO), listIncomesByDay(dayISO)]);
-  els.note.value = snap.noteText || "";
-  if (els.manualAmount) els.manualAmount.value = formatInputAmount(snap.total || 0);
+  if (snap.rows && snap.rows.length) {
+    snap.rows.forEach((r) => addEntryRow(r.clientName || '', r.amount || 0));
+  } else {
+    addEntryRow('', '');
+  }
   renderAutoEntries(allEntries);
   computeAutoAmount();
   els.popup.classList.add("show");
@@ -180,9 +236,8 @@ function closeDayPopup(){ els.popup.classList.remove("show"); popupAutoTotal = 0
 function openBlankDayPopup(dayISO){
   els.popup.dataset.day = dayISO;
   els.popupDate.textContent = dayISO;
-  els.manualClient.value = "";
-  els.note.value = "";
-  if (els.manualAmount) els.manualAmount.value = "";
+  clearEntryTable();
+  addEntryRow('', '');
   popupAutoTotal = 0;
   renderAutoEntries([]);
   computeAutoAmount();
@@ -274,26 +329,16 @@ async function saveManualIncome() {
   const dayISO = els.popup.dataset.day;
   if (!dayISO) return;
   const parsed = computeAutoAmount();
-  let entries = parsed.entries;
-  let manualTotal = Number(parsed.manualTotal || 0);
-  const clientName = String(els.manualClient.value || '').trim();
-  const amount = parseLocaleAmount((els.manualAmount || els.amount).value || '');
+  const entries = parsed.entries.filter((e) => e.clientName || e.amount > 0);
+  const manualTotal = parsed.manualTotal;
 
-  if (!entries.length && clientName && amount > 0) {
-    entries = [{ clientName, clientId:'', amount, note: `${clientName} ${amount}` }];
-    manualTotal = amount;
-  }
-
-  const hasManualData = entries.length > 0 || manualTotal > 0 || clientName.length > 0 || String(els.note.value || '').trim().length > 0;
-
-  if (!hasManualData) {
-    closeDayPopup();
-    await boot();
+  if (!entries.length) {
+    alert('Inserisci almeno una riga con nome cliente e importo.');
     return;
   }
 
-  if (!entries.length || !(manualTotal > 0)) {
-    alert('Inserisci almeno una riga nel dettaglio oppure cliente + importo.');
+  if (!(manualTotal > 0)) {
+    alert('Inserisci almeno un importo valido.');
     return;
   }
 

@@ -118,6 +118,28 @@ service cloud.firestore {
       allow read, create, update, delete: if isStaff();
     }
 
+    match /incassiHistory/{docId} {
+      allow read, create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /workNotes/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /workNotesHistory/{docId} {
+      allow read, create: if isStaff();
+      allow update, delete: if isStaff();
+    }
+
+    match /preventivi/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
+    match /counters/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
