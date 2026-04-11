@@ -847,7 +847,7 @@
         }));
       }catch(e){console.warn('kpi fornitori',e);}
 
-      const saldo=incassiMese-speseMese;
+      const saldo=incassiMese-speseMese-fornitoreMese;
 
       document.getElementById('kpiIncassi').textContent=eur(incassiMese);
       document.getElementById('kpiScadenze').textContent=eur(scadenzeMese);

@@ -174,6 +174,71 @@ function renderSuppliersChart(list){
 }
 window.addEventListener('resize', () => renderSuppliersChart(suppliersCache));
 
+let monthlyOrdersChart;
+function renderMonthlyOrdersChart(){
+  const canvas = document.getElementById('monthlyOrdersChart');
+  if(!canvas || !window.Chart) return;
+  const wrap = canvas.parentElement;
+  if(wrap){
+    wrap.style.height = (window.innerWidth <= 768 ? 260 : 320) + 'px';
+    wrap.style.minHeight = wrap.style.height;
+    wrap.style.maxHeight = wrap.style.height;
+  }
+  // Collect totals per month per supplier
+  const monthTotals = {}; // { 'YYYY-MM': { supplierId: amount } }
+  const supplierIds = Object.keys(ordersHistory);
+  supplierIds.forEach(supplierId => {
+    const { orders } = ordersHistory[supplierId];
+    orders.forEach(o => {
+      const dateStr = o.dateISO || o.invoiceDate || null;
+      if(!dateStr) return;
+      const monthKey = String(dateStr).slice(0, 7); // YYYY-MM
+      if(!monthTotals[monthKey]) monthTotals[monthKey] = {};
+      monthTotals[monthKey][supplierId] = (monthTotals[monthKey][supplierId] || 0) + Number(o.totalWithVat || o.total || o.importo || 0);
+    });
+  });
+  const months = Object.keys(monthTotals).sort();
+  if(!months.length){ canvas.style.display='none'; return; }
+  canvas.style.display='';
+  const monthLabels = months.map(m => {
+    const [y, mo] = m.split('-');
+    const d = new Date(parseInt(y), parseInt(mo)-1, 1);
+    return d.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' });
+  });
+  const chartColors = [
+    'rgba(59,130,246,0.75)','rgba(16,185,129,0.75)','rgba(245,158,11,0.75)',
+    'rgba(239,68,68,0.75)','rgba(139,92,246,0.75)','rgba(236,72,153,0.75)',
+    'rgba(20,184,166,0.75)','rgba(249,115,22,0.75)'
+  ];
+  const datasets = supplierIds
+    .filter(id => ordersHistory[id].orders.length > 0)
+    .map((id, i) => ({
+      label: ordersHistory[id].name,
+      data: months.map(m => monthTotals[m]?.[id] || 0),
+      backgroundColor: chartColors[i % chartColors.length],
+      borderRadius: 4,
+      maxBarThickness: 42
+    }));
+  if(monthlyOrdersChart){ try{monthlyOrdersChart.destroy();}catch(_){} }
+  monthlyOrdersChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels: monthLabels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: true, position: 'bottom' },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: € ${eur(ctx.parsed.y||0)}` } }
+      },
+      scales: {
+        x: { stacked: true, ticks: { autoSkip: false, maxRotation: 40, minRotation: 0 } },
+        y: { stacked: true, beginAtZero: true, ticks: { callback: (value) => '€ '+eur(value) } }
+      }
+    }
+  });
+}
+
 // ── STORICO ORDINI FORNITORI ─────────────────────────────────────────
 const storage = getStorage();
 let ordersHistory = {}; // { supplierId: { name, orders: [] } }
@@ -205,6 +270,7 @@ async function loadOrdersHistory(){
 function renderOrdersHistory(){
   const list = document.getElementById('ordersHistoryList');
   if(!list) return;
+  renderMonthlyOrdersChart();
   const entries = Object.entries(ordersHistory).filter(([,v])=>v.orders.length>0);
   if(!entries.length){
     list.innerHTML='<div style="color:#9ca3af;font-style:italic;padding:12px 0;">Nessun ordine registrato. Usa il pulsante <strong>＋ Nuovo ordine</strong> per iniziare.</div>';
