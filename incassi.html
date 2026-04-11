@@ -195,17 +195,17 @@
           <div id="autoSummary" class="auto-summary">Nessun incasso automatico registrato.</div>
           <div id="autoEntries" class="auto-entries"></div>
         </div>
-        <label class="lbl">Cliente (obbligatorio per incasso manuale)</label>
-        <input id="manualClient" list="clientsDatalist" placeholder="Inizia a scrivere il nome…" autocomplete="off">
         <datalist id="clientsDatalist"></datalist>
 
-        <label class="lbl">Dettaglio incasso (opzionale)</label>
-        <textarea id="note" placeholder="Es: Rossi Auto 250\nAcconto Bianchi 100"></textarea>
-        <label class="lbl">Importo manuale</label>
-        <input id="manualAmount" type="text" inputmode="decimal" placeholder="0,00">
+        <label class="lbl">Dettaglio incasso manuale</label>
+        <div id="manualEntriesTable" class="entries-table"></div>
+        <button class="incassi-btn add-entry-btn" type="button" id="addEntryBtn">+ Aggiungi</button>
+
+        <label class="lbl">Totale manuale (auto-calcolato)</label>
+        <input id="manualAmount" type="text" inputmode="decimal" placeholder="0,00" readonly>
         <label class="lbl">Importo totale giorno (auto-calcolato)</label>
         <input id="amount" type="text" inputmode="decimal" placeholder="0,00" readonly>
-        <div class="hint">Suggerimento: le note calcolano il totale manuale anche con la virgola (es. 1,5). Il totale giorno somma manuali + automatici.</div>
+        <div class="hint">Somma automatica degli importi inseriti nelle righe sopra. Il totale giorno include anche gli incassi automatici da ordini.</div>
       </div>
       <div class="popup-actions">
         <button class="incassi-btn primary" id="saveBtn">Salva</button>
