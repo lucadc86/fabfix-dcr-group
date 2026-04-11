@@ -511,7 +511,8 @@ async function loadInvoices(){
 
   const ref = collection(db, "suppliers", supplierId, "invoices");
   const q   = query(ref, orderBy("date","desc"));
-  const snap = await getDocs(q);
+  let snap;
+  try { snap = await getDocs(q); } catch(e){ console.warn("Fatture non caricate:", e); renderInvoiceTable(); return; }
 
   const currentYear = new Date().getFullYear().toString();
   let totalYear = 0, countYear = 0, daPagare = 0, scadute = 0;
@@ -569,7 +570,7 @@ async function loadInvoices(){
   }
 
   // update supplier total
-  await updateDoc(doc(db,"suppliers",supplierId), { total: totalYear });
+  try { await updateDoc(doc(db,"suppliers",supplierId), { total: totalYear }); } catch(e){ console.warn("Aggiornamento totale fornitore fallito:", e); }
 
   renderInvoiceTable();
 }
@@ -588,13 +589,12 @@ toggleOrdersBtn?.addEventListener("click", () => {
 // ── Load historical orders ────────────────────────────
 async function loadOrders(){
   if(!supplierId || !ordersHistorySection) return;
+  ordersHistorySection.style.display = "block";
   const ref = collection(db, "suppliers", supplierId, "orders");
   const q   = query(ref, orderBy("data", "desc"));
   let snap;
-  try { snap = await getDocs(q); } catch(e){ console.warn("Ordini non caricati:", e); return; }
-  if(snap.empty) return;
-
-  ordersHistorySection.style.display = "block";
+  try { snap = await getDocs(q); } catch(e){ console.warn("Ordini non caricati:", e); ordersEmptyState?.classList.remove("hidden"); return; }
+  if(snap.empty){ ordersEmptyState?.classList.remove("hidden"); return; }
   if(!ordersList) return;
   ordersList.innerHTML = "";
   ordersEmptyState?.classList.add("hidden");
