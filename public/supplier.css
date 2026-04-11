@@ -1,132 +1,347 @@
-/* riuso stile testata tricolore */
-.section-head{
-  position: relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:16px;
-  margin: 6px 0 18px;
-  pointer-events:none;
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn-sm{ padding:6px 12px !important; font-size:13px !important; border-radius:10px !important; }
+.ghost-btn{
+  border:1px solid #e6e8ef;
+  background:#fff;
+  border-radius:10px;
+  padding:9px 16px;
+  font-size:14px;
+  font-weight:700;
+  color:#475569;
+  cursor:pointer;
 }
-.flag-line{
-  height:4px;
-  width: 34%;
-  border-radius: 999px;
-}
-.flag-line.left{ background:#0a7a3d; }
-.flag-line.right{ background:#c62828; }
-.pill-title{
+.ghost-btn:hover{ background:#f1f5ff; border-color:#c7d6ff; }
+
+/* ── TOPBAR ──────────────────────────────────────────── */
+.supplier-topbar{
   display:flex;
   align-items:center;
   gap:10px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: rgba(31,79,216,0.10);
-  border: 1px solid rgba(31,79,216,0.25);
-  font-weight: 800;
-  letter-spacing: 2px;
-  color:#1f4fd8;
-  text-transform: uppercase;
+  padding:12px 14px;
+  position:sticky;top:0;z-index:5;
+  background:rgba(255,255,255,.93);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(15,23,42,.10);
 }
-.pill-icon{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:34px;
-  height:34px;
-  border-radius: 10px;
-  background:#1f4fd8;
-  color:#fff;
-  font-weight:900;
+.supplier-topbar-info{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  min-width:0;
+}
+.supplier-topbar-sub{
+  font-size:11px;
+  color:#64748b;
+  font-weight:600;
 }
 
-/* blocchi */
+/* ── LAYOUT ──────────────────────────────────────────── */
+.supplier-main{
+  padding:14px;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+/* ── SEZIONE HEADER ──────────────────────────────────── */
+.sup-section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 0 12px;
+}
+.sup-section-title{
+  font-size:15px;
+  font-weight:900;
+  color:#0f172a;
+}
+
+/* ── CARD BLOCCO DATI ────────────────────────────────── */
 .card-block{
   background:#fff;
   border:1px solid #e6e8ef;
   border-radius:16px;
-  padding: 16px;
+  padding:16px;
 }
 
 .sep{
-  margin: 22px 0;
+  margin:22px 0;
   border:none;
   border-top:1px solid #e6e8ef;
 }
 
-.invoice-toolbar{
-  margin: 10px 0 12px;
-  display:flex;
-  justify-content:flex-start;
+/* ── STATS GRID ──────────────────────────────────────── */
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
   gap:10px;
+  margin-bottom:16px;
+}
+.stat-card{
+  background:#fff;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:14px 12px;
+  text-align:center;
+}
+.stat-card.warn{border-color:#fde68a;background:#fffbeb}
+.stat-card.danger{border-color:#fecaca;background:#fff5f5}
+.stat-value{
+  font-size:18px;
+  font-weight:1000;
+  color:#0f172a;
+  margin-bottom:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.stat-card.warn .stat-value{color:#92400e}
+.stat-card.danger .stat-value{color:#dc2626}
+.stat-label{
+  font-size:11px;
+  font-weight:700;
+  color:#64748b;
+  text-transform:uppercase;
+  letter-spacing:.5px;
 }
 
-.invoice-total{
-  margin: 0 0 8px;
+/* ── SCADENZIARIO URGENTE ────────────────────────────── */
+.urgent-block{
+  background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);
+  border:1px solid #fed7aa;
+  border-radius:14px;
+  padding:12px 14px;
+  margin-bottom:16px;
 }
+.urgent-title{
+  font-weight:900;
+  color:#92400e;
+  margin-bottom:10px;
+  font-size:14px;
+}
+.urgent-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.urgent-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:#fff;
+  border:1px solid #fed7aa;
+  border-radius:10px;
+  padding:8px 12px;
+  font-size:13px;
+}
+.urgent-num{font-weight:800;color:#0f172a}
+.urgent-desc{color:#475569;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urgent-scad{font-weight:700;color:#dc2626;white-space:nowrap;font-size:12px}
 
+/* ── FILTER BAR ──────────────────────────────────────── */
+.filter-bar{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-bottom:14px;
+}
+.filter-tabs{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.filter-tab{
+  border:1px solid #e6e8ef;
+  background:#fff;
+  border-radius:999px;
+  padding:6px 14px;
+  font-size:12px;
+  font-weight:800;
+  color:#475569;
+  cursor:pointer;
+  transition:all .15s;
+}
+.filter-tab.active{
+  background:#1f4fd8;
+  border-color:#1f4fd8;
+  color:#fff;
+}
+.filter-tab:hover:not(.active){background:#f1f5ff;border-color:#c7d6ff}
+.search-input{
+  width:100%;
+  border:1px solid #e6e8ef;
+  border-radius:12px;
+  padding:9px 14px;
+  font-size:14px;
+  outline:none;
+  color:#0f172a;
+  background:#fff;
+}
+.search-input:focus{border-color:#1f4fd8;box-shadow:0 0 0 3px rgba(31,79,216,.1)}
+
+/* ── FORM FATTURA ESTESO ─────────────────────────────── */
 .invoice-form{
   background:#fff;
   border:1px solid #e6e8ef;
   border-radius:16px;
-  padding: 16px;
-  margin-bottom: 14px;
+  padding:16px;
+  margin-bottom:14px;
 }
-
-.hidden{ display:none; }
+.invoice-form .form-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+.invoice-form .form-group{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.invoice-form .form-group label{
+  font-size:12px;
+  font-weight:800;
+  color:#475569;
+}
+.invoice-form .form-group input,
+.invoice-form .form-group select,
+.invoice-form .form-group textarea{
+  width:100%;
+  border:1px solid #dde3ef;
+  border-radius:10px;
+  padding:9px 10px;
+  font-size:14px;
+  color:#0f172a;
+  outline:none;
+  background:#fff;
+}
+.invoice-form .form-group input:focus,
+.invoice-form .form-group select:focus,
+.invoice-form .form-group textarea:focus{
+  border-color:#1f4fd8;
+  box-shadow:0 0 0 3px rgba(31,79,216,.1);
+}
+.form-group-full{
+  grid-column:1/-1;
+}
+.input-readonly{background:#f8faff !important;color:#64748b !important}
+.photo-hint{font-size:12px;color:#2563eb;margin-top:4px}
+.upload-progress{font-size:13px;color:#2563eb;font-weight:700}
 
 .invoice-actions{
   display:flex;
+  align-items:center;
   gap:10px;
-  margin-top: 10px;
+  margin-top:12px;
+  flex-wrap:wrap;
 }
+.hidden{ display:none !important; }
 
-/* lista fatture */
-.list{
+/* ── TABELLA FATTURE ─────────────────────────────────── */
+.invoice-table-wrap{
   background:#fff;
-  border-radius: 16px;
+  border:1px solid #e6e8ef;
+  border-radius:16px;
   overflow:hidden;
-  border: 1px solid #e6e8ef;
 }
-.invoice-row{
-  display:flex;
-  justify-content:space-between;
+.invoice-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+.invoice-table thead tr{
+  background:#f8faff;
+  border-bottom:1px solid #e6e8ef;
+}
+.invoice-table th{
+  padding:10px 12px;
+  font-weight:800;
+  color:#475569;
+  text-align:left;
+  white-space:nowrap;
+}
+.invoice-table tbody tr{
+  border-bottom:1px solid #f0f2f8;
+  transition:background .12s;
+}
+.invoice-table tbody tr:last-child{border-bottom:none}
+.invoice-table tbody tr:hover{background:#f5f8ff}
+.invoice-table td{
+  padding:10px 12px;
+  vertical-align:middle;
+}
+/* status badges */
+.status-badge{
+  display:inline-flex;
   align-items:center;
-  padding: 14px 16px;
-  border-bottom:1px solid #eef0f6;
+  padding:3px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
 }
-.invoice-row:last-child{ border-bottom:none; }
-
-.inv-left{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-.inv-date{
-  font-weight: 800;
-}
-.inv-amount{
-  font-weight: 900;
-  color:#1f4fd8;
-}
-
-.inv-actions{
-  display:flex;
-  gap:8px;
-}
+.status-badge.da_pagare{background:#dbeafe;color:#1e40af}
+.status-badge.in_scadenza{background:#fef3c7;color:#92400e}
+.status-badge.scaduta{background:#fee2e2;color:#dc2626}
+.status-badge.pagata{background:#dcfce7;color:#166534}
+/* mobile actions row */
+.inv-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .icon-btn{
-  border:none;
-  background: transparent;
+  border:1px solid #e6e8ef;
+  background:#fff;
   cursor:pointer;
-  font-size: 18px;
-  padding: 6px 8px;
-  border-radius: 10px;
+  font-size:14px;
+  padding:5px 8px;
+  border-radius:8px;
+  white-space:nowrap;
 }
-.icon-btn:hover{
-  background:#f1f3fb;
+.icon-btn:hover{background:#f1f5ff;border-color:#c7d6ff}
+.icon-btn.pay-btn{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
+.icon-btn.pay-btn:hover{background:#dcfce7}
+.empty-msg{
+  padding:24px;
+  text-align:center;
+  color:#94a3b8;
+  font-size:14px;
 }
 
-/* mobile */
-@media (max-width:520px){
-  .flag-line{ width: 26%; }
+/* ── PHOTO VIEWER MODAL ──────────────────────────────── */
+.photo-modal{
+  position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.photo-modal-backdrop{
+  position:absolute;inset:0;background:rgba(0,0,0,.7);
+}
+.photo-modal-box{
+  position:relative;z-index:1;background:#fff;border-radius:16px;overflow:hidden;max-width:min(95vw,900px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;
+}
+.photo-modal-close{
+  position:absolute;top:10px;right:12px;z-index:2;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.9);border-radius:10px;padding:6px 12px;font-weight:700;cursor:pointer;
+}
+.photo-modal-img{
+  max-width:100%;max-height:calc(100dvh - 80px);object-fit:contain;display:block;
+}
+.photo-modal-pdf{
+  width:min(85vw,800px);height:calc(100dvh - 80px);border:none;
+}
+
+/* ── MOBILE ──────────────────────────────────────────── */
+@media (max-width:768px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:600px){
+  .invoice-form .form-grid{grid-template-columns:1fr 1fr}
+  .invoice-table th:nth-child(2),
+  .invoice-table td:nth-child(2){display:none} /* nascondi Descrizione */
+  .stat-value{font-size:15px}
+}
+@media (max-width:480px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .invoice-form .form-grid{grid-template-columns:1fr}
+  .invoice-table thead{display:none}
+  .invoice-table tbody tr{display:block;padding:10px 12px;border-bottom:1px solid #e6e8ef}
+  .invoice-table td{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border:none;font-size:13px}
+  .invoice-table td::before{content:attr(data-label);font-weight:800;color:#475569;font-size:11px;flex:1}
+  .inv-actions{justify-content:flex-end;padding-top:6px}
 }

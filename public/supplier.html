@@ -10,34 +10,29 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Scheda fornitore</title>
 
-  <link rel="stylesheet" href="./styles.css?v=15_20260225222215" />
-  <link rel="stylesheet" href="./supplier.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="./styles.css?v=18_20260411" />
+  <link rel="stylesheet" href="./supplier.css?v=18_20260411" />
   <script type="module" src="/auth-guard.js"></script>
 </head>
 
 <body class="page">
 
-<header class="top-bar">
-  <button class="back-btn" onclick="window.location.href='index.html'">←</button>
-  <span class="page-title">Scheda fornitore</span>
-
+<header class="top-bar supplier-topbar">
+  <button class="back-btn" onclick="window.location.href='suppliers.html'">←</button>
+  <div class="supplier-topbar-info">
+    <span class="page-title" id="supplierNameTitle">Nuovo fornitore</span>
+    <span class="supplier-topbar-sub" id="supplierVatBadge"></span>
+  </div>
   <select id="quickNav" class="quick-nav"><option value="">Vai a…</option><option value="index.html">HOME</option><option value="clients.html">CLIENTI</option><option value="suppliers.html">FORNITORI</option><option value="scadenze.html">SCADENZE</option><option value="incassi.html">INCASSI</option><option value="spese.html">SPESE</option><option value="listini.html">LISTINI</option><option value="statistiche.html">STATISTICHE</option><option value="agenda.html">AGENDA</option><option value="ordini-clienti.html">ORDINI CLIENTI</option></select>
 </header>
 
-<main class="page-content">
+<main class="page-content supplier-main">
 
-  <div class="section-head">
-    <div class="flag-line left"></div>
-    <div class="pill-title">
-      <span class="pill-icon">←</span>
-      <span>SCHEDA FORNITORE</span>
-    </div>
-    <div class="flag-line right"></div>
+  <!-- ── DATI FORNITORE ─────────────────────────── -->
+  <div class="sup-section-head">
+    <span class="sup-section-title">🏢 Dati fornitore</span>
   </div>
 
-  <h1 id="supplierNameTitle">Nuovo fornitore</h1>
-
-  <!-- DATI FORNITORE -->
   <div class="card-block">
     <div class="form-grid">
       <div class="form-group">
@@ -71,39 +66,166 @@
 
   <hr class="sep" />
 
-  <!-- FATTURE -->
-  <h2>Fatture fornitore</h2>
-  <p class="invoice-total"><strong>Totale annuo: € <span id="totalYear">0.00</span></strong></p>
-
-  <div class="invoice-toolbar">
-    <button id="addInvoiceBtn" class="primary-btn">+ Aggiungi fattura</button>
+  <!-- ── STATISTICHE ─────────────────────────────── -->
+  <div class="sup-section-head">
+    <span class="sup-section-title">📊 Statistiche fatture</span>
   </div>
 
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="statFattureAnno">0</div>
+      <div class="stat-label">Fatture anno</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statTotaleAnno">€ 0,00</div>
+      <div class="stat-label">Totale anno</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="stat-value" id="statDaPagare">€ 0,00</div>
+      <div class="stat-label">Da pagare</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-value" id="statScadute">0</div>
+      <div class="stat-label">Scadute</div>
+    </div>
+  </div>
+
+  <!-- ── SCADENZIARIO URGENTE ────────────────────── -->
+  <div id="urgentBlock" class="urgent-block hidden">
+    <div class="urgent-title">⚠️ Scadenziario urgente</div>
+    <div id="urgentList" class="urgent-list"></div>
+  </div>
+
+  <hr class="sep" />
+
+  <!-- ── FATTURE FORNITORE ──────────────────────── -->
+  <div class="sup-section-head">
+    <span class="sup-section-title">🧾 Fatture fornitore</span>
+    <button id="addInvoiceBtn" class="primary-btn btn-sm">+ Aggiungi fattura</button>
+  </div>
+
+  <!-- Filtri + Ricerca -->
+  <div class="filter-bar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-filter="all">Tutte</button>
+      <button class="filter-tab" data-filter="da_pagare">Da pagare</button>
+      <button class="filter-tab" data-filter="in_scadenza">In scadenza</button>
+      <button class="filter-tab" data-filter="scaduta">Scadute</button>
+      <button class="filter-tab" data-filter="pagata">Pagate</button>
+    </div>
+    <input type="text" id="searchInvoice" class="search-input" placeholder="🔍 Cerca per numero, descrizione…">
+  </div>
+
+  <!-- Form esteso -->
   <div id="invoiceForm" class="invoice-form hidden">
     <div class="form-grid">
       <div class="form-group">
-        <label>Data</label>
+        <label>N° Fattura</label>
+        <input type="text" id="invoiceNumero" placeholder="es. FT/2024/001">
+      </div>
+
+      <div class="form-group">
+        <label>Data fattura</label>
         <input type="date" id="invoiceDate">
       </div>
 
       <div class="form-group">
-        <label>Importo €</label>
-        <input type="number" id="invoiceAmount" step="0.01">
+        <label>Data scadenza</label>
+        <input type="date" id="invoiceScadenza">
+      </div>
+
+      <div class="form-group">
+        <label>Imponibile €</label>
+        <input type="number" id="invoiceImponibile" step="0.01" min="0" placeholder="0.00">
+      </div>
+
+      <div class="form-group">
+        <label>IVA %</label>
+        <input type="number" id="invoiceIva" step="0.01" min="0" value="22" placeholder="22">
+      </div>
+
+      <div class="form-group">
+        <label>Totale € (auto)</label>
+        <input type="number" id="invoiceAmount" step="0.01" readonly placeholder="0.00" class="input-readonly">
+      </div>
+
+      <div class="form-group">
+        <label>Descrizione</label>
+        <input type="text" id="invoiceDescrizione" placeholder="Descrizione fattura">
+      </div>
+
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="invoiceCategoria">
+          <option value="">— seleziona —</option>
+          <option value="materiali">Materiali</option>
+          <option value="servizi">Servizi</option>
+          <option value="utenze">Utenze</option>
+          <option value="macchinari">Macchinari</option>
+          <option value="altro">Altro</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Stato pagamento</label>
+        <select id="invoiceStato">
+          <option value="da_pagare">Da pagare</option>
+          <option value="pagata">Pagata</option>
+        </select>
+      </div>
+
+      <div class="form-group form-group-full">
+        <label>Note</label>
+        <textarea id="invoiceNote" rows="2" placeholder="Note aggiuntive…"></textarea>
+      </div>
+
+      <div class="form-group form-group-full">
+        <label>📎 Foto / PDF fattura (JPG, PNG, PDF – max 10 MB)</label>
+        <input type="file" id="invoicePhoto" accept="image/*,.pdf" capture="environment">
+        <div id="currentPhotoHint" class="photo-hint hidden">📎 Foto già allegata — carica un nuovo file per sostituirla</div>
       </div>
     </div>
 
     <div class="invoice-actions">
       <button id="saveInvoiceBtn" class="primary-btn">Salva fattura</button>
       <button id="cancelInvoiceBtn" class="ghost-btn">Annulla</button>
+      <span id="uploadProgress" class="upload-progress hidden">⏳ Caricamento…</span>
     </div>
   </div>
 
-  <div id="invoiceList" class="list"></div>
+  <!-- Tabella fatture -->
+  <div class="invoice-table-wrap">
+    <table class="invoice-table" id="invoiceTable">
+      <thead>
+        <tr>
+          <th>N° Fattura</th>
+          <th>Descrizione</th>
+          <th>Data</th>
+          <th>Scadenza</th>
+          <th>Importo</th>
+          <th>Stato</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody id="invoiceTableBody"></tbody>
+    </table>
+    <div id="emptyMsg" class="empty-msg hidden">Nessuna fattura trovata.</div>
+  </div>
 
 </main>
 
-<script type="module" src="./supplier.js?v=15_20260225222215"></script>
-  <script type="module" src="/nav.js?v=15_20260225222215"></script>
-  <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
+<!-- Photo viewer modal -->
+<div id="photoModal" class="photo-modal hidden">
+  <div class="photo-modal-backdrop" id="closePhotoModal"></div>
+  <div class="photo-modal-box">
+    <button class="photo-modal-close" id="closePhotoModalBtn">✕</button>
+    <img id="photoModalImg" src="" alt="Foto fattura" class="photo-modal-img hidden">
+    <iframe id="photoModalPdf" class="photo-modal-pdf hidden" src=""></iframe>
+  </div>
+</div>
+
+<script type="module" src="./supplier.js?v=18_20260411"></script>
+  <script type="module" src="/nav.js?v=18_20260411"></script>
+  <script src="scripts/dashboard-menu.js?v=18_20260411"></script>
 </body>
 </html>

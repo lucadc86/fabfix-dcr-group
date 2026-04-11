@@ -144,9 +144,9 @@ function getTableEntries() {
 function computeAutoAmount(){
   const entries = getTableEntries();
   const manualTotal = Number(entries.reduce((s, x) => s + (Number(x.amount) || 0), 0).toFixed(2));
-  if (manualAmountEl) manualAmountEl.value = manualTotal > 0 ? formatInputAmount(manualTotal) : '';
+  if (manualAmountEl) manualAmountEl.textContent = euro(manualTotal);
   const totalDay = Number((popupAutoTotal + manualTotal).toFixed(2));
-  if (amountEl) amountEl.value = formatInputAmount(totalDay);
+  if (amountEl) amountEl.textContent = euro(totalDay);
   return { entries, manualTotal: Number(manualTotal.toFixed(2)), totalDay };
 }
 

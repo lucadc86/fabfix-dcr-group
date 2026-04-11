@@ -43,28 +43,37 @@
   <div class="incassi-popup" id="popup">
     <div class="popup-box">
       <div class="popup-head">
-        <div class="popup-title" id="popupDate">—</div>
+        <div class="popup-head-inner">
+          <div class="popup-title" id="popupDate">—</div>
+          <div class="popup-subtitle">Riepilogo incassi del giorno</div>
+        </div>
         <button class="popup-close" id="closeBtn" aria-label="Chiudi">✕</button>
       </div>
       <div class="popup-body">
+        <div class="section-label">📋 Incassi automatici</div>
         <div class="auto-box">
-          <div class="auto-box-title">Incassi registrati del giorno</div>
           <div id="autoSummary" class="auto-summary">Nessun incasso automatico registrato.</div>
           <div id="autoEntries" class="auto-entries"></div>
         </div>
+        <div class="section-label">✏️ Incassi manuali</div>
         <datalist id="clientsDatalist"></datalist>
-        <label class="lbl">Dettaglio incasso manuale</label>
         <div id="manualEntriesTable" class="entries-table"></div>
-        <button class="btn add-entry-btn" type="button" id="addEntryBtn">+ Aggiungi</button>
-        <label class="lbl">Totale manuale (auto-calcolato)</label>
-        <input id="manualAmount" type="text" inputmode="decimal" placeholder="0,00" readonly>
-        <label class="lbl">Importo totale giorno (auto-calcolato)</label>
-        <input id="amount" type="text" inputmode="decimal" placeholder="0,00" readonly>
-        <div class="hint">Somma automatica degli importi inseriti nelle righe sopra. Il totale giorno include anche gli incassi automatici da ordini.</div>
+        <button class="btn add-entry-btn" type="button" id="addEntryBtn">+ Aggiungi riga</button>
+        <div class="totals-cards">
+          <div class="total-card">
+            <div class="total-card-label">Totale manuale</div>
+            <div class="total-card-value" id="manualAmount">€ 0,00</div>
+          </div>
+          <div class="total-card highlight">
+            <div class="total-card-label">Totale giorno</div>
+            <div class="total-card-value" id="amount">€ 0,00</div>
+          </div>
+        </div>
+        <div class="hint">Il totale giorno include incassi automatici da ordini + incassi manuali.</div>
       </div>
       <div class="popup-actions">
-        <button class="btn primary" id="saveBtn">Salva</button>
-        <button class="btn danger" id="deleteBtn">Elimina</button>
+        <button class="btn primary" id="saveBtn">💾 Salva</button>
+        <button class="btn danger" id="deleteBtn">🗑️ Elimina</button>
       </div>
     </div>
   </div>
