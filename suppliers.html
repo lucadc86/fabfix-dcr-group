@@ -86,6 +86,58 @@
         <div class="content-sub" style="margin-bottom:8px;font-weight:800;color:#334155;">Ordini per fornitore</div>
         <div class="suppliers-chart-wrap"><canvas id="suppliersChart"></canvas></div>
       </div>
+
+      <!-- ── STORICO ORDINI PER FORNITORE ─────────────────── -->
+      <div style="margin-top:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div style="font-weight:900;font-size:18px;color:#0f172a;">📦 Storico Ordini Fornitori</div>
+          <button id="addOrderGlobalBtn" class="btn btn-primary btn-sm" style="background:#1f4fd8;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-weight:800;cursor:pointer;">＋ Nuovo ordine</button>
+        </div>
+
+        <!-- Form aggiunta ordine rapido -->
+        <div id="quickOrderForm" style="display:none;background:#f0f5ff;border:1px solid #c7d9ff;border-radius:16px;padding:16px;margin-bottom:16px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:12px;color:#1e3a8a;">Aggiungi ordine fornitore</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#667085;display:block;margin-bottom:4px">Fornitore *</label>
+              <select id="qoSupplier" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;outline:none;"></select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#667085;display:block;margin-bottom:4px">Data ordine *</label>
+              <input type="date" id="qoDate" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#667085;display:block;margin-bottom:4px">Importo € *</label>
+              <input type="number" id="qoAmount" step="0.01" placeholder="0,00" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#667085;display:block;margin-bottom:4px">Descrizione</label>
+              <input type="text" id="qoDesc" placeholder="Es. prodotti colorazione" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;outline:none;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="font-size:12px;font-weight:700;color:#667085;display:block;margin-bottom:4px">📷 Foto / PDF fattura (opzionale)</label>
+              <div id="qoPhotoArea" style="border:2px dashed #bfdbfe;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:#fff;" onclick="document.getElementById('qoPhotoInput').click()">
+                <input type="file" id="qoPhotoInput" accept="image/*,application/pdf" capture="environment" style="display:none">
+                <div id="qoPhotoPlaceholder">📸 Tocca per scattare foto o caricare PDF della fattura</div>
+                <div id="qoPhotoPreview" style="display:none;">
+                  <img id="qoPhotoImg" src="" alt="Anteprima" style="max-width:100%;max-height:140px;border-radius:8px;margin-bottom:6px;">
+                  <div id="qoPhotoName" style="font-size:12px;color:#6b7280;"></div>
+                  <button type="button" onclick="event.stopPropagation();document.getElementById('qoPhotoInput').value='';document.getElementById('qoPhotoPreview').style.display='none';document.getElementById('qoPhotoPlaceholder').style.display='block';" style="margin-top:6px;background:none;border:1px solid #dc2626;color:#dc2626;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">✕ Rimuovi</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
+            <button id="qoCancelBtn" style="background:#fff;border:1px solid #d1d5db;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;">Annulla</button>
+            <button id="qoSaveBtn" style="background:#1f4fd8;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-weight:800;cursor:pointer;">💾 Salva ordine</button>
+          </div>
+        </div>
+
+        <!-- Lista ordini raggruppati per fornitore -->
+        <div id="ordersHistoryList" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="color:#9ca3af;font-style:italic;padding:12px 0;">Caricamento storico ordini…</div>
+        </div>
+      </div>
     </section>
 
   </div>
