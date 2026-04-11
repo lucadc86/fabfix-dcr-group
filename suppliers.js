@@ -2,8 +2,10 @@ import { db } from "./firebase.js";
 import {
   collection,
   getDocs,
+  doc,
   query,
-  orderBy
+  orderBy,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const suppliersListEl = document.getElementById("suppliersList");
@@ -98,6 +100,30 @@ newSupplierBtn.addEventListener("click", (e) => {
 searchInput.addEventListener("input", applyFilter);
 
 loadSuppliers();
+
+// ── Mark ALL invoices from ALL suppliers as paid ──────
+const markAllSuppliersInvoicesPaidBtn = document.getElementById("markAllSuppliersInvoicesPaidBtn");
+markAllSuppliersInvoicesPaidBtn?.addEventListener("click", async () => {
+  if(!confirm("Segna TUTTE le fatture di TUTTI i fornitori come pagate?")) return;
+  const suppSnap = await getDocs(collection(db, "suppliers"));
+  const invRefs = suppSnap.docs.map(suppDoc =>
+    collection(db, "suppliers", suppDoc.id, "invoices")
+  );
+  const invSnaps = await Promise.all(invRefs.map(ref => getDocs(ref)));
+  const batch = writeBatch(db);
+  let count = 0;
+  invSnaps.forEach((invSnap, i) => {
+    invSnap.forEach(invDoc => {
+      if((invDoc.data().status || "da-pagare") !== "pagata"){
+        batch.update(doc(invRefs[i], invDoc.id), { status: "pagata" });
+        count++;
+      }
+    });
+  });
+  if(count === 0){ alert("Tutte le fatture sono già segnate come pagate."); return; }
+  await batch.commit();
+  alert(`✅ ${count} fattura/e segnata/e come pagata.`);
+});
 
 let suppliersChart;
 function renderSuppliersChart(list){

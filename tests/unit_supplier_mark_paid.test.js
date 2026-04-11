@@ -30,3 +30,35 @@ test('getUnpaidInvoiceIds: returns all ids when none is paid', () => {
   ];
   assert.deepEqual(getUnpaidInvoiceIds(invoices), ['1', '2', '3']);
 });
+
+test('getUnpaidInvoiceIds across multiple suppliers: collects all unpaid ids', () => {
+  // Simulates flattening invoices from multiple suppliers into one list
+  const supplierAInvoices = [
+    { id: 'a1', status: 'da-pagare' },
+    { id: 'a2', status: 'pagata' },
+  ];
+  const supplierBInvoices = [
+    { id: 'b1', status: 'pagata-parz' },
+    { id: 'b2', status: 'pagata' },
+    { id: 'b3' }, // no status = da-pagare
+  ];
+  const supplierCInvoices = [
+    { id: 'c1', status: 'pagata' },
+  ];
+  const allUnpaid = [
+    ...getUnpaidInvoiceIds(supplierAInvoices),
+    ...getUnpaidInvoiceIds(supplierBInvoices),
+    ...getUnpaidInvoiceIds(supplierCInvoices),
+  ];
+  assert.deepEqual(allUnpaid, ['a1', 'b1', 'b3']);
+});
+
+test('getUnpaidInvoiceIds across multiple suppliers: returns empty when all paid', () => {
+  const supplierAInvoices = [{ id: 'a1', status: 'pagata' }];
+  const supplierBInvoices = [{ id: 'b1', status: 'pagata' }, { id: 'b2', status: 'pagata' }];
+  const allUnpaid = [
+    ...getUnpaidInvoiceIds(supplierAInvoices),
+    ...getUnpaidInvoiceIds(supplierBInvoices),
+  ];
+  assert.deepEqual(allUnpaid, []);
+});
