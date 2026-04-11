@@ -604,21 +604,34 @@ markAllInvoicesPaidBtn?.addEventListener("click", markAllInvoicesPaid);
 async function markAllInvoicesPaid(){
   if(!supplierId) return;
   if(!confirm("Segna TUTTE le fatture di questo fornitore come pagate?")) return;
-  const invRef = collection(db, "suppliers", supplierId, "invoices");
-  const snap = await getDocs(invRef);
-  const batch = writeBatch(db);
-  let count = 0;
-  snap.forEach(docSnap => {
-    const d = docSnap.data();
-    if(d.status !== "pagata"){
-      batch.update(doc(invRef, docSnap.id), { status: "pagata" });
-      count++;
+  try {
+    const invRef = collection(db, "suppliers", supplierId, "invoices");
+    const snap = await getDocs(invRef);
+
+    // Collect unpaid invoice refs
+    const unpaidInvoiceRefs = [];
+    snap.forEach(docSnap => {
+      if(docSnap.data().status !== "pagata"){
+        unpaidInvoiceRefs.push(doc(invRef, docSnap.id));
+      }
+    });
+
+    if(unpaidInvoiceRefs.length === 0){ alert("Tutte le fatture sono già segnate come pagate."); return; }
+
+    // Commit in chunks of 500 (Firestore batch limit)
+    const FIRESTORE_BATCH_LIMIT = 500;
+    for(let i = 0; i < unpaidInvoiceRefs.length; i += FIRESTORE_BATCH_LIMIT){
+      const batch = writeBatch(db);
+      unpaidInvoiceRefs.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach(ref => batch.update(ref, { status: "pagata" }));
+      await batch.commit();
     }
-  });
-  if(count === 0){ alert("Tutte le fatture sono già segnate come pagate."); return; }
-  await batch.commit();
-  alert(`✅ ${count} fattura/e segnata/e come pagata.`);
-  await loadInvoices();
+
+    alert(`✅ ${unpaidInvoiceRefs.length} fattura/e segnata/e come pagata.`);
+    await loadInvoices();
+  } catch(err) {
+    console.error("Errore durante il salvataggio:", err);
+    alert("❌ Errore durante il salvataggio: " + (err?.message || err));
+  }
 }
 
 // ── Mark all supplier orders as paid ─────────────────
