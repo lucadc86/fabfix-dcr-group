@@ -242,6 +242,34 @@
     </div>
   </div>
 
+  <!-- OCR LOADING OVERLAY -->
+  <div class="ocr-overlay hidden" id="ocrOverlay">
+    <div class="ocr-spinner"></div>
+    <div class="ocr-label">Analisi fattura in corso…</div>
+  </div>
+
+  <!-- ── STORICO ORDINI FORNITORE ───────────────── -->
+  <div id="ordersHistorySection" style="display:none;margin-top:24px;">
+    <div class="sup-section-head">
+      <span class="sup-section-title">📦 Storico ordini fornitore</span>
+      <button id="toggleOrdersBtn" class="sup-toggle-btn">Mostra</button>
+    </div>
+    <div id="ordersHistoryBody" class="hidden">
+      <div class="inv-table-wrap" id="ordersTableWrap">
+        <div class="inv-table-head orders-table-head">
+          <span>Data</span>
+          <span>Articoli</span>
+          <span>Totale</span>
+        </div>
+        <div id="ordersList" class="inv-table-body"></div>
+        <div id="ordersEmptyState" class="inv-empty hidden">
+          <span>📭</span>
+          <p>Nessun ordine trovato</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script type="module" src="./supplier.js?v=15_20260225222215"></script>

@@ -45,6 +45,10 @@
       {
         "source": "/api/ai/**",
         "function": "aiAssistant"
+      },
+      {
+        "source": "/api/analyze-invoice",
+        "function": "analyzeInvoice"
       }
     ],
     "ignore": [

@@ -254,6 +254,36 @@
   .filter-pill{padding:5px 10px;font-size:10px;}
 }
 
+/* ── OCR OVERLAY ──────────────────────────────── */
+.ocr-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(15,23,42,.55);backdrop-filter:blur(4px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.ocr-overlay.hidden{display:none;}
+.ocr-spinner{
+  width:48px;height:48px;border-radius:50%;
+  border:5px solid rgba(255,255,255,.25);border-top-color:#fff;
+  animation:ocr-spin .8s linear infinite;
+}
+@keyframes ocr-spin{to{transform:rotate(360deg);}}
+.ocr-label{color:#fff;font-size:15px;font-weight:800;letter-spacing:.3px;}
+
+/* ── ORDERS HISTORY TABLE ─────────────────────── */
+.orders-table-head{grid-template-columns:100px 1fr 100px !important;}
+.order-row{
+  display:grid;grid-template-columns:100px 1fr 100px;
+  padding:10px 14px;border-bottom:1px solid #f1f5f9;gap:8px;align-items:start;
+}
+.order-row:last-child{border-bottom:none;}
+.order-date{font-size:12px;font-weight:700;color:#334155;}
+.order-items{font-size:11px;color:#64748b;line-height:1.5;}
+.order-total{font-size:13px;font-weight:900;color:#1e40af;text-align:right;}
+@media(max-width:520px){
+  .orders-table-head{grid-template-columns:80px 1fr 80px !important;}
+  .order-row{grid-template-columns:80px 1fr 80px;}
+}
+
 /* ── KEEP LEGACY (used by other pages referencing supplier.css) ── */
 .section-head{position:relative;display:flex;align-items:center;justify-content:center;gap:16px;margin:6px 0 18px;pointer-events:none;}
 .flag-line{height:4px;width:34%;border-radius:999px;}

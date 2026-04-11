@@ -81,6 +81,13 @@ const photoModalBackdrop  = document.getElementById("photoModalBackdrop");
 const photoModalClose     = document.getElementById("photoModalClose");
 const photoModalImg       = document.getElementById("photoModalImg");
 
+const ocrOverlay          = document.getElementById("ocrOverlay");
+const ordersHistorySection= document.getElementById("ordersHistorySection");
+const ordersHistoryBody   = document.getElementById("ordersHistoryBody");
+const toggleOrdersBtn     = document.getElementById("toggleOrdersBtn");
+const ordersList          = document.getElementById("ordersList");
+const ordersEmptyState    = document.getElementById("ordersEmptyState");
+
 let editingInvoiceId = null;
 let allInvoices = [];
 let activeFilter = "all";
@@ -176,7 +183,7 @@ removePhotoBtn?.addEventListener("click", () => {
   photoPreviewInner?.classList.add("hidden");
 });
 
-photoFileInput?.addEventListener("change", (e) => {
+photoFileInput?.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if(!file) return;
   // Enforce 10 MB limit
@@ -193,7 +200,58 @@ photoFileInput?.addEventListener("change", (e) => {
   }
   photoUploadInner?.classList.add("hidden");
   photoPreviewInner?.classList.remove("hidden");
+
+  // Auto-fill form via OCR only for images
+  if(file.type.startsWith("image/")){
+    await runOcrAutoFill(file);
+  }
 });
+
+// ── OCR auto-fill ─────────────────────────────────────
+async function runOcrAutoFill(file){
+  if(ocrOverlay) ocrOverlay.classList.remove("hidden");
+  try {
+    const base64 = await fileToBase64(file);
+    const res = await fetch("/api/analyze-invoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
+    });
+    if(!res.ok) throw new Error("Risposta server non valida");
+    const data = await res.json();
+    if(data.invoiceNumber && !invoiceNumberInput.value)  invoiceNumberInput.value  = data.invoiceNumber;
+    if(data.date          && !invoiceDateInput.value)    invoiceDateInput.value    = data.date;
+    if(data.dueDate       && !invoiceDueDateInput.value) invoiceDueDateInput.value = data.dueDate;
+    if(data.amount != null && !(parseFloat(invoiceAmountInput.value) > 0)){
+      invoiceAmountInput.value = String(data.amount);
+      computeInvoiceTotal();
+    }
+    if(data.vat != null){
+      const vatStr = String(data.vat);
+      const opt = invoiceVatInput?.querySelector(`option[value="${vatStr}"]`);
+      if(opt){ invoiceVatInput.value = vatStr; computeInvoiceTotal(); }
+    }
+    if(data.description && !invoiceDescInput.value) invoiceDescInput.value = data.description;
+  } catch(err){
+    console.warn("OCR fallito:", err);
+  } finally {
+    if(ocrOverlay) ocrOverlay.classList.add("hidden");
+  }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      // result is "data:image/jpeg;base64,XXXX" – extract only the base64 part
+      const b64 = result.split(",")[1] || "";
+      resolve(b64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 async function uploadPhotoFile(suppId, invId){
   if(!photoFile) return existingPhotoUrl || null;
@@ -513,3 +571,49 @@ async function loadInvoices(){
 /* Init */
 await loadSupplier();
 await loadInvoices();
+await loadOrders();
+
+// ── Toggle storico ordini ─────────────────────────────
+toggleOrdersBtn?.addEventListener("click", () => {
+  const hidden = ordersHistoryBody?.classList.toggle("hidden");
+  if(toggleOrdersBtn) toggleOrdersBtn.textContent = hidden ? "Mostra" : "Nascondi";
+});
+
+// ── Load historical orders ────────────────────────────
+async function loadOrders(){
+  if(!supplierId || !ordersHistorySection) return;
+  const ref = collection(db, "suppliers", supplierId, "orders");
+  const q   = query(ref, orderBy("data", "desc"));
+  let snap;
+  try { snap = await getDocs(q); } catch(e){ console.warn("Ordini non caricati:", e); return; }
+  if(snap.empty) return;
+
+  ordersHistorySection.style.display = "block";
+  if(!ordersList) return;
+  ordersList.innerHTML = "";
+  ordersEmptyState?.classList.add("hidden");
+
+  snap.forEach(docSnap => {
+    const o = docSnap.data();
+    const dateVal = o.data?.toDate ? o.data.toDate() : (o.data ? new Date(o.data) : null);
+    const dateStr = dateVal
+      ? `${String(dateVal.getDate()).padStart(2,"0")}/${String(dateVal.getMonth()+1).padStart(2,"0")}/${dateVal.getFullYear()}`
+      : "—";
+    const righe = Array.isArray(o.righe) ? o.righe : [];
+    const itemsHtml = righe.length
+      ? righe.map(r => `${r.prodotto || "—"} × ${r.quantita ?? 1} (${eur(r.totale || 0)})`).join("<br>")
+      : "—";
+    const totale = Number(o.totale || 0);
+
+    const row = document.createElement("div");
+    row.className = "order-row";
+    row.innerHTML = `
+      <span class="order-date">${dateStr}</span>
+      <span class="order-items">${itemsHtml}</span>
+      <span class="order-total">${eur(totale)}</span>
+    `;
+    ordersList.appendChild(row);
+  });
+
+  if(!ordersList.children.length) ordersEmptyState?.classList.remove("hidden");
+}
