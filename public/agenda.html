@@ -19,7 +19,7 @@
   <style>
     :root{
       --bg:#f5f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
-      --brand:#1f4fd8; --brand2:#163da8; --radius:14px;
+      --brand:#1f4fd8; --brand2:#163da8; --radius:14px; --text-dark:#0f172a;
       --col-ordine:#1f4fd8;
       --col-incasso:#16a34a;
       --col-scadenza:#dc2626;
@@ -275,6 +275,27 @@
       .page-content{grid-template-columns:1fr;padding:0}
       .hist-section{page-break-before:always}
     }
+
+    /* ─── Dashboard menu (stile iPhone) ─── */
+    .dashnav-btn{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;border:1px solid rgba(15,23,42,.12);background:#fff;color:var(--text-dark);box-shadow:0 10px 25px rgba(2,6,23,.08);font-weight:800;cursor:pointer;}
+    .dashnav-btn-ico{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:10px;background:rgba(37,99,235,.12);color:#2563eb;}
+    .dashnav-overlay{position:fixed;inset:0;background:rgba(2,6,23,.35);display:none;z-index:9999;padding:16px;}
+    .dashnav-overlay.open{display:flex;align-items:center;justify-content:center;}
+    .dashnav-panel{width:min(720px,100%);max-height:min(86vh,900px);background:#fff;border-radius:20px;box-shadow:0 20px 55px rgba(2,6,23,.35);overflow:auto;}
+    .dashnav-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.10);}
+    .dashnav-title{font-weight:900;color:var(--text-dark);}
+    .dashnav-close{border:0;background:transparent;font-size:26px;line-height:1;padding:2px 8px;cursor:pointer;color:var(--text-dark);}
+    .dashnav-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;}
+    .dashnav-item{border:1px solid rgba(15,23,42,.10);background:#f8fafc;border-radius:18px;padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;}
+    .dashnav-item:hover{background:#eef2ff;}
+    .dashnav-ico{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900;}
+    .dashnav-item-txt{font-weight:800;color:var(--text-dark);font-size:12px;text-align:center;}
+    @media (max-width:520px){
+      .dashnav-overlay.open{align-items:stretch;}
+      .dashnav-panel{border-radius:18px;}
+      .dashnav-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+    }
+    .top-bar .dashnav-btn{margin-left:auto;}
   </style>
   <script type="module" src="/auth-guard.js"></script>
 </head>
@@ -283,6 +304,7 @@
   <header class="top-bar">
     <button class="back-btn" onclick="window.location.href='index.html'">←</button>
     <span class="page-title">Agenda</span>
+    <select id="quickNav" class="quick-nav"><option value="">Vai a…</option><option value="index.html">HOME</option><option value="clients.html">CLIENTI</option><option value="suppliers.html">FORNITORI</option><option value="scadenze.html">SCADENZE</option><option value="incassi.html">INCASSI</option><option value="spese.html">SPESE</option><option value="listini.html">LISTINI</option><option value="statistiche.html">STATISTICHE</option><option value="agenda.html" selected>AGENDA</option><option value="ordini-clienti.html">ORDINI CLIENTI</option></select>
   </header>
 
   <!-- KPI strip -->
