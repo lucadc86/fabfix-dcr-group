@@ -214,7 +214,8 @@ exports.analyzeInvoice = onRequest(
         }
 
         const raw = data?.choices?.[0]?.message?.content || '';
-        // Strip markdown code fences if present
+        // GPT models sometimes wrap JSON in markdown code fences (e.g. ```json ... ```)
+        // despite explicit instructions not to. Strip them before parsing.
         const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
         const parsed = safeJsonParse(jsonStr, {});
         res.status(200).json(parsed);

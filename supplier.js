@@ -217,7 +217,7 @@ async function runOcrAutoFill(file){
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
     });
-    if(!res.ok) throw new Error("Risposta server non valida");
+    if(!res.ok) throw new Error(`Risposta server non valida (${res.status}): impossibile analizzare la fattura`);
     const data = await res.json();
     if(data.invoiceNumber && !invoiceNumberInput.value)  invoiceNumberInput.value  = data.invoiceNumber;
     if(data.date          && !invoiceDateInput.value)    invoiceDateInput.value    = data.date;
@@ -595,13 +595,17 @@ async function loadOrders(){
 
   snap.forEach(docSnap => {
     const o = docSnap.data();
+    // "data" is the Firestore field name used by the legacy supplier-order.js (Italian for "date")
     const dateVal = o.data?.toDate ? o.data.toDate() : (o.data ? new Date(o.data) : null);
     const dateStr = dateVal
       ? `${String(dateVal.getDate()).padStart(2,"0")}/${String(dateVal.getMonth()+1).padStart(2,"0")}/${dateVal.getFullYear()}`
       : "—";
     const righe = Array.isArray(o.righe) ? o.righe : [];
     const itemsHtml = righe.length
-      ? righe.map(r => `${r.prodotto || "—"} × ${r.quantita ?? 1} (${eur(r.totale || 0)})`).join("<br>")
+      ? righe.map(r => {
+          const prodotto = (r.prodotto || "—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+          return `${prodotto} × ${r.quantita ?? 1} (${eur(r.totale || 0)})`;
+        }).join("<br>")
       : "—";
     const totale = Number(o.totale || 0);
 
@@ -614,6 +618,4 @@ async function loadOrders(){
     `;
     ordersList.appendChild(row);
   });
-
-  if(!ordersList.children.length) ordersEmptyState?.classList.remove("hidden");
 }
