@@ -9,7 +9,8 @@ import {
   collection,
   getDocs,
   query,
-  orderBy
+  orderBy,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   getStorage,
@@ -85,6 +86,7 @@ const ocrOverlay          = document.getElementById("ocrOverlay");
 const ordersHistorySection= document.getElementById("ordersHistorySection");
 const ordersHistoryBody   = document.getElementById("ordersHistoryBody");
 const toggleOrdersBtn     = document.getElementById("toggleOrdersBtn");
+const markAllPaidBtn      = document.getElementById("markAllPaidBtn");
 const ordersList          = document.getElementById("ordersList");
 const ordersEmptyState    = document.getElementById("ordersEmptyState");
 
@@ -429,6 +431,7 @@ function renderInvoiceTable(){
       </div>
       <!-- Mobile: compact action row always visible on small screens -->
       <div class="inv-actions-mobile">
+        <span class="inv-amt-mobile">${eur(inv.total || inv.amount)}</span>
         <button class="act-btn" title="Modifica" data-edit-m="${inv.id}">✏️</button>
         ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-pay-m="${inv.id}">✅</button>` : ""}
         <button class="act-btn del-btn" title="Elimina" data-del-m="${inv.id}">🗑️</button>
@@ -586,42 +589,162 @@ toggleOrdersBtn?.addEventListener("click", () => {
   if(toggleOrdersBtn) toggleOrdersBtn.textContent = hidden ? "Mostra" : "Nascondi";
 });
 
+markAllPaidBtn?.addEventListener("click", markAllOrdersPaid);
+
+// ── Mark all supplier orders as paid ─────────────────
+async function markAllOrdersPaid(){
+  if(!supplierId) return;
+  if(!confirm("Segna TUTTI gli ordini di questo fornitore come pagati e saldati?")) return;
+  const ordersRef = collection(db, "suppliers", supplierId, "orders");
+  const snap = await getDocs(ordersRef);
+  const batch = writeBatch(db);
+  let count = 0;
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    if(!d.pagato || !d.saldato){
+      batch.update(doc(ordersRef, docSnap.id), { pagato: true, saldato: true });
+      count++;
+    }
+  });
+  if(count === 0){ alert("Tutti gli ordini sono già segnati come pagati."); return; }
+  await batch.commit();
+  alert(`✅ ${count} ordine/i segnato/i come pagato e saldato.`);
+  await loadOrders();
+}
+
 // ── Load historical orders ────────────────────────────
 async function loadOrders(){
   if(!supplierId || !ordersHistorySection) return;
   ordersHistorySection.style.display = "block";
-  const ref = collection(db, "suppliers", supplierId, "orders");
-  const q   = query(ref, orderBy("data", "desc"));
-  let snap;
-  try { snap = await getDocs(q); } catch(e){ console.warn("Ordini non caricati:", e); ordersEmptyState?.classList.remove("hidden"); return; }
-  if(snap.empty){ ordersEmptyState?.classList.remove("hidden"); return; }
+
+  const ordersRef  = collection(db, "suppliers", supplierId, "orders");
+  const invRef     = collection(db, "suppliers", supplierId, "invoices");
+  const ordersQ    = query(ordersRef, orderBy("data", "desc"));
+  const invQ       = query(invRef, orderBy("date", "desc"));
+
+  let ordersSnap, invSnap;
+  try {
+    [ordersSnap, invSnap] = await Promise.all([getDocs(ordersQ), getDocs(invQ)]);
+  } catch(e){
+    console.warn("Storico non caricato:", e);
+    ordersEmptyState?.classList.remove("hidden");
+    return;
+  }
+
+  // Build combined entries list (orders + invoices with photo)
+  const entries = [];
+
+  ordersSnap.forEach(docSnap => {
+    const o = docSnap.data();
+    const dateVal = o.data?.toDate ? o.data.toDate() : (o.data ? new Date(o.data) : null);
+    entries.push({ id: docSnap.id, type: "order", dateVal, data: o });
+  });
+
+  invSnap.forEach(docSnap => {
+    const inv = docSnap.data();
+    if(!inv.photoUrl) return; // only photo-invoices appear in orders history
+    const dateVal = inv.date ? new Date(inv.date + "T00:00:00") : null;
+    entries.push({ id: docSnap.id, type: "invoice", dateVal, data: inv });
+  });
+
+  // Sort descending by date
+  entries.sort((a, b) => (b.dateVal?.getTime() || 0) - (a.dateVal?.getTime() || 0));
+
   if(!ordersList) return;
   ordersList.innerHTML = "";
+
+  if(entries.length === 0){
+    ordersEmptyState?.classList.remove("hidden");
+    if(markAllPaidBtn) markAllPaidBtn.style.display = "none";
+    return;
+  }
   ordersEmptyState?.classList.add("hidden");
 
-  snap.forEach(docSnap => {
-    const o = docSnap.data();
-    // "data" is the Firestore field name used by the legacy supplier-order.js (Italian for "date")
-    const dateVal = o.data?.toDate ? o.data.toDate() : (o.data ? new Date(o.data) : null);
+  // Show "mark all paid" button only when there are unpaid orders
+  const hasUnpaid = ordersSnap.docs.some(d => !d.data().pagato);
+  if(markAllPaidBtn) markAllPaidBtn.style.display = hasUnpaid ? "inline-flex" : "none";
+
+  entries.forEach(entry => {
+    const dateVal = entry.dateVal;
     const dateStr = dateVal
       ? `${String(dateVal.getDate()).padStart(2,"0")}/${String(dateVal.getMonth()+1).padStart(2,"0")}/${dateVal.getFullYear()}`
       : "—";
-    const righe = Array.isArray(o.righe) ? o.righe : [];
-    const itemsHtml = righe.length
-      ? righe.map(r => {
-          const prodotto = (r.prodotto || "—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-          return `${prodotto} × ${r.quantita ?? 1} (${eur(r.totale || 0)})`;
-        }).join("<br>")
-      : "—";
-    const totale = Number(o.totale || 0);
 
     const row = document.createElement("div");
     row.className = "order-row";
-    row.innerHTML = `
-      <span class="order-date">${dateStr}</span>
-      <span class="order-items">${itemsHtml}</span>
-      <span class="order-total">${eur(totale)}</span>
-    `;
+
+    if(entry.type === "order"){
+      const o = entry.data;
+      const righe = Array.isArray(o.righe) ? o.righe : [];
+      const itemsHtml = righe.length
+        ? righe.map(r => {
+            const prodotto = (r.prodotto || "—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+            return `${prodotto} × ${r.quantita ?? 1} (${eur(r.totale || 0)})`;
+          }).join("<br>")
+        : "—";
+      const totale  = Number(o.totale || 0);
+      const pagato  = o.pagato === true;
+      const saldato = o.saldato === true;
+      const statusLabel = (pagato && saldato) ? "✅ Pagato e saldato" : pagato ? "✅ Pagato" : "⏳ Da saldare";
+      const statusCls   = (pagato || saldato) ? "pagato" : "in-attesa";
+
+      row.innerHTML = `
+        <span class="order-date">${dateStr}</span>
+        <div class="order-items">
+          ${itemsHtml}
+          <div class="order-items-status" style="display:none;margin-top:4px;">
+            <span class="order-status-pill ${statusCls}">${statusLabel}</span>
+          </div>
+        </div>
+        <span class="order-total">${eur(totale)}</span>
+        <div class="order-status-cell">
+          <span class="order-status-pill ${statusCls}">${statusLabel}</span>
+        </div>
+        <div class="order-actions-cell">
+          ${!pagato ? `<button class="act-btn pay-btn" title="Segna come pagato e saldato" data-order-pay="${entry.id}">✅</button>` : ""}
+        </div>
+      `;
+      row.querySelector("[data-order-pay]")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if(!confirm("Segna questo ordine come pagato e saldato?")) return;
+        await updateDoc(doc(ordersRef, entry.id), { pagato: true, saldato: true });
+        await loadOrders();
+      });
+
+    } else {
+      // Fattura con foto
+      const inv  = entry.data;
+      const { label: statusLabel, cls: statusCls } = getStatusInfo(inv);
+      const totale = Number(inv.total || inv.amount || 0);
+      const numLabel = inv.invoiceNumber ? `Fattura #${inv.invoiceNumber}` : "Fattura";
+
+      row.innerHTML = `
+        <span class="order-date">${dateStr}</span>
+        <div class="order-items">
+          <strong>🧾 ${numLabel.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</strong>
+          ${inv.description ? `<br>${inv.description.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}` : ""}
+          <br><button class="act-btn photo-btn-sm" style="margin-top:4px;width:auto;padding:0 8px;height:26px;font-size:11px;" data-photo="${inv.photoUrl}" title="Visualizza foto fattura">📷 Vedi foto</button>
+          <div class="order-items-status" style="display:none;margin-top:4px;">
+            <span class="status-pill ${statusCls}">${statusLabel}</span>
+          </div>
+        </div>
+        <span class="order-total">${eur(totale)}</span>
+        <div class="order-status-cell">
+          <span class="status-pill ${statusCls}">${statusLabel}</span>
+        </div>
+        <div class="order-actions-cell"></div>
+      `;
+      row.querySelector("[data-photo]")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openPhotoModal(e.currentTarget.dataset.photo);
+      });
+    }
+
     ordersList.appendChild(row);
   });
+
+  // On mobile, show status inline inside items
+  if(window.innerWidth <= 640){
+    ordersList.querySelectorAll(".order-items-status").forEach(el => el.style.display = "flex");
+  }
 }

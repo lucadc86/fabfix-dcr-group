@@ -70,6 +70,8 @@ document.getElementById("saveOrder").onclick = async () => {
     mese: date.getMonth() + 1,
     righe: rows,
     totale: Number(grandTotal.textContent),
+    pagato: false,
+    saldato: false,
     createdAt: serverTimestamp()
   });
 
