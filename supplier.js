@@ -103,6 +103,9 @@ function eur(n){ return new Intl.NumberFormat("it-IT",{style:"currency",currency
 function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function formatDate(iso){ if(!iso) return "—"; const [y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; }
 function daysDiff(isoDate){ const t=new Date(isoDate+" 00:00:00").getTime(); return Math.round((t-Date.now())/(1000*60*60*24)); }
+function invTotal(inv){ return Number(inv.total || inv.amount || 0); }
+
+const MOBILE_BREAKPOINT = 640;
 
 function getStatusInfo(inv){
   const s = inv.status || "da-pagare";
@@ -420,7 +423,7 @@ function renderInvoiceTable(){
       </div>
       <span class="inv-date">${formatDate(inv.date)}</span>
       <span class="inv-due ${dueCls}">${dueText}</span>
-      <span class="inv-amt">${eur(inv.total || inv.amount)}</span>
+      <span class="inv-amt">${eur(invTotal(inv))}</span>
       <!-- inv.total is the VAT-inclusive total for new invoices; inv.amount is kept for backward compatibility with old invoices that only stored the base amount -->
       <span class="status-pill ${statusCls}">${statusLabel}</span>
       <div class="inv-actions-cell">
@@ -431,7 +434,7 @@ function renderInvoiceTable(){
       </div>
       <!-- Mobile: compact action row always visible on small screens -->
       <div class="inv-actions-mobile">
-        <span class="inv-amt-mobile">${eur(inv.total || inv.amount)}</span>
+        <span class="inv-amt-mobile">${eur(invTotal(inv))}</span>
         <button class="act-btn" title="Modifica" data-edit-m="${inv.id}">✏️</button>
         ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-pay-m="${inv.id}">✅</button>` : ""}
         <button class="act-btn del-btn" title="Elimina" data-del-m="${inv.id}">🗑️</button>
@@ -525,7 +528,7 @@ async function loadInvoices(){
   snap.forEach(docSnap => {
     const inv = { id: docSnap.id, ...docSnap.data() };
     allInvoices.push(inv);
-    const amount = Number(inv.total || inv.amount || 0);
+    const amount = invTotal(inv);
     if((inv.date||"").startsWith(currentYear)){
       totalYear += amount; countYear++;
     }
@@ -564,7 +567,7 @@ async function loadInvoices(){
         </div>
         <div class="scad-right">
           <div class="scad-due ${dueCls}">${dueLabel}</div>
-          <div class="scad-amt">${eur(inv.total || inv.amount)}</div>
+          <div class="scad-amt">${eur(invTotal(inv))}</div>
         </div>`;
       urgentList.appendChild(row);
     });
@@ -715,7 +718,7 @@ async function loadOrders(){
       // Fattura con foto
       const inv  = entry.data;
       const { label: statusLabel, cls: statusCls } = getStatusInfo(inv);
-      const totale = Number(inv.total || inv.amount || 0);
+      const totale = invTotal(inv);
       const numLabel = inv.invoiceNumber ? `Fattura #${inv.invoiceNumber}` : "Fattura";
 
       row.innerHTML = `
@@ -744,7 +747,7 @@ async function loadOrders(){
   });
 
   // On mobile, show status inline inside items
-  if(window.innerWidth <= 640){
+  if(window.innerWidth <= MOBILE_BREAKPOINT){
     ordersList.querySelectorAll(".order-items-status").forEach(el => el.style.display = "flex");
   }
 }
