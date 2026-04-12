@@ -260,8 +260,8 @@ async function loadOrdersHistory(){
         .map(d=>({id:d.id,...d.data()}))
         .sort((a,b)=>{
           const da = a.dateISO || a.invoiceDate || a.date || '';
-          const db_ = b.dateISO || b.invoiceDate || b.date || '';
-          return da < db_ ? 1 : da > db_ ? -1 : 0;
+          const dateB = b.dateISO || b.invoiceDate || b.date || '';
+          return da < dateB ? 1 : da > dateB ? -1 : 0;
         });
       ordersHistory[suppDoc.id] = { name, orders };
     }));
