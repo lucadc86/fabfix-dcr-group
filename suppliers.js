@@ -190,7 +190,7 @@ function renderMonthlyOrdersChart(){
   supplierIds.forEach(supplierId => {
     const { orders } = ordersHistory[supplierId];
     orders.forEach(o => {
-      const dateStr = o.dateISO || o.invoiceDate || null;
+      const dateStr = o.dateISO || o.invoiceDate || o.date || null;
       if(!dateStr) return;
       const monthKey = String(dateStr).slice(0, 7); // YYYY-MM
       if(!monthTotals[monthKey]) monthTotals[monthKey] = {};
@@ -255,8 +255,14 @@ async function loadOrdersHistory(){
     ordersHistory = {};
     await Promise.all(snap.docs.map(async suppDoc => {
       const name = String(suppDoc.data().name||'Senza nome');
-      const ordersSnap = await getDocs(query(collection(db,'suppliers',suppDoc.id,'invoices'), orderBy('dateISO','desc')));
-      const orders = ordersSnap.docs.map(d=>({id:d.id,...d.data()}));
+      const ordersSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+      const orders = ordersSnap.docs
+        .map(d=>({id:d.id,...d.data()}))
+        .sort((a,b)=>{
+          const da = a.dateISO || a.invoiceDate || a.date || '';
+          const dateB = b.dateISO || b.invoiceDate || b.date || '';
+          return da < dateB ? 1 : da > dateB ? -1 : 0;
+        });
       ordersHistory[suppDoc.id] = { name, orders };
     }));
     renderOrdersHistory();
