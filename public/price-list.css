@@ -43,3 +43,26 @@
   font-weight: 700;
   color: #1f4fd8;
 }
+
+/* ── Dark mode (storico listini) ── */
+:root:not(.theme-light) body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .search-input {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.15);
+}
+:root:not(.theme-light) .category-title {
+  color: #93c5fd;
+  border-bottom-color: rgba(255,255,255,.12);
+}
+:root:not(.theme-light) .product-row {
+  background: #1e293b;
+  border-bottom-color: rgba(255,255,255,.08);
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .product-row:hover { background: #1e3a5f; }
+:root:not(.theme-light) .product-format { color: #94a3b8; }
+:root:not(.theme-light) .product-price { color: #93c5fd; }

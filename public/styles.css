@@ -539,6 +539,7 @@ header::after{
 .dashnav-item{border:1px solid rgba(15,23,42,.10); background:#f8fafc; border-radius:18px; padding:14px 10px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .dashnav-item:hover{background:#eef2ff;}
 .dashnav-ico{width:48px; height:48px; border-radius:16px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; font-weight:900;}
+.dashnav-ico svg{display:block;}
 .dashnav-item-txt{font-weight:800; color:var(--text-dark); font-size:12px; text-align:center;}
 @media (max-width:520px){
   .dashnav-overlay.open{align-items:stretch;}

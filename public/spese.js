@@ -420,6 +420,11 @@ async function quickDelete(id) {
 function renderCharts() {
   if (typeof Chart === 'undefined') return;
 
+  // Register datalabels plugin if available
+  if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+  }
+
   const barCanvas   = document.getElementById('barChart');
   const donutCanvas = document.getElementById('donutChart');
   if (!barCanvas || !donutCanvas) return;
@@ -457,6 +462,14 @@ function renderCharts() {
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } },
+        datalabels: typeof ChartDataLabels !== 'undefined' ? {
+          anchor: 'end',
+          align: 'top',
+          color: '#f97316',
+          font: { size: 9, weight: '700' },
+          formatter: (v) => v > 0 ? fmt(v) : '',
+          clip: false,
+        } : false,
       },
       scales: {
         x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.06)' } },
@@ -501,6 +514,17 @@ function renderCharts() {
           labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 12 },
         },
         tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmt(ctx.raw)}` } },
+        datalabels: typeof ChartDataLabels !== 'undefined' ? {
+          color: '#fff',
+          font: { size: 10, weight: '900' },
+          formatter: (v, ctx) => {
+            if (!v || v <= 0) return '';
+            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+            const pct = total > 0 ? Math.round(v / total * 100) : 0;
+            return pct >= 5 ? `${fmt(v)}\n${pct}%` : '';
+          },
+          textAlign: 'center',
+        } : false,
       },
     },
   });

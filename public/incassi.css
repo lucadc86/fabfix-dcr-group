@@ -182,11 +182,11 @@
 /* Popup */
 .incassi-popup{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
 .incassi-popup.show{display:flex}
-.popup-box{width:100%;max-width:620px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
-.popup-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--line)}
+.popup-box{width:100%;max-width:620px;max-height:90vh;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;}
+.popup-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--line);flex-shrink:0;}
 .popup-title{font-weight:1000;font-size:18px}
 .popup-close{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:12px;padding:6px 10px;cursor:pointer}
-.popup-body{padding:12px 14px}
+.popup-body{padding:12px 14px;overflow-y:auto;flex:1;min-height:0;}
 .lbl{display:block;color:var(--muted);font-size:12px;font-weight:900;margin:10px 0 6px}
 textarea,input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;color:var(--ink);padding:12px;font-size:15px;outline:none}
 textarea{min-height:120px;resize:none}
