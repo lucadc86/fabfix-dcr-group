@@ -34,6 +34,7 @@
         <button class="incassi-btn" id="prevBtn">◀</button>
         <div class="incassi-btn" style="cursor:default; font-weight:900" id="monthTitle">—</div>
         <button class="incassi-btn" id="nextBtn">▶</button>
+        <button class="incassi-btn" id="btnExportSpese" type="button" title="Esporta CSV">⬇ CSV</button>
         <button class="incassi-btn primary" id="btnNewExpense">Nuova spesa</button>
       </div>
     </div>
@@ -360,6 +361,16 @@
     }
 
     boot();
+  </script>
+  <script type="module">
+    import { exportSpese } from './services/exportService.js';
+    import { listExpenses } from './services/expenseService.js';
+    document.getElementById('btnExportSpese')?.addEventListener('click', async () => {
+      try {
+        const expenses = await listExpenses();
+        exportSpese(expenses);
+      } catch (e) { alert('Errore export: ' + e.message); }
+    });
   </script>
 
   <script type="module" src="/nav.js?v=15_20260225222215"></script>

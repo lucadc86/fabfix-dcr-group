@@ -1,1 +1,1 @@
-v53 ORDER UI - qty/price smaller, description wider, client smaller, wider layout on tablet/PC
+v54 TOP-DI-GAMMA L1 - dark mode, offline banner, ricerca globale, export CSV, admin portale, session timeout, form validation

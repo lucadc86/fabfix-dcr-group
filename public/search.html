@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <base href="/">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ricerca Globale — DCR GROUP</title>
+  <link rel="stylesheet" href="styles.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="mobile.css?v=15_20260225222215" />
+  <style>
+    .page-content { max-width: 860px; }
+
+    /* ── Search bar ── */
+    .search-hero {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    .search-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+    .search-input-wrap .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      pointer-events: none;
+    }
+    #globalSearch {
+      width: 100%;
+      padding: 14px 14px 14px 44px;
+      border: 2px solid var(--card-border, rgba(31,79,216,.22));
+      border-radius: 18px;
+      font-size: 16px;
+      font-weight: 600;
+      background: var(--card-bg, #fff);
+      color: var(--text-dark, #0f172a);
+      outline: none;
+      box-shadow: var(--card-shadow, 0 10px 26px rgba(15,23,42,.06));
+      transition: border-color .15s, box-shadow .15s;
+    }
+    #globalSearch:focus {
+      border-color: var(--brand, #1f4fd8);
+      box-shadow: 0 0 0 3px rgba(31,79,216,.14), var(--card-shadow, 0 10px 26px rgba(15,23,42,.06));
+    }
+
+    /* ── Filter pills ── */
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .filter-pill {
+      border: 1.5px solid var(--card-border, rgba(31,79,216,.22));
+      background: var(--card-bg, #fff);
+      color: var(--text-dark, #0f172a);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .filter-pill.active {
+      background: var(--brand, #1f4fd8);
+      color: #fff;
+      border-color: var(--brand, #1f4fd8);
+    }
+
+    /* ── Results ── */
+    #searchResults { display: flex; flex-direction: column; gap: 8px; }
+
+    .result-item {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--card-border-soft, rgba(15,23,42,.10));
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: var(--card-shadow, 0 10px 26px rgba(15,23,42,.06));
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: background .12s, border-color .12s;
+    }
+    .result-item:hover {
+      background: rgba(31,79,216,.04);
+      border-color: var(--card-border, rgba(31,79,216,.22));
+    }
+
+    .result-left { flex: 1; min-width: 0; }
+    .result-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 5px;
+    }
+    .result-type.client  { background: rgba(31,79,216,.12); color: #1f4fd8; }
+    .result-type.order   { background: rgba(22,163,74,.12); color: #16a34a; }
+    .result-type.supplier{ background: rgba(245,158,11,.12); color: #b45309; }
+    .result-type.income  { background: rgba(6,182,212,.12); color: #0e7490; }
+    .result-type.expense { background: rgba(239,68,68,.12); color: #b91c1c; }
+    .result-type.deadline{ background: rgba(124,58,237,.12); color: #6d28d9; }
+
+    .result-title {
+      font-weight: 800;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .result-sub {
+      font-size: 12px;
+      color: var(--text-muted, #475569);
+      margin-top: 2px;
+    }
+    .result-value {
+      font-weight: 900;
+      font-size: 15px;
+      white-space: nowrap;
+      color: var(--brand, #1f4fd8);
+    }
+
+    .search-hint {
+      text-align: center;
+      color: var(--text-muted, #475569);
+      font-size: 14px;
+      padding: 40px 0;
+    }
+    .search-hint .hint-icon { font-size: 48px; margin-bottom: 10px; }
+
+    .results-count {
+      font-size: 12px;
+      color: var(--text-muted, #475569);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* ── Loading skeleton ── */
+    .skel { background: rgba(15,23,42,.06); border-radius: 10px; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  </style>
+  <script type="module" src="/auth-guard.js"></script>
+</head>
+
+<body class="page">
+  <header class="top-bar">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <span class="page-title">Ricerca Globale</span>
+    <select id="quickNav" class="quick-nav">
+      <option value="">Vai a…</option>
+      <option value="index.html">HOME</option>
+      <option value="clients.html">CLIENTI</option>
+      <option value="suppliers.html">FORNITORI</option>
+      <option value="scadenze.html">SCADENZE</option>
+      <option value="incassi.html">INCASSI</option>
+      <option value="spese.html">SPESE</option>
+      <option value="statistiche.html">STATISTICHE</option>
+    </select>
+  </header>
+
+  <main class="page-content">
+
+    <div class="search-hero">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          id="globalSearch"
+          type="search"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Cerca clienti, ordini, fornitori, incassi…"
+          autofocus
+        />
+      </div>
+    </div>
+
+    <div class="filter-pills" id="filterPills">
+      <button class="filter-pill active" data-type="all">Tutti</button>
+      <button class="filter-pill" data-type="client">👥 Clienti</button>
+      <button class="filter-pill" data-type="order">🧾 Ordini</button>
+      <button class="filter-pill" data-type="supplier">📦 Fornitori</button>
+      <button class="filter-pill" data-type="income">💰 Incassi</button>
+      <button class="filter-pill" data-type="expense">💸 Spese</button>
+      <button class="filter-pill" data-type="deadline">📅 Scadenze</button>
+    </div>
+
+    <div class="results-count" id="resultsCount"></div>
+    <div id="searchResults">
+      <div class="search-hint">
+        <div class="hint-icon">🔍</div>
+        <div>Digita almeno 2 caratteri per cercare<br><span style="font-size:12px;opacity:.7">Clienti • Ordini • Fornitori • Incassi • Spese • Scadenze</span></div>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { getNormalizedIncomesAndOrders } from './services/incomeService.js';
+    import { listExpenses } from './services/expenseService.js';
+    import { listDeadlines } from './services/deadlineService.js';
+    import { firestoreService as fs } from './services/firestoreService.js';
+
+    // ── Helpers ──
+    const eur = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(n) || 0);
+
+    const TYPE_LABEL = {
+      client:   { label: 'Cliente',   icon: '👥', cls: 'client' },
+      order:    { label: 'Ordine',    icon: '🧾', cls: 'order' },
+      supplier: { label: 'Fornitore', icon: '📦', cls: 'supplier' },
+      income:   { label: 'Incasso',   icon: '💰', cls: 'income' },
+      expense:  { label: 'Spesa',     icon: '💸', cls: 'expense' },
+      deadline: { label: 'Scadenza',  icon: '📅', cls: 'deadline' },
+    };
+
+    function link(type, item) {
+      if (type === 'client')   return `client.html?id=${encodeURIComponent(item.id)}`;
+      if (type === 'order')    return `order.html?id=${encodeURIComponent(item.id)}`;
+      if (type === 'supplier') return `supplier.html?id=${encodeURIComponent(item.id)}`;
+      if (type === 'income')   return `incassi.html`;
+      if (type === 'expense')  return `spese.html`;
+      if (type === 'deadline') return `scadenze.html`;
+      return '#';
+    }
+
+    function matchScore(text, query) {
+      if (!text || !query) return 0;
+      const t = text.toLowerCase();
+      const q = query.toLowerCase().trim();
+      if (!q) return 0;
+      if (t === q) return 100;
+      if (t.startsWith(q)) return 80;
+      if (t.includes(q)) return 60;
+      const words = q.split(/\s+/);
+      if (words.every(w => t.includes(w))) return 40;
+      return 0;
+    }
+
+    function score(item, fields, query) {
+      return Math.max(...fields.map(f => matchScore(String(item[f] || ''), query)));
+    }
+
+    // ── Data loading ──
+    let allData = null;
+    let loading = false;
+
+    async function loadAll() {
+      if (allData) return allData;
+      if (loading) return null;
+      loading = true;
+      try {
+        const [{ incomes, orders }, expenses, deadlines, suppliers] = await Promise.all([
+          getNormalizedIncomesAndOrders(),
+          listExpenses(),
+          listDeadlines(),
+          fs.getAll('suppliers'),
+        ]);
+        const { clients } = await getNormalizedIncomesAndOrders();
+        const clientList = [...new Map(orders.map(o => [
+          o.clientId || o.clientName,
+          { id: o.clientId || o.clientName, name: o.clientName || o.clientId || '', email: o.clientEmail || '' }
+        ])).values()];
+        allData = { orders, incomes, expenses, deadlines, suppliers, clients: clientList };
+        return allData;
+      } finally {
+        loading = false;
+      }
+    }
+
+    // ── Render ──
+    function renderResults(results, query) {
+      const container = document.getElementById('searchResults');
+      const countEl = document.getElementById('resultsCount');
+
+      if (!results.length) {
+        countEl.textContent = '';
+        container.innerHTML = `<div class="search-hint"><div class="hint-icon">😕</div><div>Nessun risultato per "<strong>${query}</strong>"</div></div>`;
+        return;
+      }
+
+      countEl.textContent = `${results.length} risultat${results.length === 1 ? 'o' : 'i'}`;
+      container.innerHTML = '';
+
+      for (const r of results.slice(0, 100)) {
+        const t = TYPE_LABEL[r.type] || { label: r.type, icon: '•', cls: '' };
+        const a = document.createElement('a');
+        a.className = 'result-item';
+        a.href = link(r.type, r.item);
+        a.innerHTML = `
+          <div class="result-left">
+            <div class="result-type ${t.cls}">${t.icon} ${t.label}</div>
+            <div class="result-title">${escapeHtml(r.title)}</div>
+            ${r.sub ? `<div class="result-sub">${escapeHtml(r.sub)}</div>` : ''}
+          </div>
+          ${r.value !== undefined ? `<div class="result-value">${escapeHtml(r.value)}</div>` : ''}
+        `;
+        container.appendChild(a);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function search(query, typeFilter) {
+      if (!allData) return;
+      const q = query.trim().toLowerCase();
+      if (q.length < 2) {
+        document.getElementById('resultsCount').textContent = '';
+        document.getElementById('searchResults').innerHTML = `<div class="search-hint"><div class="hint-icon">🔍</div><div>Digita almeno 2 caratteri per cercare</div></div>`;
+        return;
+      }
+
+      const results = [];
+
+      // Clients
+      if (!typeFilter || typeFilter === 'client') {
+        for (const c of allData.clients || []) {
+          const s = Math.max(
+            matchScore(c.name || '', q),
+            matchScore(c.email || '', q)
+          );
+          if (s > 0) results.push({ type: 'client', score: s, item: c, title: c.name || c.id, sub: c.email || '', value: '' });
+        }
+      }
+
+      // Orders
+      if (!typeFilter || typeFilter === 'order') {
+        for (const o of allData.orders || []) {
+          const s = Math.max(
+            matchScore(o.clientName || '', q),
+            matchScore(o.id || '', q),
+            matchScore(String(o.total || ''), q),
+            matchScore(o.note || o.notes || '', q)
+          );
+          if (s > 0) results.push({ type: 'order', score: s, item: o, title: o.clientName || o.id, sub: o.createdAtISO ? o.createdAtISO.slice(0, 10) : '', value: eur(o.total) });
+        }
+      }
+
+      // Suppliers
+      if (!typeFilter || typeFilter === 'supplier') {
+        for (const sup of allData.suppliers || []) {
+          const name = sup.name || sup.nome || sup.ragioneSociale || '';
+          const s = Math.max(
+            matchScore(name, q),
+            matchScore(sup.email || '', q),
+            matchScore(sup.note || '', q)
+          );
+          if (s > 0) results.push({ type: 'supplier', score: s, item: sup, title: name, sub: sup.email || '', value: eur(sup.total) });
+        }
+      }
+
+      // Incassi
+      if (!typeFilter || typeFilter === 'income') {
+        for (const inc of allData.incomes || []) {
+          const s = Math.max(
+            matchScore(inc.clientName || '', q),
+            matchScore(inc.dateISO || '', q),
+            matchScore(inc.note || '', q)
+          );
+          if (s > 0) results.push({ type: 'income', score: s, item: inc, title: inc.clientName || 'Incasso', sub: inc.dateISO || '', value: eur(inc.amount) });
+        }
+      }
+
+      // Spese
+      if (!typeFilter || typeFilter === 'expense') {
+        for (const e of allData.expenses || []) {
+          const s = Math.max(
+            matchScore(e.note || e.description || e.category || '', q),
+            matchScore(e.dateISO || e.date || '', q)
+          );
+          if (s > 0) results.push({ type: 'expense', score: s, item: e, title: e.note || e.description || e.category || 'Spesa', sub: e.dateISO || e.date || '', value: eur(e.amount) });
+        }
+      }
+
+      // Scadenze
+      if (!typeFilter || typeFilter === 'deadline') {
+        for (const d of allData.deadlines || []) {
+          const s = Math.max(
+            matchScore(d.note || d.description || '', q),
+            matchScore(d.dateISO || '', q)
+          );
+          if (s > 0) results.push({ type: 'deadline', score: s, item: d, title: d.note || d.description || 'Scadenza', sub: d.dateISO || '', value: eur(d.amount) });
+        }
+      }
+
+      results.sort((a, b) => b.score - a.score);
+      renderResults(results, query);
+    }
+
+    // ── Init ──
+    let typeFilter = null;
+    let debounceTimer = null;
+
+    const input = document.getElementById('globalSearch');
+    const pillsContainer = document.getElementById('filterPills');
+
+    // Pre-load data in background
+    loadAll().catch(console.error);
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      const q = input.value;
+      if (q.trim().length < 2) {
+        document.getElementById('resultsCount').textContent = '';
+        document.getElementById('searchResults').innerHTML = `<div class="search-hint"><div class="hint-icon">🔍</div><div>Digita almeno 2 caratteri per cercare</div></div>`;
+        return;
+      }
+      // Show loading skeleton while waiting
+      document.getElementById('searchResults').innerHTML = `
+        <div class="skel" style="height:60px;width:100%"></div>
+        <div class="skel" style="height:60px;width:100%"></div>
+        <div class="skel" style="height:60px;width:100%;opacity:.6"></div>
+      `;
+      debounceTimer = setTimeout(async () => {
+        if (!allData) await loadAll();
+        search(input.value, typeFilter);
+      }, 250);
+    });
+
+    pillsContainer.addEventListener('click', (e) => {
+      const pill = e.target.closest('.filter-pill');
+      if (!pill) return;
+      pillsContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const t = pill.dataset.type;
+      typeFilter = t === 'all' ? null : t;
+      if (input.value.trim().length >= 2) search(input.value, typeFilter);
+    });
+
+    // Support ?q= query string
+    const params = new URLSearchParams(location.search);
+    const qParam = params.get('q');
+    if (qParam) {
+      input.value = qParam;
+      loadAll().then(() => search(qParam, typeFilter)).catch(console.error);
+    }
+  </script>
+  <script type="module" src="/nav.js?v=15_20260225222215"></script>
+  <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
+</body>
+</html>

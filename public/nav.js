@@ -80,12 +80,113 @@ async function waitForAuth(timeoutMs = 1500){
   });
 }
 
+// ---- Dark/Light Mode ----
+(function applyTheme(){
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') document.documentElement.classList.add('theme-light');
+    else document.documentElement.classList.remove('theme-light');
+  } catch {}
+})();
+
+// ---- Offline Banner ----
+(function setupOfflineBanner(){
+  function inject(){
+    if (document.getElementById('nav-offline-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'nav-offline-banner';
+    banner.style.cssText = [
+      'display:none','position:fixed','top:0','left:0','width:100%','z-index:99999',
+      'background:#ef4444','color:#fff','text-align:center','font-size:13px',
+      'font-weight:700','padding:8px 16px','letter-spacing:.2px',
+    ].join(';');
+    banner.textContent = '⚠️ Connessione non disponibile — i dati potrebbero non essere aggiornati';
+    document.body.appendChild(banner);
+
+    function update(){
+      banner.style.display = navigator.onLine ? 'none' : 'block';
+    }
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
+  else inject();
+})();
+
 // ---- Styles ----
 (function injectStyles(){
   if (qs('#ai-assistant-styles')) return;
   const style = document.createElement('style');
   style.id = 'ai-assistant-styles';
   style.textContent = `
+    /* ── Dark mode ── */
+    :root.theme-light body.page,
+    :root.theme-light .page-content,
+    :root.theme-light { /* already light by default */ }
+
+    :root:not(.theme-light) body.page{
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    :root:not(.theme-light) body.page .top-bar,
+    :root:not(.theme-light) body.page .topbar{
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border-bottom-color: rgba(255,255,255,.08);
+    }
+    :root:not(.theme-light) body.page .page-title{ color: #e2e8f0; }
+    :root:not(.theme-light) body.page .card,
+    :root:not(.theme-light) body.page .kpi-card,
+    :root:not(.theme-light) body.page .chart-card{
+      background: #1e293b;
+      border-color: rgba(255,255,255,.10);
+      color: #e2e8f0;
+    }
+    :root:not(.theme-light) body.page .k-label,
+    :root:not(.theme-light) body.page .k-sub,
+    :root:not(.theme-light) body.page .stat-sub,
+    :root:not(.theme-light) body.page .stat-status,
+    :root:not(.theme-light) body.page .chart-title { color: #94a3b8; }
+    :root:not(.theme-light) body.page .client-row,
+    :root:not(.theme-light) body.page .order-row,
+    :root:not(.theme-light) body.page .supplier-row,
+    :root:not(.theme-light) body.page .invoice-row{
+      background: #1e293b;
+      border-bottom-color: rgba(255,255,255,.07);
+      color: #e2e8f0;
+    }
+    :root:not(.theme-light) body.page input,
+    :root:not(.theme-light) body.page select,
+    :root:not(.theme-light) body.page textarea{
+      background: #1e293b;
+      border-color: rgba(255,255,255,.15);
+      color: #e2e8f0;
+    }
+    :root:not(.theme-light) body.page .dashnav-panel,
+    :root:not(.theme-light) body.page .dashnav-item{ background:#1e293b; color:#e2e8f0; }
+    :root:not(.theme-light) body.page .dashnav-item-txt{ color:#e2e8f0; }
+    :root:not(.theme-light) body.page .dashnav-head{ border-bottom-color:rgba(255,255,255,.10); }
+    :root:not(.theme-light) body.page .dashnav-title{ color:#e2e8f0; }
+    :root:not(.theme-light) body.page .dashnav-close{ color:#e2e8f0; }
+    :root:not(.theme-light) body.page .dashnav-btn{ background:#1e293b; color:#e2e8f0; border-color:rgba(255,255,255,.12); }
+    :root:not(.theme-light) body.page .quick-nav{ background:#1e293b; color:#e2e8f0; border-color:rgba(255,255,255,.15); }
+
+    /* ── Theme toggle button ── */
+    .theme-toggle-btn{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom) + var(--ai-bottom-extra,0px));left:18px;z-index:9999;
+      width:44px;height:44px;border-radius:50%;border:none;
+      background:rgba(255,255,255,.14);color:#fff;font-size:16px;
+      cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);
+      display:flex;align-items:center;justify-content:center;}
+    .theme-toggle-btn:active{transform:scale(.96)}
+
+    /* ── Search FAB ── */
+    .search-fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom) + var(--ai-bottom-extra,0px));z-index:9999;
+      width:44px;height:44px;border-radius:50%;border:none;
+      background:rgba(255,255,255,.14);color:#fff;font-size:18px;
+      cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);
+      display:flex;align-items:center;justify-content:center;}
+    .search-fab:active{transform:scale(.96)}
+
     .ai-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom) + var(--ai-bottom-extra, 0px));z-index:9999;width:54px;height:54px;border-radius:50%;
       border:none;cursor:pointer;background:rgba(20,140,255,.95);box-shadow:0 10px 25px rgba(0,0,0,.25);
       display:flex;align-items:center;justify-content:center;}
@@ -158,6 +259,35 @@ function ensureFab(){
   btn.innerHTML = '<span>AI</span>';
   btn.addEventListener('click', openModal);
   document.body.appendChild(btn);
+
+  // Search FAB (shortcut to global search)
+  if (!qs('#nav-search-fab')) {
+    const searchFab = document.createElement('button');
+    searchFab.id = 'nav-search-fab';
+    searchFab.className = 'search-fab';
+    searchFab.title = 'Ricerca globale';
+    searchFab.innerHTML = '🔍';
+    searchFab.addEventListener('click', () => {
+      window.location.href = '/search.html';
+    });
+    document.body.appendChild(searchFab);
+  }
+
+  // Theme toggle button (bottom-left, above logout)
+  if (!qs('#nav-theme-btn')) {
+    const themeBtn = document.createElement('button');
+    themeBtn.id = 'nav-theme-btn';
+    themeBtn.className = 'theme-toggle-btn';
+    themeBtn.title = 'Cambia tema';
+    const isDark = !document.documentElement.classList.contains('theme-light');
+    themeBtn.innerHTML = isDark ? '☀️' : '🌙';
+    themeBtn.addEventListener('click', () => {
+      const isNowLight = document.documentElement.classList.toggle('theme-light');
+      themeBtn.innerHTML = isNowLight ? '🌙' : '☀️';
+      try { localStorage.setItem('theme', isNowLight ? 'light' : 'dark'); } catch {}
+    });
+    document.body.appendChild(themeBtn);
+  }
 
   // Pulsante logout piccolo, in basso a sinistra
   if (!qs('#nav-logout-btn')) {

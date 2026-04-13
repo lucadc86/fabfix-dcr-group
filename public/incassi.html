@@ -46,6 +46,7 @@
       <div class="incassi-actions">
         <button class="incassi-btn" id="btnApriCalendarioTop" type="button">Apri calendario</button>
         <span id="restoreStatus" class="backup-status"></span>
+        <button class="incassi-btn" id="btnExportIncassi" type="button" title="Esporta CSV">⬇ CSV</button>
         <button class="incassi-btn primary" id="btnNuovoIncasso">Registra incasso</button>
       </div>
     </div>
@@ -215,6 +216,17 @@
   </div>
 
   <script type="module" src="./incassi.js?v=70_2026031207"></script>
+  <script type="module">
+    import { exportIncassi } from './services/exportService.js';
+    import { listIncomesByYear } from './services/incomeService.js';
+    document.getElementById('btnExportIncassi')?.addEventListener('click', async () => {
+      try {
+        const year = new Date().getFullYear();
+        const incomes = await listIncomesByYear(year);
+        exportIncassi(incomes);
+      } catch (e) { alert('Errore export: ' + e.message); }
+    });
+  </script>
 <!-- FABFIX_RESTORE_BACKUP_START -->
 <script>
 /**
