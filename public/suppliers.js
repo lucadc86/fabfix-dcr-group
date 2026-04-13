@@ -165,11 +165,12 @@ function renderSuppliersChart(list){
   if(window.ChartDataLabels) Chart.register(ChartDataLabels);
   suppliersChart = new Chart(canvas.getContext('2d'), {
     type:'bar',
-    data:{ labels, datasets:[{ data: values, backgroundColor:'rgba(59,130,246,0.55)', borderColor:'rgba(59,130,246,0.95)', borderWidth:1, borderRadius:8, maxBarThickness:42 }] },
+    data:{ labels, datasets:[{ data: values, backgroundColor:'rgba(59,130,246,0.55)', borderColor:'rgba(59,130,246,0.95)', borderWidth:1, borderRadius:8, maxBarThickness:42, clip:false }] },
     options:{
       responsive:true,
       maintainAspectRatio:false,
       animation:false,
+      layout:{ padding:{ top:30 } },
       plugins:{
         legend:{display:false},
         tooltip:{ callbacks:{ label:(ctx)=>`€ ${eur(ctx.parsed.y||0)}` } },
@@ -179,7 +180,7 @@ function renderSuppliersChart(list){
           formatter:(v)=>'€ '+eur(v),
           font:{size:10,weight:'700'},
           color:'rgba(59,130,246,0.9)',
-          clamp:true, clip:false,
+          clamp:false, clip:false,
           padding:{top:2}
         }
       },
@@ -234,6 +235,31 @@ function renderMonthlyOrdersChart(){
       borderRadius: 4,
       maxBarThickness: 42
     }));
+  // Custom plugin: draw column totals above stacked bars
+  const stackTotalsPlugin = {
+    id: 'stackTotals',
+    afterDatasetsDraw(chart) {
+      const { ctx, data, scales } = chart;
+      const yScale = scales.y;
+      if(!yScale) return;
+      const n = data.labels.length;
+      for(let i=0; i<n; i++){
+        const total = data.datasets.reduce((s,ds)=>s+(Number(ds.data[i])||0),0);
+        if(!total) continue;
+        const meta0 = chart.getDatasetMeta(0);
+        if(!meta0||!meta0.data[i]) continue;
+        const x = meta0.data[i].x;
+        const y = yScale.getPixelForValue(total);
+        ctx.save();
+        ctx.font = 'bold 10px "Segoe UI",system-ui,sans-serif';
+        ctx.fillStyle = '#334155';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('€'+eur(total), x, y-4);
+        ctx.restore();
+      }
+    }
+  };
   if(monthlyOrdersChart){ try{monthlyOrdersChart.destroy();}catch(_){} }
   if(window.ChartDataLabels) Chart.register(ChartDataLabels);
   monthlyOrdersChart = new Chart(canvas.getContext('2d'), {
@@ -243,6 +269,7 @@ function renderMonthlyOrdersChart(){
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
+      layout: { padding: { top: 30 } },
       plugins: {
         legend: { display: true, position: 'bottom' },
         tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: € ${eur(ctx.parsed.y||0)}` } },
@@ -259,7 +286,8 @@ function renderMonthlyOrdersChart(){
         x: { stacked: true, ticks: { autoSkip: false, maxRotation: 40, minRotation: 0 } },
         y: { stacked: true, beginAtZero: true, ticks: { callback: (value) => '€ '+eur(value) } }
       }
-    }
+    },
+    plugins: [stackTotalsPlugin]
   });
 }
 

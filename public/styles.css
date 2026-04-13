@@ -444,8 +444,11 @@ input:focus, textarea:focus, select:focus {
   }
 
   .top-bar {
-    height: 56px;
-    padding: 0 12px;
+    height: calc(56px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    box-sizing: border-box;
   }
 
   .page-content {

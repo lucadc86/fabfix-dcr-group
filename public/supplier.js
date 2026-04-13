@@ -733,7 +733,7 @@ async function loadOrders(){
 
   invSnap.forEach(docSnap => {
     const inv = docSnap.data();
-    if(!inv.photoUrl) return; // only photo-invoices appear in orders history
+    // Include ALL invoices in order history, not just photo ones
     const dateVal = inv.date ? new Date(inv.date + "T00:00:00") : null;
     entries.push({ id: docSnap.id, type: "invoice", dateVal, data: inv });
   });
@@ -750,6 +750,12 @@ async function loadOrders(){
     return;
   }
   ordersEmptyState?.classList.add("hidden");
+
+  // Auto-expand history body
+  if(ordersHistoryBody) {
+    ordersHistoryBody.classList.remove("hidden");
+    if(toggleOrdersBtn) toggleOrdersBtn.textContent = "Nascondi";
+  }
 
   // Show "mark all paid" button only when there are unpaid orders
   const hasUnpaid = ordersSnap.docs.some(d => !d.data().pagato);
@@ -803,7 +809,7 @@ async function loadOrders(){
       });
 
     } else {
-      // Fattura con foto
+      // Fattura (tutti, non solo con foto)
       const inv  = entry.data;
       const { label: statusLabel, cls: statusCls } = getStatusInfo(inv);
       const totale = invTotal(inv);
@@ -814,7 +820,7 @@ async function loadOrders(){
         <div class="order-items">
           <strong>🧾 ${numLabel.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</strong>
           ${inv.description ? `<br>${inv.description.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}` : ""}
-          <br><button class="act-btn photo-btn-sm" style="margin-top:4px;width:auto;padding:0 8px;height:26px;font-size:11px;" data-photo="${inv.photoUrl}" title="Visualizza foto fattura">📷 Vedi foto</button>
+          ${inv.photoUrl ? `<br><button class="act-btn photo-btn-sm" style="margin-top:4px;width:auto;padding:0 8px;height:26px;font-size:11px;" data-photo="${inv.photoUrl}" title="Visualizza foto fattura">📷 Vedi foto</button>` : ""}
           <div class="order-items-status" style="display:none;margin-top:4px;">
             <span class="status-pill ${statusCls}">${statusLabel}</span>
           </div>
@@ -823,11 +829,36 @@ async function loadOrders(){
         <div class="order-status-cell">
           <span class="status-pill ${statusCls}">${statusLabel}</span>
         </div>
-        <div class="order-actions-cell"></div>
+        <div class="order-actions-cell">
+          <button class="act-btn" title="Modifica" data-inv-edit="${entry.id}">✏️</button>
+          ${statusCls !== "pagata" ? `<button class="act-btn pay-btn" title="Segna come pagata" data-inv-pay="${entry.id}">✅</button>` : ""}
+          <button class="act-btn del-btn" title="Elimina" data-inv-del="${entry.id}">🗑️</button>
+        </div>
       `;
-      row.querySelector("[data-photo]")?.addEventListener("click", (e) => {
+      if(inv.photoUrl) {
+        row.querySelector("[data-photo]")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openPhotoModal(e.currentTarget.dataset.photo);
+        });
+      }
+      row.querySelector("[data-inv-edit]")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        openPhotoModal(e.currentTarget.dataset.photo);
+        startEdit(inv);
+      });
+      row.querySelector("[data-inv-pay]")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if(!confirm("Segna questa fattura come pagata?")) return;
+        await updateDoc(doc(collection(db,"suppliers",supplierId,"invoices"), entry.id), { status:"pagata" });
+        await loadOrders();
+        await loadInvoices();
+      });
+      row.querySelector("[data-inv-del]")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if(!confirm("Eliminare questa fattura?")) return;
+        await deleteDoc(doc(collection(db,"suppliers",supplierId,"invoices"), entry.id));
+        await removeInvoiceFromSpese(entry.id);
+        await loadOrders();
+        await loadInvoices();
       });
     }
 

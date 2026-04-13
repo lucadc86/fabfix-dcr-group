@@ -305,10 +305,13 @@
     /* Events (common) */
     .fc-event{
       border-radius:6px !important;border:none !important;
-      margin-bottom:2px !important;cursor:pointer !important;
+      margin-bottom:2px !important;cursor:grab !important;
       overflow:hidden !important;
       transition:filter .1s,transform .12s,box-shadow .12s !important;
+      touch-action:none !important;
     }
+    .fc-event:active{ cursor:grabbing !important; }
+    .fc-event-draggable{ cursor:grab !important; }
     .fc-event:hover{
       filter:brightness(.92);transform:translateY(-1px);
       box-shadow:0 4px 12px rgba(0,0,0,.18) !important;
@@ -419,28 +422,39 @@
       .fc .fc-daygrid-day{min-height:64px}
       .fc .fc-timeGridWeek-button,.fc .fc-timeGridDay-button{display:none !important}
     }
+    @media (max-width:480px){
+      .fc .fc-toolbar-title{font-size:13px !important}
+      .fc .fc-button-primary{padding:4px 7px !important;font-size:11px !important}
+      .fc .fc-toolbar.fc-header-toolbar{flex-wrap:wrap;gap:4px;padding:8px 8px 6px !important}
+      .fc .fc-daygrid-day{min-height:52px !important}
+      .fc .fc-daygrid-day-number{font-size:11px !important;width:20px !important;height:20px !important;line-height:20px !important;padding:0 !important;text-align:center !important;}
+      .fc-evt-pill{font-size:9px !important;padding:1px 3px !important;}
+      .fc .fc-col-header-cell-cushion{font-size:10px !important;padding:3px 1px !important;}
+      #calendar{min-height:320px !important;}
+    }
 
     /* ─── Modal ─── */
     .modal-backdrop{
-      position:fixed;inset:0;background:rgba(0,0,0,.45);
-      display:none;align-items:flex-end;justify-content:center;
-      padding:0;
-      z-index:2000;overscroll-behavior:contain;
-    }
-    @media (min-width:600px){
-      .modal-backdrop{align-items:center;padding:16px;}
+      position:fixed;inset:0;background:rgba(0,0,0,.55);
+      display:none;align-items:center;justify-content:center;
+      padding:16px;box-sizing:border-box;
+      z-index:9000;overflow-y:auto;overscroll-behavior:contain;
     }
     .modal{
-      width:min(540px, 100%);background:#fff;
-      border-radius:20px 20px 0 0;
-      box-shadow:0 -8px 40px rgba(0,0,0,.22);
+      width:100%;max-width:480px;min-width:0;
+      background:var(--card,#fff);
+      border-radius:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,.3);
       border:none;
       overflow:hidden;
-      max-height:92dvh;max-height:92vh;
+      max-height:calc(100dvh - 32px);max-height:calc(100vh - 32px);
       display:flex;flex-direction:column;
+      flex-shrink:0;margin:auto;
     }
-    @media (min-width:600px){
-      .modal{border-radius:20px;max-height:calc(100dvh - 32px);max-height:calc(100vh - 32px);}
+    @media (max-width:520px){
+      .modal-backdrop{padding:12px;}
+      .modal{max-width:100%;border-radius:16px;}
+      .modal-body{max-height:60vh;overflow-y:auto;}
     }
     .modal-head{
       padding:14px 16px 12px;background:linear-gradient(135deg,#1f4fd8 0%,#3b82f6 100%);
@@ -650,6 +664,12 @@
 
     <!-- Sidebar -->
     <aside class="sidebar-col">
+
+      <!-- Today panel -->
+      <div class="card sidebar-section" id="todayCard">
+        <div class="card-title">📍 Oggi — <span id="todayDateLabel"></span></div>
+        <div id="todayList"><span class="sidebar-empty">Nessun evento oggi</span></div>
+      </div>
 
       <!-- Upcoming events -->
       <div class="card sidebar-section">
@@ -1034,8 +1054,43 @@
       }).join('');
     }
 
+    // ─── Today panel ───
+    function buildTodayPanel(events){
+      const today=new Date();
+      today.setHours(0,0,0,0);
+      const todayEvts=events
+        .filter(ev=>{
+          const st=ev.start?new Date(ev.start):null;
+          if(!st) return false;
+          const d=new Date(st); d.setHours(0,0,0,0);
+          return d.getTime()===today.getTime();
+        })
+        .sort((a,b)=>new Date(a.start)-new Date(b.start));
+      const lbl=document.getElementById('todayDateLabel');
+      if(lbl) lbl.textContent=today.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+      const el=document.getElementById('todayList');
+      if(!el) return;
+      if(!todayEvts.length){el.innerHTML='<div class="sidebar-empty">Nessun evento oggi 🎉</div>';return;}
+      const bgMap={promemoria:'#ede9fe',appuntamento:'#ede9fe',scadenza:'#fee2e2',ordine:'#dbeafe',incasso:'#dcfce7',spesa:'#ffedd5',altro:'#f3f4f6'};
+      const iconMap={promemoria:'🟣',appuntamento:'📌',scadenza:'🔴',ordine:'🔵',incasso:'🟢',spesa:'🟠',altro:'⚪'};
+      el.innerHTML=todayEvts.map(ev=>{
+        const type=ev.extendedProps?.sourceType||ev.extendedProps?.type||'promemoria';
+        const bg=bgMap[type]||'#f3f4f6';
+        const icon=iconMap[type]||'•';
+        const color=TYPE_COLORS[type]||TYPE_COLORS.promemoria;
+        const title=(ev.title||'Evento').replace(/^[🔵🟢🟠🔴🟣📌⚪]\s*/u,'');
+        const amount=ev.extendedProps?.sourceData?.resolvedAmount;
+        return `<div class="sidebar-item" style="border-left:3px solid ${color};padding-left:8px;margin-left:-8px;">
+          <div class="sidebar-badge" style="background:${bg}">${icon}</div>
+          <div class="sidebar-item-body">
+            <div class="sidebar-item-title">${title}</div>
+            ${amount?`<div class="sidebar-meta" style="color:#16a34a;font-weight:700;">${eur(amount)}</div>`:''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
     // ─── Historical table ───
-    function buildHistTable(){
       const search=(document.getElementById('histSearch').value||'').toLowerCase();
       const typeFilter=document.getElementById('histTypeFilter').value;
       let rows=histData.filter(r=>{
@@ -1181,11 +1236,11 @@
       const el=document.getElementById("calendar");
       calendar=new FullCalendar.Calendar(el,{
         locale:"it",
-        initialView: window.innerWidth <= 480 ? "listMonth" : "dayGridMonth",
+        initialView: "dayGridMonth",
         headerToolbar:{
           left:"prev,next today",
           center:"title",
-          right:"dayGridMonth,listMonth,timeGridWeek"
+          right: window.innerWidth <= 480 ? "listMonth" : "dayGridMonth,listMonth,timeGridWeek"
         },
         height:"auto",
         nowIndicator:true,
@@ -1196,7 +1251,8 @@
         eventDurationEditable:true,
         eventResizableFromStart:true,
         dragScroll:true,
-        longPressDelay:150,
+        longPressDelay:0,
+        eventLongPressDelay:0,
         dayMaxEvents:3,
         stickyHeaderDates:true,
         eventDisplay:"block",
@@ -1399,6 +1455,7 @@
         applyFilters();
 
         buildUpcoming(allCalendarEvents);
+        buildTodayPanel(allCalendarEvents);
         rebuildHistData(allCalendarEvents);
       });
     }

@@ -224,6 +224,35 @@ async function waitForAuth(timeoutMs = 1500){
     :root:not(.theme-light) body.page .quick-nav,
     :root:not(.theme-light) body:not(.incassi-dark):not([class]) .quick-nav{ background:#1e293b; color:#e2e8f0; border-color:rgba(255,255,255,.15); }
 
+    /* ── Dark mode: finanze/fornitori-specific elements ── */
+    :root:not(.theme-light) .fin-kpi{ background:#1e293b !important; border-color:rgba(255,255,255,.10) !important; }
+    :root:not(.theme-light) .fin-kpi-value{ color:#e2e8f0 !important; }
+    :root:not(.theme-light) .fin-kpi-label{ color:#94a3b8 !important; }
+    :root:not(.theme-light) .fin-kpi-sub{ color:#94a3b8 !important; }
+    :root:not(.theme-light) .fin-card{ background:#1e293b !important; border-color:rgba(255,255,255,.10) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .fin-card-title{ color:#e2e8f0 !important; }
+    :root:not(.theme-light) .fin-empty{ color:#94a3b8 !important; }
+    :root:not(.theme-light) .supplier-name{ color:#e2e8f0 !important; }
+    :root:not(.theme-light) .supplier-total{ color:#e2e8f0 !important; }
+    :root:not(.theme-light) .supplier-row{ background:#1e293b !important; border-bottom-color:rgba(255,255,255,.07) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .inv-row{ background:#1e293b !important; border-bottom-color:rgba(255,255,255,.07) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .inv-table-head{ background:#0f172a !important; color:#94a3b8 !important; }
+    :root:not(.theme-light) .inv-stat-card{ background:#0f172a !important; border-color:rgba(255,255,255,.10) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .inv-stat-value{ color:#e2e8f0 !important; }
+    :root:not(.theme-light) .inv-stat-label{ color:#94a3b8 !important; }
+    :root:not(.theme-light) .filter-pill{ background:#1e293b !important; color:#e2e8f0 !important; border-color:rgba(255,255,255,.15) !important; }
+    :root:not(.theme-light) .filter-pill.active{ background:#1f4fd8 !important; color:#fff !important; border-color:#1f4fd8 !important; }
+    :root:not(.theme-light) .ghost-btn{ background:transparent !important; color:#e2e8f0 !important; border-color:rgba(255,255,255,.20) !important; }
+    :root:not(.theme-light) .primary-btn{ background:#1f4fd8 !important; color:#fff !important; border-color:#1f4fd8 !important; }
+    :root:not(.theme-light) .card-block{ background:#1e293b !important; border-color:rgba(255,255,255,.10) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .scad-row{ background:#1e293b !important; border-bottom-color:rgba(255,255,255,.07) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .scad-supplier{ color:#e2e8f0 !important; }
+    :root:not(.theme-light) .scad-detail{ color:#94a3b8 !important; }
+    :root:not(.theme-light) .fin-table-row{ background:#1e293b !important; border-bottom-color:rgba(255,255,255,.07) !important; color:#e2e8f0 !important; }
+    :root:not(.theme-light) .year-tab{ background:#1e293b !important; color:#94a3b8 !important; border-color:rgba(255,255,255,.10) !important; }
+    :root:not(.theme-light) .year-tab.active{ background:#1f4fd8 !important; color:#fff !important; }
+    :root:not(.theme-light) .saldo-bar{ background:rgba(255,255,255,.08) !important; }
+
     /* ── Theme toggle button ── */
     .theme-toggle-btn{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom) + var(--ai-bottom-extra,0px));left:18px;z-index:9999;
       width:44px;height:44px;border-radius:50%;border:none;

@@ -214,7 +214,7 @@
     <div class="fin-kpi blue" id="kpiSaldoCard">
       <div class="fin-kpi-label">⚖️ Saldo netto mese</div>
       <div class="fin-kpi-value" id="kpiSaldo">—</div>
-      <div class="fin-kpi-sub">Incassato − Spese − Fornitori</div>
+      <div class="fin-kpi-sub">Incassato − Spese</div>
     </div>
   </div>
 
@@ -290,6 +290,7 @@
   import {
     collection, getDocs, query, orderBy, limit, where
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getYearlyIncomesTotal, getMonthlyIncomesTotal, getYearlyMonthlySeries } from "./services/incomeService.js?v=69fix";
 
   Chart.register(ChartDataLabels);
 
@@ -376,17 +377,12 @@
     let incassiMese=0, speseMese=0, forniMese=0, scadenzeMese=0;
     let incassiAnno=0, speseAnno=0, forniAnno=0;
 
-    // Incassi
+    // Incassi – use incomeService for same normalization as incassi.html
     try{
-      const snap = await getDocs(collection(db,'incassi'));
-      snap.forEach(d=>{
-        const data=d.data()||{};
-        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
-        if(!dateKey) return;
-        const amount = Number(data.amount||0);
-        if(dateKey.startsWith(ymStr)) incassiMese+=amount;
-        if(dateKey.startsWith(String(y))) incassiAnno+=amount;
-      });
+      [incassiMese, incassiAnno] = await Promise.all([
+        getMonthlyIncomesTotal(y, m+1),
+        getYearlyIncomesTotal(y)
+      ]);
     }catch(e){console.warn('finanze incassi',e);}
 
     // Spese
@@ -432,7 +428,7 @@
     }catch(e){console.warn('finanze scadenze',e);}
 
     // Saldo
-    const saldo = incassiMese - speseMese - forniMese;
+    const saldo = incassiMese - speseMese;
 
     // Update KPIs
     document.getElementById('kpiIncassiMese').textContent = eur(incassiMese);
@@ -473,17 +469,11 @@
     const speseByMonth = Array(12).fill(0);
     const forniByMonth = Array(12).fill(0);
 
-    // Incassi
+    // Incassi – use incomeService for consistent normalization
     try{
-      const snap = await getDocs(collection(db,'incassi'));
-      snap.forEach(d=>{
-        const data=d.data()||{};
-        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
-        if(!dateKey.startsWith(String(y))) return;
-        const m=parseInt(dateKey.slice(5,7))-1;
-        if(m>=0&&m<12) incassiByMonth[m]+=Number(data.amount||0);
-      });
-    }catch(e){}
+      const { values } = await getYearlyMonthlySeries(y);
+      values.forEach((v,i)=>{ incassiByMonth[i]=v; });
+    }catch(e){ console.warn('finanze yearChart incassi',e); }
 
     // Spese
     try{
@@ -512,7 +502,7 @@
       }
     }catch(e){}
 
-    const saldoByMonth = incassiByMonth.map((inc,i)=>inc-speseByMonth[i]-forniByMonth[i]);
+    const saldoByMonth = incassiByMonth.map((inc,i)=>inc-speseByMonth[i]);
 
     // Cash Flow chart
     const cfCanvas = document.getElementById('cashFlowChart');
