@@ -155,9 +155,11 @@ function renderSuppliersChart(list){
   if(!canvas || !window.Chart) return;
   const wrap = canvas.parentElement;
   if(wrap){
-    wrap.style.height = (window.innerWidth <= 768 ? 260 : 320) + 'px';
-    wrap.style.minHeight = wrap.style.height;
-    wrap.style.maxHeight = wrap.style.height;
+    const h = (window.innerWidth <= 768 ? 300 : 360) + 'px';
+    wrap.style.height = h;
+    wrap.style.minHeight = h;
+    wrap.style.maxHeight = h;
+    wrap.style.overflow = 'visible';
   }
   const labels = list.map(s=>String(s.name||'Senza nome'));
   const values = list.map(s=>parseEuroLike(s.total));
@@ -170,7 +172,7 @@ function renderSuppliersChart(list){
       responsive:true,
       maintainAspectRatio:false,
       animation:false,
-      layout:{ padding:{ top:30 } },
+      layout:{ padding:{ top:50, right:10, left:10 } },
       plugins:{
         legend:{display:false},
         tooltip:{ callbacks:{ label:(ctx)=>`€ ${eur(ctx.parsed.y||0)}` } },
@@ -181,7 +183,7 @@ function renderSuppliersChart(list){
           font:{size:10,weight:'700'},
           color:'rgba(59,130,246,0.9)',
           clamp:false, clip:false,
-          padding:{top:2}
+          padding:{top:4, bottom:4}
         }
       },
       scales:{ y:{ beginAtZero:true, ticks:{ callback:(value)=>'€ '+eur(value) } }, x:{ ticks:{ autoSkip:false, maxRotation:40, minRotation:0 } } }
@@ -196,9 +198,11 @@ function renderMonthlyOrdersChart(){
   if(!canvas || !window.Chart) return;
   const wrap = canvas.parentElement;
   if(wrap){
-    wrap.style.height = (window.innerWidth <= 768 ? 260 : 320) + 'px';
-    wrap.style.minHeight = wrap.style.height;
-    wrap.style.maxHeight = wrap.style.height;
+    const h = (window.innerWidth <= 768 ? 300 : 360) + 'px';
+    wrap.style.height = h;
+    wrap.style.minHeight = h;
+    wrap.style.maxHeight = h;
+    wrap.style.overflow = 'visible';
   }
   // Collect totals per month per supplier
   const monthTotals = {}; // { 'YYYY-MM': { supplierId: amount } }
@@ -246,16 +250,27 @@ function renderMonthlyOrdersChart(){
       for(let i=0; i<n; i++){
         const total = data.datasets.reduce((s,ds)=>s+(Number(ds.data[i])||0),0);
         if(!total) continue;
-        const meta0 = chart.getDatasetMeta(0);
+        // Find the last visible dataset to position the label
+        let meta0 = null;
+        for(let di=0; di<data.datasets.length; di++){
+          const m = chart.getDatasetMeta(di);
+          if(m && m.data[i] && !m.hidden){ meta0 = m; }
+        }
         if(!meta0||!meta0.data[i]) continue;
         const x = meta0.data[i].x;
         const y = yScale.getPixelForValue(total);
         ctx.save();
-        ctx.font = 'bold 10px "Segoe UI",system-ui,sans-serif';
-        ctx.fillStyle = '#334155';
+        ctx.font = 'bold 11px "Segoe UI",system-ui,sans-serif';
+        ctx.fillStyle = '#1e40af';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('€'+eur(total), x, y-4);
+        // Draw white background for readability
+        const text = '€'+eur(total);
+        const tw = ctx.measureText(text).width;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillRect(x - tw/2 - 3, y - 18, tw + 6, 16);
+        ctx.fillStyle = '#1e40af';
+        ctx.fillText(text, x, y - 4);
         ctx.restore();
       }
     }
@@ -269,7 +284,7 @@ function renderMonthlyOrdersChart(){
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
-      layout: { padding: { top: 30 } },
+      layout: { padding: { top: 50, right: 10, left: 10 } },
       plugins: {
         legend: { display: true, position: 'bottom' },
         tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: € ${eur(ctx.parsed.y||0)}` } },
@@ -516,13 +531,6 @@ if(btnToggleStorico && storicoBody){
     storicoBody.style.display = open ? 'block' : 'none';
     btnToggleStorico.textContent = open ? '▲ Nascondi storico' : '▼ Mostra storico';
   });
-}
-// Auto-open storicoBody when "Nuovo ordine" is clicked
-if(addOrderGlobalBtn && storicoBody){
-  addOrderGlobalBtn.addEventListener('click',()=>{
-    storicoBody.style.display='block';
-    if(btnToggleStorico) btnToggleStorico.textContent='▲ Nascondi storico';
-  }, true); // capture phase so it runs before the existing click listener
 }
 
 loadOrdersHistory();

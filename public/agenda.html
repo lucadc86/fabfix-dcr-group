@@ -107,13 +107,16 @@
     /* ─── Filter toggles ─── */
     .filter-strip{
       max-width:1400px;margin:12px auto 0;padding:0 16px;
-      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+      display:flex;gap:8px;align-items:center;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+      scrollbar-width:none;flex-wrap:nowrap;
     }
-    .filter-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-right:4px}
+    .filter-strip::-webkit-scrollbar{display:none;}
+    .filter-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-right:4px;white-space:nowrap;flex-shrink:0;}
     .filter-btn{
       border:2px solid transparent;border-radius:999px;
       padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;
-      transition:opacity .15s;
+      transition:opacity .15s;white-space:nowrap;flex-shrink:0;
     }
     .filter-btn[data-type="promemoria"]{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd}
     .filter-btn[data-type="ordine"]{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
@@ -538,29 +541,31 @@
       .fc .fc-toolbar-chunk:last-child{display:none !important;}
       .fc .fc-toolbar-title{font-size:15px !important;}
       .fc .fc-button-primary{padding:5px 9px !important;font-size:11px !important;}
-      .fc .fc-daygrid-day{min-height:48px !important;}
-      .fc .fc-daygrid-day-number{font-size:11px !important;width:22px;height:22px;margin:3px 3px 1px;}
+      .fc .fc-daygrid-day{min-height:64px !important;}
+      .fc .fc-daygrid-day-number{font-size:12px !important;width:24px !important;height:24px !important;line-height:24px !important;margin:3px 3px 1px;}
       .fc-evt-lbl,.fc-evt-ico{font-size:10px !important;}
       /* Hide week/day buttons - keep month + list on mobile */
       .fc .fc-timeGridWeek-button,.fc .fc-timeGridDay-button{display:none !important;}
       .kpi-card{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px);}
-      .page-content{padding:8px 8px 16px;}
+      .page-content{padding:4px 2px 16px;}
       .card{padding:10px;}
       .hist-tbl{font-size:11px;}
       .hist-tbl th,.hist-tbl td{padding:6px 8px;}
       .calendar-col,.cal-card,#calendar{max-width:100%;overflow:hidden;}
       .fc .fc-view-harness{max-width:100%;overflow-x:hidden;}
-      .fc .fc-col-header-cell-cushion{padding:4px 2px !important;font-size:10px !important;letter-spacing:0;}
+      .fc .fc-col-header-cell-cushion{padding:4px 2px !important;font-size:11px !important;letter-spacing:0;}
+      .filter-strip{padding:0 6px;margin-top:8px;}
+      .kpi-strip{padding:calc(72px + env(safe-area-inset-top)) 6px 0;}
     }
     /* iPhone small (SE, 375px) */
     @media (max-width:390px){
       .fc .fc-toolbar-title{font-size:13px !important;}
       .fc .fc-button-primary{padding:4px 7px !important;font-size:10px !important;}
-      .fc .fc-daygrid-day{min-height:42px !important;}
-      .fc .fc-daygrid-day-number{font-size:10px !important;width:20px;height:20px;margin:2px 2px 0;}
+      .fc .fc-daygrid-day{min-height:58px !important;}
+      .fc .fc-daygrid-day-number{font-size:11px !important;width:22px;height:22px;margin:2px 2px 0;}
       .kpi-card{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px);padding:8px 10px;}
       .kpi-value{font-size:14px;}
-      .page-content{padding:6px 6px 12px;}
+      .page-content{padding:4px 2px 12px;}
     }
     @media (max-width:560px){
       .top-bar{height:calc(58px + env(safe-area-inset-top));}
@@ -1091,6 +1096,7 @@
     }
 
     // ─── Historical table ───
+    function buildHistTable(){
       const search=(document.getElementById('histSearch').value||'').toLowerCase();
       const typeFilter=document.getElementById('histTypeFilter').value;
       let rows=histData.filter(r=>{
@@ -1106,6 +1112,7 @@
         return 0;
       });
       const tbody=document.getElementById('histBody');
+      if(!tbody) return;
       if(!rows.length){tbody.innerHTML='<tr><td colspan="4" class="hist-empty">Nessun evento trovato</td></tr>';return;}
       tbody.innerHTML=rows.map(r=>{
         const amtVal=Number(r.amount)||0;
