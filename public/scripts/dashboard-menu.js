@@ -47,7 +47,13 @@
     const opts = optionData;
     opts.forEach((o,i)=>{
       const item = createEl("button",{type:"button",class:"dashnav-item",title:o.text});
-      item.innerHTML = `${iconSVG(i)}<div class="dashnav-item-txt">${o.text}</div>`;
+      const iconSpan = document.createElement('span');
+      iconSpan.innerHTML = iconSVG(i);
+      const txtDiv = document.createElement('div');
+      txtDiv.className = 'dashnav-item-txt';
+      txtDiv.textContent = o.text;
+      item.appendChild(iconSpan);
+      item.appendChild(txtDiv);
       item.addEventListener("click", ()=>{
         const url=o.value;
         if (url) window.location.href=url;

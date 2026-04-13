@@ -266,18 +266,41 @@
           const tr = document.createElement('tr');
           const enabled = acc.enabled !== false;
           const createdAt = acc.createdAt?.toDate ? acc.createdAt.toDate().toLocaleDateString('it-IT') : (acc.createdAtISO || '—');
-          tr.innerHTML = `
-            <td style="font-weight:700">${escapeHtml(acc.clientName || acc.clientId || '—')}</td>
-            <td>${escapeHtml(acc.email || '—')}</td>
-            <td>${acc.discount ? acc.discount + '%' : '—'}</td>
-            <td><span class="badge ${enabled ? 'on' : 'off'}">${enabled ? '✅ Attivo' : '⏸ Disabilitato'}</span></td>
-            <td>${createdAt}</td>
-            <td>
-              <button class="btn-admin secondary" data-id="${acc.id}" data-action="toggle" style="padding:7px 12px;font-size:12px">
-                ${enabled ? '⏸ Disabilita' : '▶ Abilita'}
-              </button>
-            </td>
-          `;
+
+          const tdName = document.createElement('td');
+          tdName.style.fontWeight = '700';
+          tdName.textContent = acc.clientName || acc.clientId || '—';
+
+          const tdEmail = document.createElement('td');
+          tdEmail.textContent = acc.email || '—';
+
+          const tdDiscount = document.createElement('td');
+          tdDiscount.textContent = acc.discount ? acc.discount + '%' : '—';
+
+          const tdStatus = document.createElement('td');
+          const badge = document.createElement('span');
+          badge.className = `badge ${enabled ? 'on' : 'off'}`;
+          badge.textContent = enabled ? '✅ Attivo' : '⏸ Disabilitato';
+          tdStatus.appendChild(badge);
+
+          const tdCreated = document.createElement('td');
+          tdCreated.textContent = createdAt;
+
+          const tdActions = document.createElement('td');
+          const toggleBtn = document.createElement('button');
+          toggleBtn.className = 'btn-admin secondary';
+          toggleBtn.dataset.id = acc.id;
+          toggleBtn.dataset.action = 'toggle';
+          toggleBtn.style.cssText = 'padding:7px 12px;font-size:12px';
+          toggleBtn.textContent = enabled ? '⏸ Disabilita' : '▶ Abilita';
+          tdActions.appendChild(toggleBtn);
+
+          tr.appendChild(tdName);
+          tr.appendChild(tdEmail);
+          tr.appendChild(tdDiscount);
+          tr.appendChild(tdStatus);
+          tr.appendChild(tdCreated);
+          tr.appendChild(tdActions);
           tbody.appendChild(tr);
         }
 
@@ -304,12 +327,12 @@
         });
 
       } catch (err) {
-        container.innerHTML = `<p style="color:#ef4444;font-size:13px">Errore caricamento: ${escapeHtml(err.message)}</p>`;
+        const p = document.createElement('p');
+        p.style.cssText = 'color:#ef4444;font-size:13px';
+        p.textContent = 'Errore caricamento: ' + (err.message || String(err));
+        container.innerHTML = '';
+        container.appendChild(p);
       }
-    }
-
-    function escapeHtml(s) {
-      return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
     function validate() {

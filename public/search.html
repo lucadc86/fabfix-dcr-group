@@ -264,17 +264,19 @@
       if (loading) return null;
       loading = true;
       try {
-        const [{ incomes, orders }, expenses, deadlines, suppliers] = await Promise.all([
+        const [{ incomes, orders }, expenses, deadlines, suppliers, rawClients] = await Promise.all([
           getNormalizedIncomesAndOrders(),
           listExpenses(),
           listDeadlines(),
           fs.getAll('suppliers'),
+          fs.getAll('clients'),
         ]);
-        const { clients } = await getNormalizedIncomesAndOrders();
-        const clientList = [...new Map(orders.map(o => [
-          o.clientId || o.clientName,
-          { id: o.clientId || o.clientName, name: o.clientName || o.clientId || '', email: o.clientEmail || '' }
-        ])).values()];
+        // Build a deduplicated client list from the Firestore clients collection
+        const clientList = rawClients.map(c => ({
+          id: c.id,
+          name: String(c.name || c.nome || c.ragioneSociale || '').trim(),
+          email: String(c.email || c.mail || '').trim(),
+        })).filter(c => c.name);
         allData = { orders, incomes, expenses, deadlines, suppliers, clients: clientList };
         return allData;
       } finally {
@@ -289,7 +291,21 @@
 
       if (!results.length) {
         countEl.textContent = '';
-        container.innerHTML = `<div class="search-hint"><div class="hint-icon">😕</div><div>Nessun risultato per "<strong>${query}</strong>"</div></div>`;
+        const hint = document.createElement('div');
+        hint.className = 'search-hint';
+        const icon = document.createElement('div');
+        icon.className = 'hint-icon';
+        icon.textContent = '😕';
+        const msg = document.createElement('div');
+        msg.textContent = 'Nessun risultato per "';
+        const strong = document.createElement('strong');
+        strong.textContent = query;
+        msg.appendChild(strong);
+        msg.appendChild(document.createTextNode('"'));
+        hint.appendChild(icon);
+        hint.appendChild(msg);
+        container.innerHTML = '';
+        container.appendChild(hint);
         return;
       }
 
@@ -301,14 +317,37 @@
         const a = document.createElement('a');
         a.className = 'result-item';
         a.href = link(r.type, r.item);
-        a.innerHTML = `
-          <div class="result-left">
-            <div class="result-type ${t.cls}">${t.icon} ${t.label}</div>
-            <div class="result-title">${escapeHtml(r.title)}</div>
-            ${r.sub ? `<div class="result-sub">${escapeHtml(r.sub)}</div>` : ''}
-          </div>
-          ${r.value !== undefined ? `<div class="result-value">${escapeHtml(r.value)}</div>` : ''}
-        `;
+
+        const left = document.createElement('div');
+        left.className = 'result-left';
+
+        const typeDiv = document.createElement('div');
+        typeDiv.className = `result-type ${t.cls}`;
+        typeDiv.textContent = `${t.icon} ${t.label}`;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'result-title';
+        titleDiv.textContent = String(r.title || '');
+
+        left.appendChild(typeDiv);
+        left.appendChild(titleDiv);
+
+        if (r.sub) {
+          const subDiv = document.createElement('div');
+          subDiv.className = 'result-sub';
+          subDiv.textContent = String(r.sub || '');
+          left.appendChild(subDiv);
+        }
+
+        a.appendChild(left);
+
+        if (r.value !== undefined) {
+          const valDiv = document.createElement('div');
+          valDiv.className = 'result-value';
+          valDiv.textContent = String(r.value || '');
+          a.appendChild(valDiv);
+        }
+
         container.appendChild(a);
       }
     }
