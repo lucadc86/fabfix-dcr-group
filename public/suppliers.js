@@ -318,7 +318,7 @@ function renderOrdersHistory(){
     return;
   }
   list.innerHTML = entries.map(([supplierId,{name,orders}])=>{
-    const total = orders.reduce((s,o)=>s+Number(o.totalWithVat||o.total||o.importo||0),0);
+    const total = orders.reduce((s,o)=>s+Number(o.totalWithVat||o.total||o.importo||o.amount||0),0);
     const rows = orders.slice(0,5).map(o=>{
       const date = o.dateISO||o.invoiceDate||o.date||'—';
       const amount = Number(o.totalWithVat||o.total||o.importo||o.amount||0);
