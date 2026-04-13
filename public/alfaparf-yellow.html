@@ -21,6 +21,12 @@ table{width:100%;border-collapse:collapse}
 th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left}
 th{text-align:left;background:#f8fafc}
 .num{text-align:right;white-space:nowrap}
+/* Dark mode */
+:root:not(.theme-light) body{background:#0f172a;color:#e2e8f0}
+:root:not(.theme-light) .table-wrap{background:#1e293b;border-color:rgba(255,255,255,.10)}
+:root:not(.theme-light) th{background:#1e293b;color:#94a3b8;border-bottom-color:rgba(255,255,255,.10)}
+:root:not(.theme-light) td{border-bottom-color:rgba(255,255,255,.08)}
+:root:not(.theme-light) tr:hover td{background:rgba(255,255,255,.04)}
 </style>
 </head>
 <body>

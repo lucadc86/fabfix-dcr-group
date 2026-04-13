@@ -459,6 +459,7 @@ function renderCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } },
