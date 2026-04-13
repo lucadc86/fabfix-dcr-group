@@ -152,6 +152,8 @@
 @media (max-width: 560px){.quote-actions{grid-template-columns:1fr 1fr;gap:8px}.quote-actions button{min-height:46px;padding:12px;font-size:13px;border-radius:14px;}}
 
 /* ── Dark mode overrides for ordini-clienti ── */
+:root:not(.theme-light) .top-bar { background: #1e293b; border-bottom-color: rgba(255,255,255,.08); }
+:root:not(.theme-light) .page-title { color: #e2e8f0 !important; }
 :root:not(.theme-light) .quote-card {
   background: #1e293b !important;
   border-color: rgba(255,255,255,.12) !important;
@@ -210,6 +212,7 @@
 <body>
   <header class="top-bar">
     <button type="button" onclick="window.location.href='index.html'" class="back-btn" aria-label="Indietro">←</button>
+    <span class="page-title" style="color:#0f172a;font-weight:900;font-size:17px;flex:1;">📋 Ordini Clienti</span>
     <select id="quickNav" class="nav-select">
       <option value="">Vai a...</option>
       <option value="index.html">Home</option>

@@ -213,9 +213,9 @@ main.page-content{
   background: rgba(255,255,255,.9);
 }
 
-.kpi-label{ font-weight: 800; opacity: .86; }
+.kpi-label{ font-weight: 800; color: #334155; }
 .kpi-value{ font-size: 26px; font-weight: 950; margin-top: 8px; }
-.kpi-hint{ margin-top: 6px; opacity: .70; font-size: 12.5px; }
+.kpi-hint{ margin-top: 6px; color: #475569; font-size: 12.5px; }
 
 .kpi-blue{ background: #f0f4ff; border-left: 4px solid #4338ca; }
 .kpi-blue .kpi-value { color: #4338ca; }

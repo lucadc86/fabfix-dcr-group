@@ -140,7 +140,9 @@ export function normalizeDeadline(doc) {
   const amount = num(doc?.amount ?? doc?.importo ?? doc?.value, 0);
   const note = String(doc?.note ?? doc?.descrizione ?? "").trim();
   const isDeleted = Boolean(doc?.isDeleted);
-  return { id, dateISO, amount, note, isDeleted };
+  const pagata = Boolean(doc?.pagata ?? doc?.paid ?? doc?.pagato);
+  const category = String(doc?.category ?? doc?.categoria ?? "").trim();
+  return { id, dateISO, amount, note, isDeleted, pagata, category };
 }
 
 export const schemaUtils = {

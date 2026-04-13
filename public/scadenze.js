@@ -29,7 +29,9 @@ function monthLabel(ym) {
   return d.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
 }
 
-function statusOf(iso) {
+function statusOf(item) {
+  const iso = typeof item === 'string' ? item : item?.dateISO;
+  if (item && typeof item === 'object' && item.pagata) return { cls: 'scad-status-paid', label: '✅ Pagata' };
   const today = todayISO();
   if (iso < today) return { cls: 'scad-status-past',   label: '🔴 Scaduta' };
   if (iso === today) return { cls: 'scad-status-today', label: '🟡 Oggi' };
@@ -191,7 +193,7 @@ function renderList() {
     const label = monthLabel(ym);
 
     const rows = items.map(item => {
-      const st = statusOf(item.dateISO);
+      const st = statusOf(item);
       return `
         <div class="scad-row" data-id="${esc(item.id)}" tabindex="0" role="button"
              aria-label="Scadenza ${fmtDate(item.dateISO)}: ${esc(item.note) || 'nessuna nota'}">

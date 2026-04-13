@@ -200,3 +200,21 @@
   .auto-entry{flex-direction:column;align-items:flex-start}
   .auto-entry-amt{font-size:16px}
 }
+
+/* ── Dark mode overrides (incassi-calendario) ── */
+:root:not(.theme-light) body { background: #0f172a; color: #e2e8f0; }
+:root:not(.theme-light) .top-bar { background: #1e293b; border-bottom-color: rgba(255,255,255,.08); }
+:root:not(.theme-light) .title { color: #e2e8f0 !important; }
+:root:not(.theme-light) .cal-title { color: #e2e8f0 !important; }
+:root:not(.theme-light) .btn { background: #1e293b; color: #e2e8f0; border-color: rgba(255,255,255,.12); }
+:root:not(.theme-light) .btn.primary { background: rgba(37,99,235,.25); border-color: rgba(37,99,235,.4); color: #93c5fd; }
+:root:not(.theme-light) .totals { background: #1e293b; border-color: rgba(255,255,255,.08); }
+:root:not(.theme-light) .totals-row span { color: #e2e8f0 !important; }
+:root:not(.theme-light) .totals-row b { color: #f1f5f9 !important; }
+:root:not(.theme-light) .day-row { background: #1e293b; border-color: rgba(255,255,255,.08); }
+:root:not(.theme-light) .day-row:hover { background: #1e3a5f; border-color: rgba(37,99,235,.3); }
+:root:not(.theme-light) .day-date { color: #e2e8f0 !important; }
+:root:not(.theme-light) .day-sub { color: #94a3b8 !important; }
+:root:not(.theme-light) .day-amt { color: #f1f5f9 !important; }
+:root:not(.theme-light) .day-list { }
+:root:not(.theme-light) .hint { color: #64748b; }

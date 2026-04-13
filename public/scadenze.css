@@ -380,6 +380,12 @@ details[open] .scad-chart-toggle::before { transform: rotate(90deg); }
   color: #6ee7b7;
   border: 1px solid rgba(16,185,129,.25);
 }
+.scad-status-paid {
+  background: rgba(16,185,129,.20);
+  color: #34d399;
+  border: 1px solid rgba(16,185,129,.45);
+  font-weight: 800;
+}
 
 /* Row actions */
 .scad-row-actions {
@@ -583,7 +589,9 @@ details[open] .scad-chart-toggle::before { transform: rotate(90deg); }
 .scad-input-date {
   min-width: 0;
   max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* ── Checkbox field ── */

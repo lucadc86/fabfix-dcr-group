@@ -453,7 +453,7 @@ body.sp-page {
 
 .sp-chart-wrap {
   position: relative;
-  min-height: 230px;
+  min-height: 160px;
 }
 .sp-chart-label {
   font-size: 11px;

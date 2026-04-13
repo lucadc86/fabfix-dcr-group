@@ -10,6 +10,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agenda</title>
 
+  <link rel="stylesheet" href="./styles.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="./mobile.css?v=15_20260225222215" />
+
   <!-- FullCalendar (CDN) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
@@ -95,7 +98,7 @@
       background:#fff;border:1px solid var(--line);border-radius:14px;
       padding:12px 14px;box-shadow:0 4px 12px rgba(0,0,0,.05);
     }
-    .kpi-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .kpi-label{font-size:12px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
     .kpi-value{font-size:20px;font-weight:900;color:var(--text)}
     .kpi-value.positive{color:#16a34a}
     .kpi-value.negative{color:#dc2626}
@@ -1455,8 +1458,10 @@
 
         allCalendarEvents=[...agendaEvents,...external];
 
-        calendar.removeAllEvents();
-        calendar.addEventSource(allCalendarEvents);
+        if(calendar){
+          calendar.removeAllEvents();
+          calendar.addEventSource(allCalendarEvents);
+        }
         applyFilters();
 
         buildUpcoming(allCalendarEvents);

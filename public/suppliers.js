@@ -61,8 +61,11 @@ function render(list){
     `;
 
     row.addEventListener("click", () => {
-      // apre scheda fornitore
-      window.location.href = `supplier.html?supplierId=${encodeURIComponent(s.id)}`;
+      // Highlight selected row
+      document.querySelectorAll('.supplier-row').forEach(r => r.classList.remove('supplier-row--selected'));
+      row.classList.add('supplier-row--selected');
+      // Open inline detail panel
+      openSupplierDetail(s);
     });
 
     suppliersListEl.appendChild(row);
@@ -97,7 +100,136 @@ function applyFilter(){
   render(filtered);
 }
 
-/* FIX iPhone: click bloccati da overlay
+if(!term){
+    render(suppliersCache);
+    return;
+  }
+  const filtered = suppliersCache.filter(s => normalize(s.name).includes(term));
+  render(filtered);
+}
+
+// ── Inline Supplier Detail Panel ──────────────────────────────
+async function openSupplierDetail(s) {
+  const panel = document.getElementById('supplierDetailPanel');
+  if (!panel) return;
+
+  const initials = (s.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  // Show loading state
+  panel.classList.remove('hidden');
+  panel.innerHTML = `<div class="sdp-loading">⏳ Caricamento scheda fornitore…</div>`;
+
+  // Fetch orders and invoices
+  let orders = [], invoices = [];
+  try {
+    const [ordSnap, invSnap] = await Promise.all([
+      getDocs(collection(db, 'suppliers', s.id, 'orders')),
+      getDocs(collection(db, 'suppliers', s.id, 'invoices'))
+    ]);
+    orders = ordSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    invoices = invSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    console.warn('Errore caricamento scheda fornitore:', e);
+  }
+
+  // KPIs
+  const totalOrders = orders.reduce((s, o) => s + Number(o.totale || o.total || o.importo || o.amount || 0), 0);
+  const totalInvoices = invoices.reduce((s, i) => s + Number(i.total || i.amount || 0), 0);
+  const grandTotalSupp = totalOrders + totalInvoices;
+  const unpaidInvoices = invoices.filter(i => (i.status || 'da-pagare') !== 'pagata').length;
+
+  // Combined history (orders + invoices) sorted by date desc
+  const entries = [
+    ...orders.map(o => {
+      const dateVal = o.data?.toDate ? o.data.toDate() : (o.data ? new Date(o.data) : null);
+      return { type: 'order', dateVal, data: o };
+    }),
+    ...invoices.map(i => {
+      const dateVal = i.date ? new Date(i.date + 'T00:00:00') : null;
+      return { type: 'invoice', dateVal, data: i };
+    })
+  ].sort((a, b) => (b.dateVal?.getTime() || 0) - (a.dateVal?.getTime() || 0));
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  }
+
+  const historyRows = entries.slice(0, 20).map(e => {
+    const dateStr = fmtDate(e.dateVal);
+    if (e.type === 'order') {
+      const o = e.data;
+      const amount = Number(o.totale || o.total || o.importo || o.amount || 0);
+      const desc = (Array.isArray(o.righe) && o.righe.length) ? o.righe.map(r => r.prodotto || r.name || '').filter(Boolean).join(', ') : (o.descrizione || o.note || 'Ordine');
+      const paid = o.pagato === true;
+      return `<div class="sdp-hist-row">
+        <span class="sdp-hist-date">${dateStr}</span>
+        <span class="sdp-hist-desc" title="${desc}">${desc.length > 40 ? desc.slice(0,40)+'…' : desc}</span>
+        <span class="sdp-hist-amt">€ ${eur(amount)}</span>
+        <span class="sdp-hist-status ${paid ? 'paid' : 'unpaid'}">${paid ? '✅' : '⏳'}</span>
+      </div>`;
+    } else {
+      const i = e.data;
+      const amount = Number(i.total || i.amount || 0);
+      const desc = i.description || (i.invoiceNumber ? `Fattura #${i.invoiceNumber}` : 'Fattura');
+      const paid = (i.status || '') === 'pagata';
+      return `<div class="sdp-hist-row">
+        <span class="sdp-hist-date">${dateStr}</span>
+        <span class="sdp-hist-desc" title="${desc}">${desc.length > 40 ? desc.slice(0,40)+'…' : desc}</span>
+        <span class="sdp-hist-amt">€ ${eur(amount)}</span>
+        <span class="sdp-hist-status ${paid ? 'paid' : 'unpaid'}">${paid ? '✅' : '⏳'}</span>
+      </div>`;
+    }
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="sdp-header">
+      <div class="sdp-avatar">${initials}</div>
+      <div class="sdp-info">
+        <div class="sdp-name">${(s.name || '—').toUpperCase()}</div>
+        <div class="sdp-meta">${[s.email, s.phone, s.city].filter(Boolean).join(' · ') || 'Nessun contatto'}</div>
+      </div>
+      <div class="sdp-header-actions">
+        <a href="supplier.html?supplierId=${encodeURIComponent(s.id)}" class="sdp-btn sdp-btn-primary" title="Apri scheda completa">📋 Scheda completa</a>
+        <button class="sdp-close" id="sdpClose" title="Chiudi">✕</button>
+      </div>
+    </div>
+    <div class="sdp-stats">
+      <div class="sdp-stat">
+        <div class="sdp-stat-val">€ ${eur(grandTotalSupp)}</div>
+        <div class="sdp-stat-label">Totale acquistato</div>
+      </div>
+      <div class="sdp-stat">
+        <div class="sdp-stat-val">${orders.length + invoices.length}</div>
+        <div class="sdp-stat-label">Documenti totali</div>
+      </div>
+      <div class="sdp-stat">
+        <div class="sdp-stat-val">${invoices.length}</div>
+        <div class="sdp-stat-label">Fatture</div>
+      </div>
+      <div class="sdp-stat ${unpaidInvoices > 0 ? 'sdp-stat-warn' : ''}">
+        <div class="sdp-stat-val">${unpaidInvoices}</div>
+        <div class="sdp-stat-label">Da pagare</div>
+      </div>
+    </div>
+    <div class="sdp-section-title">📋 Storico ordini e fatture (ultimi 20)</div>
+    <div class="sdp-history">
+      <div class="sdp-hist-head">
+        <span>Data</span><span>Descrizione</span><span>Importo</span><span>Stato</span>
+      </div>
+      ${historyRows || '<div class="sdp-no-data">Nessun documento trovato</div>'}
+    </div>
+    <div class="sdp-actions">
+      <a href="supplier.html?supplierId=${encodeURIComponent(s.id)}" class="sdp-btn sdp-btn-primary">📋 Scheda completa</a>
+      <a href="supplier.html" class="sdp-btn sdp-btn-secondary">➕ Nuovo fornitore</a>
+    </div>
+  `;
+
+  document.getElementById('sdpClose')?.addEventListener('click', () => {
+    panel.classList.add('hidden');
+    document.querySelectorAll('.supplier-row').forEach(r => r.classList.remove('supplier-row--selected'));
+  });
+}
   - usiamo addEventListener e stopPropagation
   - e il CSS mette z-index/pointer-events corretti
 */
