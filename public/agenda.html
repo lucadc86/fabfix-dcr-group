@@ -233,14 +233,14 @@
 
     /* Toolbar */
     .fc .fc-toolbar.fc-header-toolbar{
-      padding:14px 16px 12px;margin-bottom:0;
+      padding:14px 18px 12px;margin-bottom:0;
       border-bottom:1px solid #e5e7eb;background:#fff;
       flex-wrap:wrap;gap:8px;
     }
     .fc .fc-toolbar-chunk{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .fc .fc-toolbar-title{
       font-size:20px !important;font-weight:900 !important;
-      color:#0f172a;letter-spacing:-.3px;text-transform:capitalize;
+      color:#0f172a;letter-spacing:-.4px;text-transform:capitalize;
     }
 
     /* Buttons */
@@ -249,6 +249,7 @@
       border:1.5px solid #e5e7eb !important;border-radius:10px !important;
       font-weight:700 !important;font-size:13px !important;
       box-shadow:none !important;transition:all .15s !important;
+      padding:7px 13px !important;
     }
     .fc .fc-button-primary:hover{
       background:#f3f4f6 !important;border-color:#d1d5db !important;
@@ -267,107 +268,162 @@
     .fc .fc-today-button:not(:disabled):hover{
       background:#dbeafe !important;border-color:#93c5fd !important;
     }
+    /* Prev/next arrows slightly smaller */
+    .fc .fc-prev-button,.fc .fc-next-button{padding:7px 11px !important}
 
     /* Day headers */
     .fc .fc-col-header-cell{background:#f8fafc;padding:4px 0}
     .fc .fc-col-header-cell-cushion{
       font-size:11px !important;font-weight:800 !important;
       color:#6b7280 !important;text-transform:uppercase;
-      letter-spacing:.6px;text-decoration:none !important;padding:5px 4px !important;
+      letter-spacing:.6px;text-decoration:none !important;padding:6px 4px !important;
     }
     .fc .fc-day-sat .fc-col-header-cell-cushion,
     .fc .fc-day-sun .fc-col-header-cell-cushion{color:#94a3b8 !important}
 
     /* Day cells */
-    .fc .fc-daygrid-day{min-height:80px}
+    .fc .fc-daygrid-day{min-height:90px;cursor:pointer !important}
     .fc .fc-day-sat,.fc .fc-day-sun{background:#fbfcfd}
-    .fc .fc-day-today{background:#eff6ff !important}
-    .fc .fc-daygrid-day-frame:hover{background:rgba(0,0,0,.025)}
+    .fc .fc-day-today{background:rgba(219,234,254,.35) !important}
+    .fc .fc-daygrid-day-frame:hover{background:rgba(31,79,216,.04)}
+    /* Highlight the hovered day number container */
+    .fc .fc-daygrid-day:hover .fc-daygrid-day-frame{background:rgba(31,79,216,.05)}
 
     /* Day numbers */
     .fc .fc-daygrid-day-number{
-      font-size:12px !important;font-weight:600;color:#374151;
-      width:26px;height:26px;
+      font-size:12px !important;font-weight:700;color:#374151;
+      width:28px;height:28px;
       display:flex !important;align-items:center;justify-content:center;
-      margin:4px 4px 2px;border-radius:50%;
-      text-decoration:none !important;transition:background .1s;
+      margin:5px 5px 2px;border-radius:50%;
+      text-decoration:none !important;transition:background .12s,color .12s;
     }
-    .fc .fc-daygrid-day-number:hover{background:#f1f5f9}
+    .fc .fc-daygrid-day-number:hover{background:#dbeafe;color:#1e40af}
     .fc .fc-day-today .fc-daygrid-day-number{
-      background:#1f4fd8 !important;color:#fff !important;font-weight:800 !important;
+      background:#1f4fd8 !important;color:#fff !important;font-weight:900 !important;
+      box-shadow:0 2px 6px rgba(31,79,216,.35);
     }
     .fc .fc-day-past .fc-daygrid-day-number{color:#9ca3af}
     .fc .fc-day-other .fc-daygrid-day-number{color:#d1d5db}
 
-    /* Events */
+    /* Events (common) */
     .fc-event{
-      border-radius:5px !important;border:none !important;
+      border-radius:6px !important;border:none !important;
       margin-bottom:2px !important;cursor:pointer !important;
-      overflow:hidden !important;transition:filter .1s,transform .1s,box-shadow .1s !important;
+      overflow:hidden !important;
+      transition:filter .1s,transform .12s,box-shadow .12s !important;
     }
     .fc-event:hover{
-      filter:brightness(.93);transform:translateY(-1px);
-      box-shadow:0 3px 10px rgba(0,0,0,.15) !important;
+      filter:brightness(.92);transform:translateY(-1px);
+      box-shadow:0 4px 12px rgba(0,0,0,.18) !important;
+    }
+    .fc-event.fc-event-dragging,.fc-event.fc-event-resizing{
+      opacity:.85 !important;
+      box-shadow:0 8px 24px rgba(0,0,0,.22) !important;
+      transform:scale(1.01) !important;
     }
     .fc-event .fc-event-main{padding:2px 6px !important}
     .fc-event .fc-event-title{font-size:11px !important;font-weight:700 !important}
     .fc-event .fc-event-time{font-size:10px !important;font-weight:800 !important;opacity:.85}
+
+    /* Custom event content classes */
+    .fc-evt-pill{
+      display:flex;align-items:center;gap:3px;
+      padding:2px 5px;overflow:hidden;width:100%;
+    }
+    .fc-evt-ico{font-size:9px;flex-shrink:0;line-height:1}
+    .fc-evt-lbl{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+    /* TimeGrid event custom block */
+    .fc-evt-tg{
+      padding:4px 8px;height:100%;
+      display:flex;flex-direction:column;justify-content:flex-start;gap:2px;
+      overflow:hidden;
+    }
+    .fc-evt-tg-title{
+      display:flex;align-items:center;gap:5px;
+      font-size:12px;font-weight:800;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      color:#fff;line-height:1.3;
+    }
+    .fc-evt-tg-title .fc-evt-ico{font-size:11px}
+    .fc-evt-tg-time{
+      font-size:10px;font-weight:700;opacity:.85;color:#fff;
+    }
 
     /* "More" link */
     .fc .fc-daygrid-more-link{
       font-size:11px !important;font-weight:800 !important;
       color:#1f4fd8 !important;background:#eff6ff !important;
       border-radius:999px;padding:2px 8px !important;
-      text-decoration:none !important;
+      text-decoration:none !important;margin:1px 2px !important;
     }
     .fc .fc-daygrid-more-link:hover{background:#dbeafe !important}
 
     /* Popover */
     .fc .fc-more-popover{
-      border:1px solid #e5e7eb !important;border-radius:12px !important;
-      box-shadow:0 20px 40px rgba(0,0,0,.12) !important;overflow:hidden;
+      border:1px solid #e5e7eb !important;border-radius:14px !important;
+      box-shadow:0 20px 50px rgba(0,0,0,.14) !important;overflow:hidden;
     }
     .fc .fc-popover-header{
-      background:#f8fafc !important;padding:8px 12px !important;
-      font-weight:800 !important;font-size:12px !important;
+      background:#f8fafc !important;padding:10px 14px !important;
+      font-weight:800 !important;font-size:13px !important;
       color:#374151 !important;border-bottom:1px solid #e5e7eb !important;
     }
-    .fc .fc-popover-close{color:#6b7280 !important}
+    .fc .fc-popover-close{color:#6b7280 !important;font-size:16px !important}
+    .fc .fc-popover-body{padding:8px 10px !important}
 
     /* Time grid */
-    .fc .fc-timegrid-slot{height:44px !important}
-    .fc .fc-timegrid-slot-label{font-size:11px !important;color:#9ca3af;font-weight:600}
+    .fc .fc-timegrid-slot{height:52px !important}
+    .fc .fc-timegrid-slot-minor{border-top-color:#f1f5f9 !important}
+    .fc .fc-timegrid-slot-label{font-size:11px !important;color:#9ca3af;font-weight:700;vertical-align:top;padding-top:4px !important}
     .fc .fc-timegrid-now-indicator-line{border-color:#ef4444 !important;border-width:2px !important}
     .fc .fc-timegrid-now-indicator-arrow{
       border-top-color:#ef4444 !important;border-bottom-color:#ef4444 !important;
     }
-    .fc .fc-timegrid-event{border-radius:6px !important}
+    .fc .fc-timegrid-event{
+      border-radius:8px !important;
+      box-shadow:0 1px 4px rgba(0,0,0,.12) !important;
+      border-left:3px solid rgba(255,255,255,.4) !important;
+    }
+    /* Selection highlight in time grid */
+    .fc .fc-highlight{background:rgba(31,79,216,.12) !important;border:1.5px dashed #1f4fd8 !important;border-radius:6px}
+    .fc .fc-timegrid-col-bg .fc-highlight{border-radius:6px}
 
     /* List view */
     .fc .fc-list{border:none !important}
-    .fc .fc-list-day th{background:#f8fafc !important;border-bottom:1px solid #e5e7eb !important}
+    .fc .fc-list-day th{background:#f8fafc !important;border-bottom:1px solid #e5e7eb !important;border-top:1px solid #e5e7eb !important}
     .fc .fc-list-day-cushion{
-      font-size:12px !important;font-weight:800 !important;
-      color:#374151 !important;padding:8px 14px !important;
+      font-size:12px !important;font-weight:900 !important;
+      color:#374151 !important;padding:9px 16px !important;letter-spacing:.2px;
     }
-    .fc .fc-list-event td{border-color:#f1f5f9 !important}
-    .fc .fc-list-event:hover td{background:#f9fafb !important}
+    .fc .fc-list-event td{border-color:#f1f5f9 !important;padding:10px 14px !important}
+    .fc .fc-list-event:hover td{background:#f0f7ff !important}
+    .fc .fc-list-event-dot{border-radius:50% !important;width:10px !important;height:10px !important}
     .fc .fc-list-event-title a{
-      font-size:13px !important;font-weight:600;
+      font-size:13px !important;font-weight:700;
       text-decoration:none;color:#1f2937;
     }
-    .fc .fc-list-empty{padding:40px !important;font-size:14px;color:#9ca3af}
+    .fc .fc-list-event-time{font-size:12px !important;color:#6b7280 !important;font-weight:600}
+    .fc .fc-list-empty{padding:48px !important;font-size:14px;color:#9ca3af}
     .fc .fc-list-empty-cushion{font-style:italic}
 
     /* Borders */
-    .fc .fc-scrollgrid{border-color:#e5e7eb !important}
+    .fc .fc-scrollgrid{border-color:#e5e7eb !important;border-radius:0}
     .fc td,.fc th{border-color:#e5e7eb !important}
+    /* Remove double-border at top of grid */
+    .fc .fc-scrollgrid-section-header .fc-scroller{overflow:hidden !important}
+
+    /* Day-view header cell: bigger, more prominent */
+    .fc .fc-timeGridDay-view .fc-col-header-cell-cushion{
+      font-size:14px !important;font-weight:900 !important;
+      color:#0f172a !important;letter-spacing:0;text-transform:none;
+    }
 
     @media (max-width:700px){
       .fc .fc-toolbar-title{font-size:16px !important}
       .fc .fc-button-primary{padding:6px 9px !important;font-size:12px !important}
       .fc .fc-toolbar.fc-header-toolbar{padding:10px 12px 8px;gap:6px}
-      .fc .fc-daygrid-day{min-height:60px}
+      .fc .fc-daygrid-day{min-height:64px}
       .fc .fc-timeGridWeek-button,.fc .fc-timeGridDay-button{display:none !important}
     }
 
@@ -592,7 +648,7 @@
     <div class="calendar-col">
       <div class="card cal-card">
         <!-- Suggerimento uso -->
-        <div class="cal-hint">💡 <span>Clicca su un giorno per aggiungere un promemoria &bull; Clicca un evento per i dettagli &bull; Trascina per spostare</span></div>
+        <div class="cal-hint">💡 <span>Tocca/clicca un giorno per vedere la lista &bull; Seleziona un orario per creare un evento &bull; Trascina per spostare o ridimensionare</span></div>
         <div id="calendar"></div>
       </div>
     </div>
@@ -1143,6 +1199,9 @@
         editable:true,
         eventStartEditable:true,
         eventDurationEditable:true,
+        eventResizableFromStart:true,
+        dragScroll:true,
+        longPressDelay:150,
         dayMaxEvents:4,
         stickyHeaderDates:true,
         eventDisplay:"block",
@@ -1153,13 +1212,16 @@
             slotMinTime:'07:00:00',
             slotMaxTime:'22:00:00',
             slotDuration:'00:30:00',
+            slotLabelInterval:'01:00',
             nowIndicator:true,
           },
           timeGridDay:{
             slotMinTime:'07:00:00',
             slotMaxTime:'22:00:00',
             slotDuration:'00:30:00',
+            slotLabelInterval:'01:00',
             nowIndicator:true,
+            dayHeaderFormat:{weekday:'long',day:'numeric',month:'long'},
           },
           listWeek:{
             noEventsText:'Nessun evento in questa settimana',
@@ -1167,23 +1229,31 @@
         },
 
         eventContent:(arg)=>{
-          // Custom rendering for month grid: clean pill with type icon + title
+          const title=arg.event.title||'';
+          const clean=title.replace(/^[🔵🟢🟠🔴🟣📌⚪]\s*/u,'');
+          const type=arg.event.extendedProps?.sourceType||arg.event.extendedProps?.type||'promemoria';
+          const icons={promemoria:'🟣',appuntamento:'📌',scadenza:'🔴',ordine:'🔵',incasso:'🟢',spesa:'🟠',altro:'⚪'};
+          const icon=icons[type]||'•';
+
           if(arg.view.type==='dayGridMonth'){
-            const title=arg.event.title||'';
-            // Strip leading emoji from the stored title to avoid duplication
-            const clean=title.replace(/^[🔵🟢🟠🔴🟣📌⚪]\s*/u,'');
-            const type=arg.event.extendedProps?.sourceType||arg.event.extendedProps?.type||'promemoria';
-            const icons={promemoria:'🟣',appuntamento:'📌',scadenza:'🔴',ordine:'🔵',incasso:'🟢',spesa:'🟠',altro:'⚪'};
-            const icon=icons[type]||'•';
-            return{html:`<div style="display:flex;align-items:center;gap:3px;padding:2px 6px;overflow:hidden;width:100%"><span style="font-size:9px;flex-shrink:0;line-height:1">${icon}</span><span style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${clean}</span></div>`};
+            return{html:`<div class="fc-evt-pill"><span class="fc-evt-ico">${icon}</span><span class="fc-evt-lbl">${clean}</span></div>`};
+          }
+          if(arg.view.type==='timeGridWeek'||arg.view.type==='timeGridDay'){
+            const timeStr=arg.timeText||'';
+            return{html:`<div class="fc-evt-tg"><div class="fc-evt-tg-title"><span class="fc-evt-ico">${icon}</span><span>${clean}</span></div>${timeStr?`<div class="fc-evt-tg-time">${timeStr}</div>`:''}</div>`};
           }
           return true;
         },
 
         dateClick:(info)=>{
-          const start=info.date;
-          const allDay=info.allDay===true;
-          openModal({mode:'create',id:null,title:'',type:'promemoria',start:toISO(start),end:toISO(addMinutes(start,allDay?24*60:30)),allDay});
+          // In month view: navigate to day schedule. In other views: open create modal.
+          if(info.view.type==='dayGridMonth'){
+            calendar.changeView('timeGridDay', info.date);
+          } else {
+            const start=info.date;
+            const allDay=info.allDay===true;
+            openModal({mode:'create',id:null,title:'',type:'promemoria',start:toISO(start),end:toISO(addMinutes(start,allDay?24*60:30)),allDay});
+          }
         },
         select:(info)=>{
           openModal({mode:'create',id:null,title:'',type:'promemoria',start:toISO(info.start),end:toISO(info.end),allDay:info.allDay===true});
