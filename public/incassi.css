@@ -391,3 +391,88 @@ textarea{min-height:120px;resize:none}
   .auto-entry{align-items:flex-start;flex-direction:column}
   .auto-entry-amt{font-size:18px;text-align:left}
 }
+
+/* ── Dark mode overrides – incassi.html ── */
+:root:not(.theme-light) {
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --card: #1e293b;
+  --card2: #162032;
+  --line: rgba(255,255,255,.10);
+  --btn: rgba(255,255,255,.06);
+  --btn2: rgba(255,255,255,.08);
+  --shadow: 0 18px 45px rgba(0,0,0,.45);
+}
+:root:not(.theme-light) .incassi-dark { background: #0f172a; color: #e2e8f0; }
+:root:not(.theme-light) .incassi-card {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+:root:not(.theme-light) .incassi-kpi {
+  background: rgba(255,255,255,.04) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+:root:not(.theme-light) .kpi-val { color: #f1f5f9; }
+:root:not(.theme-light) .kpi-name { color: #94a3b8; }
+:root:not(.theme-light) .card-title { color: #f1f5f9; }
+:root:not(.theme-light) .card-sub { color: #94a3b8; }
+:root:not(.theme-light) .metric-big { color: #f1f5f9; }
+:root:not(.theme-light) .saldo-val { color: #f1f5f9; }
+:root:not(.theme-light) .incassi-btn {
+  background: rgba(255,255,255,.08);
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.14);
+}
+:root:not(.theme-light) .incassi-btn.primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: rgba(255,255,255,.20);
+}
+:root:not(.theme-light) .incassi-btn.danger {
+  background: rgba(239,68,68,.20);
+  color: #fca5a5;
+  border-color: rgba(239,68,68,.35);
+}
+:root:not(.theme-light) .li {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.08);
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .li:hover { background: rgba(59,130,246,.10); }
+:root:not(.theme-light) .side-cal-list .day { color: #e2e8f0; }
+:root:not(.theme-light) .side-cal-list .day.today { background: rgba(59,130,246,.25) !important; }
+:root:not(.theme-light) .side-cal-list .day.has-data { color: #34d399; }
+:root:not(.theme-light) .popup-box {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.12);
+}
+:root:not(.theme-light) .popup-head { border-bottom-color: rgba(255,255,255,.10); }
+:root:not(.theme-light) .popup-title { color: #f1f5f9; }
+:root:not(.theme-light) .auto-box {
+  background: #162032 !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+:root:not(.theme-light) .auto-box-title { color: #f1f5f9; }
+:root:not(.theme-light) .auto-entry {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+:root:not(.theme-light) .auto-entry-name { color: #f1f5f9 !important; }
+:root:not(.theme-light) .auto-entry-meta { color: #94a3b8; }
+:root:not(.theme-light) .auto-entry-amt { color: #60a5fa !important; }
+:root:not(.theme-light) .lbl { color: #94a3b8; }
+:root:not(.theme-light) .hint { color: #64748b; }
+:root:not(.theme-light) input, :root:not(.theme-light) textarea {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+:root:not(.theme-light) .backup-menu {
+  background: #1e293b;
+  border-color: rgba(255,255,255,.14);
+}
+:root:not(.theme-light) .backup-item { color: #e2e8f0; }
+:root:not(.theme-light) .backup-item:hover { background: rgba(59,130,246,.12); }

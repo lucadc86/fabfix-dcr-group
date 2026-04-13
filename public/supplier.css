@@ -330,3 +330,40 @@
 .icon-btn{border:none;background:transparent;cursor:pointer;font-size:18px;padding:6px 8px;border-radius:10px;}
 .icon-btn:hover{background:#f1f3fb;}
 @media(max-width:520px){.flag-line{width:26%;}}
+
+/* ── Dark mode – supplier.html ── */
+:root:not(.theme-light) .card-block {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .pill-title { background: rgba(37,99,235,.20); border-color: rgba(37,99,235,.35); color: #93c5fd; }
+:root:not(.theme-light) .sep { border-top-color: rgba(255,255,255,.10); }
+:root:not(.theme-light) .list {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+:root:not(.theme-light) .invoice-row {
+  border-bottom-color: rgba(255,255,255,.08);
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .inv-date { color: #f1f5f9; }
+:root:not(.theme-light) .inv-amount { color: #60a5fa; }
+:root:not(.theme-light) .inv-desc { color: #e2e8f0 !important; }
+:root:not(.theme-light) .inv-detail,
+:root:not(.theme-light) .scad-detail { color: #94a3b8 !important; }
+:root:not(.theme-light) .icon-btn { color: #94a3b8; }
+:root:not(.theme-light) .icon-btn:hover { background: rgba(255,255,255,.08); }
+:root:not(.theme-light) .scad-card {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+:root:not(.theme-light) label { color: #cbd5e1; }
+:root:not(.theme-light) input,
+:root:not(.theme-light) select,
+:root:not(.theme-light) textarea {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+:root:not(.theme-light) .supplier-form-card input::placeholder { color: #64748b; }

@@ -8,18 +8,31 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Listini Prezzi</title>
+  <title>Listini Prezzi – DCR Group</title>
 
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="listini.css" />
+  <link rel="stylesheet" href="styles.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="mobile.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="listini.css?v=listini_v2" />
+  <script type="module" src="/auth-guard.js"></script>
 </head>
-<body class="page">
+<body class="page listini-page">
 
-  <div class="topbar">
-    <a class="btn-back" href="index.html">←</a>
-    <div class="title">Listini Prezzi</div>
-    <select id="quickNav" class="quick-nav"><option value="">Vai a…</option><option value="index.html">HOME</option><option value="clients.html">CLIENTI</option><option value="suppliers.html">FORNITORI</option><option value="scadenze.html">SCADENZE</option><option value="incassi.html">INCASSI</option><option value="spese.html">SPESE</option><option value="listini.html">LISTINI</option><option value="agenda.html">AGENDA</option><option value="ordini-clienti.html">ORDINI CLIENTI</option></select>
-  </div>
+  <header class="top-bar">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <span class="page-title">📋 Listini Prezzi</span>
+    <select id="quickNav" class="quick-nav">
+      <option value="">Vai a…</option>
+      <option value="index.html">HOME</option>
+      <option value="clients.html">CLIENTI</option>
+      <option value="suppliers.html">FORNITORI</option>
+      <option value="scadenze.html">SCADENZE</option>
+      <option value="incassi.html">INCASSI</option>
+      <option value="spese.html">SPESE</option>
+      <option value="listini.html">LISTINI</option>
+      <option value="agenda.html">AGENDA</option>
+      <option value="ordini-clienti.html">ORDINI CLIENTI</option>
+    </select>
+  </header>
 
   <main class="listini-wrap">
     <div class="listini-shell">
@@ -89,8 +102,8 @@
     </div>
   </main>
 
-  <script src="nav.js"></script>
-  <script src="scripts/dashboard-menu.js"></script>
+  <script type="module" src="/nav.js?v=15_20260225222215"></script>
+  <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
   <script src="listini.js" type="module"></script>
 </body>
 </html>

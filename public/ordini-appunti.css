@@ -61,3 +61,13 @@ body{padding-top:0 !important;}
 .page{padding-top:calc(128px + env(safe-area-inset-top)) !important;}
 .container{padding-top:38px !important;}
 @media (max-width:900px){.page{padding-top:calc(138px + env(safe-area-inset-top)) !important;}}
+
+/* ── Dark mode – ordini-appunti.html ── */
+:root:not(.theme-light) .note-item {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .note-item:hover { background: #1e3a5f !important; }
+:root:not(.theme-light) .note-meta { color: #94a3b8; }
+:root:not(.theme-light) .note-body { color: #e2e8f0; }
