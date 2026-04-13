@@ -461,3 +461,31 @@
   .sdp-hist-head, .sdp-hist-row { grid-template-columns: 68px 1fr 68px 75px; font-size: 12px; }
   .sdp-hist-head .sdp-hist-due, .sdp-hist-row .sdp-hist-due { display: none; }
 }
+
+/* ── Dark mode – quick order form & history ── */
+:root:not(.theme-light) #quickOrderForm {
+  background: #1e293b !important;
+  border-color: rgba(31,79,216,.25) !important;
+  color: #e2e8f0;
+}
+:root:not(.theme-light) #quickOrderForm label { color: #94a3b8 !important; }
+:root:not(.theme-light) #quickOrderForm select,
+:root:not(.theme-light) #quickOrderForm input[type="date"],
+:root:not(.theme-light) #quickOrderForm input[type="number"],
+:root:not(.theme-light) #quickOrderForm input[type="text"] {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255,255,255,.15) !important;
+}
+:root:not(.theme-light) #qoPhotoArea {
+  background: #0f172a !important;
+  border-color: rgba(96,165,250,.3) !important;
+  color: #94a3b8;
+}
+:root:not(.theme-light) #qoCancelBtn {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255,255,255,.15) !important;
+}
+:root:not(.theme-light) #ordersHistoryList { color: #e2e8f0; }
+:root:not(.theme-light) .analytics-card { background: #1e293b !important; border-color: rgba(31,79,216,.15) !important; }

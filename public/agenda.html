@@ -1099,6 +1099,7 @@
     }
 
     // ─── Historical table ───
+    function buildHistTable(){
       const search=(document.getElementById('histSearch').value||'').toLowerCase();
       const typeFilter=document.getElementById('histTypeFilter').value;
       let rows=histData.filter(r=>{

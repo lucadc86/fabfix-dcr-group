@@ -8,6 +8,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  onSnapshot,
   serverTimestamp,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -82,25 +83,25 @@ function render(list){
 }
 
 async function loadSuppliers(){
-  // ordino per nome (se non c’è name, va comunque)
   const q = query(collection(db, "suppliers"), orderBy("name"));
-  const snap = await getDocs(q);
-
-  suppliersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  applyFilter();
+  if(suppliersListEl) suppliersListEl.innerHTML = '<div style="padding:16px;color:#6b7280;font-style:italic;text-align:center;">⏳ Caricamento fornitori…</div>';
+  try {
+    onSnapshot(q, (snap) => {
+      suppliersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      applyFilter();
+    }, (err) => {
+      console.error('Errore caricamento fornitori:', err);
+      if(suppliersListEl) suppliersListEl.innerHTML = '<div style="padding:16px;color:#dc2626;font-weight:700;text-align:center;">⚠️ Errore caricamento. Ricarica la pagina.</div>';
+    });
+  } catch(err) {
+    console.error('Errore avvio listener fornitori:', err);
+    if(suppliersListEl) suppliersListEl.innerHTML = '<div style="padding:16px;color:#dc2626;font-weight:700;text-align:center;">⚠️ Errore caricamento. Ricarica la pagina.</div>';
+  }
 }
 
 function applyFilter(){
   const term = normalize(searchInput.value);
   if(!term){
-    render(suppliersCache);
-    return;
-  }
-  const filtered = suppliersCache.filter(s => normalize(s.name).includes(term));
-  render(filtered);
-}
-
-if(!term){
     render(suppliersCache);
     return;
   }
