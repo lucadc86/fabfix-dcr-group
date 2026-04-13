@@ -170,7 +170,8 @@ function renderSuppliersChart(list){
       responsive:true,
       maintainAspectRatio:false,
       animation:false,
-      layout:{ padding:{ top:30 } },
+      clip: false,
+      layout:{ padding:{ top:40 } },
       plugins:{
         legend:{display:false},
         tooltip:{ callbacks:{ label:(ctx)=>`€ ${eur(ctx.parsed.y||0)}` } },
@@ -269,7 +270,8 @@ function renderMonthlyOrdersChart(){
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
-      layout: { padding: { top: 30 } },
+      clip: false,
+      layout: { padding: { top: 40 } },
       plugins: {
         legend: { display: true, position: 'bottom' },
         tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: € ${eur(ctx.parsed.y||0)}` } },
@@ -279,7 +281,7 @@ function renderMonthlyOrdersChart(){
           formatter:(v)=>v>=100?'€'+eur(v):'',
           font:{size:9,weight:'700'},
           color:'#fff',
-          clamp:true, clip:true
+          clamp:false, clip:false
         }
       },
       scales: {
@@ -510,19 +512,20 @@ if(qoSaveBtn){
 // ── Toggle Storico Ordini ──────────────────────────────────────────────────
 const btnToggleStorico = document.getElementById('btnToggleStorico');
 const storicoBody = document.getElementById('storicoBody');
+// storicoBody is visible by default; toggle collapses/expands
 if(btnToggleStorico && storicoBody){
   btnToggleStorico.addEventListener('click',()=>{
-    const open = storicoBody.style.display === 'none';
-    storicoBody.style.display = open ? 'block' : 'none';
-    btnToggleStorico.textContent = open ? '▲ Nascondi storico' : '▼ Mostra storico';
+    const isVisible = storicoBody.style.display !== 'none';
+    storicoBody.style.display = isVisible ? 'none' : 'block';
+    btnToggleStorico.textContent = isVisible ? '▼ Mostra storico' : '▲ Nascondi storico';
   });
 }
-// Auto-open storicoBody when "Nuovo ordine" is clicked
+// Always ensure storicoBody is open when "Nuovo ordine" is clicked
 if(addOrderGlobalBtn && storicoBody){
   addOrderGlobalBtn.addEventListener('click',()=>{
     storicoBody.style.display='block';
     if(btnToggleStorico) btnToggleStorico.textContent='▲ Nascondi storico';
-  }, true); // capture phase so it runs before the existing click listener
+  }, true);
 }
 
 loadOrdersHistory();

@@ -7,497 +7,203 @@
   <base href="/">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spese</title>
+  <title>Spese – DCR Group</title>
 
-  <!-- Stile base + stile Incassi per avere la stessa impostazione -->
   <link rel="stylesheet" href="styles.css?v=15_20260225222215" />
   <link rel="stylesheet" href="mobile.css?v=15_20260225222215" />
-  <link rel="stylesheet" href="incassi.css?v=15_20260225222215" />
-  <link rel="stylesheet" href="spese.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="spese.css?v=rebuild_v1" />
+
+  <script type="module" src="/auth-guard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
-<body class="page incassi-dark">
-  <header class="top-bar incassi-topbar">
-    <button class="back-btn" id="backBtn">←</button>
+<body class="page sp-page">
+
+  <!-- ── Top bar ── -->
+  <header class="top-bar sp-topbar">
+    <button class="back-btn" id="backBtn" title="Torna indietro">←</button>
     <span class="page-title">Spese</span>
-    <a class="chip header-dashboard" href="index.html">Dashboard</a>
+    <select id="quickNav" class="quick-nav">
+      <option value="">Vai a…</option>
+      <option value="index.html">HOME</option>
+      <option value="clients.html">CLIENTI</option>
+      <option value="suppliers.html">FORNITORI</option>
+      <option value="scadenze.html">SCADENZE</option>
+      <option value="incassi.html">INCASSI</option>
+      <option value="spese.html" selected>SPESE</option>
+      <option value="listini.html">LISTINI</option>
+      <option value="statistiche.html">STATISTICHE</option>
+      <option value="agenda.html">AGENDA</option>
+      <option value="ordini-clienti.html">ORDINI CLIENTI</option>
+      <option value="finanze.html">FINANZE</option>
+    </select>
   </header>
 
-  <main class="container incassi-wrap safe-main">
-    <div class="incassi-head">
-      <div>
-        <h1 class="incassi-h1">Dashboard Spese</h1>
-        <div class="incassi-sub">Totali e calendario mese. Tap su un giorno per aggiungere/modificare.</div>
+  <!-- ── Main ── -->
+  <main class="sp-main" id="spMain">
+
+    <!-- KPI Strip -->
+    <section class="sp-kpi-strip" aria-label="Indicatori spese">
+      <div class="sp-kpi-card">
+        <div class="sp-kpi-label">Totale anno</div>
+        <div class="sp-kpi-value" id="kpiAnno">—</div>
+        <div class="sp-kpi-badge">ANNO</div>
       </div>
-
-      <div class="spese-head-actions">
-        <button class="incassi-btn" id="prevBtn">◀</button>
-        <div class="incassi-btn" style="cursor:default; font-weight:900" id="monthTitle">—</div>
-        <button class="incassi-btn" id="nextBtn">▶</button>
-        <input type="search" id="speseSearch" placeholder="Cerca per nota…" autocomplete="off"
-               style="padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px;min-width:160px;background:rgba(255,255,255,.8)">
-        <button class="incassi-btn" id="btnExportSpese" type="button" title="Esporta CSV">⬇ CSV</button>
-        <button class="incassi-btn primary" id="btnNewExpense">Nuova spesa</button>
+      <div class="sp-kpi-card">
+        <div class="sp-kpi-label">Totale mese corrente</div>
+        <div class="sp-kpi-value" id="kpiMese">—</div>
+        <div class="sp-kpi-badge">MESE</div>
       </div>
-    </div>
-
-    <section class="incassi-grid">
-      <div class="incassi-col">
-        <div class="incassi-kpi-card">
-          <div class="incassi-kpi kpi-oggi" id="kpiSpeseMeseBox">
-            <div>
-              <div class="kpi-name">Totale mese</div>
-              <div class="kpi-val" id="monthTotal">—</div>
-            </div>
-            <div class="kpi-badge">MESE</div>
-          </div>
-
-          <div class="incassi-kpi kpi-mese" id="kpiSpeseAnnoBox">
-            <div>
-              <div class="kpi-name">Totale anno</div>
-              <div class="kpi-val" id="yearTotal">—</div>
-            </div>
-            <div class="kpi-badge">ANNO</div>
-          </div>
-        </div>
-
-        <div class="incassi-card">
-          <div class="incassi-card-head">
-            <div>
-              <div class="card-title">Calendario mese</div>
-              <div class="card-sub">Elenco giorni con importo. Clicca per modificare.</div>
-            </div>
-          </div>
-          <div class="incassi-card-body" id="days">
-            <div class="spese-empty">Caricamento…</div>
-          </div>
-        </div>
+      <div class="sp-kpi-card">
+        <div class="sp-kpi-label">Media mensile</div>
+        <div class="sp-kpi-value" id="kpiMedia">—</div>
+        <div class="sp-kpi-badge">MEDIA</div>
       </div>
-
-      <aside class="incassi-side">
-        <div class="incassi-card">
-          <div class="incassi-card-head">
-            <div>
-              <div class="card-title">📊 Riepilogo mese</div>
-              <div class="card-sub">Spese, Ordini Fornitori e Scadenze.</div>
-            </div>
-          </div>
-          <div class="incassi-card-body">
-            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px">
-              <div>
-                <div style="color:var(--muted);font-weight:800">Spese mese</div>
-                <div style="font-size:28px;font-weight:900" id="sideMonth">—</div>
-              </div>
-              <div>
-                <div style="color:var(--muted);font-weight:800">Anno</div>
-                <div style="font-size:18px;font-weight:900" id="sideYear">—</div>
-              </div>
-            </div>
-            <!-- Ordini Fornitori -->
-            <div style="background:rgba(59,130,246,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px;border:1px solid rgba(59,130,246,.18);">
-              <div style="font-size:12px;font-weight:800;color:#1e40af;margin-bottom:4px;">📦 Ordini Fornitori (mese)</div>
-              <div style="font-size:22px;font-weight:900;color:#1f4fd8;" id="sideOrdiniMese">—</div>
-              <a href="suppliers.html" style="font-size:11px;color:#1f4fd8;text-decoration:none;font-weight:700;">Vai ai fornitori →</a>
-            </div>
-            <!-- Scadenze -->
-            <div style="background:rgba(220,38,38,.07);border-radius:12px;padding:10px 12px;border:1px solid rgba(220,38,38,.18);">
-              <div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:6px;">🔴 Scadenze in scadenza</div>
-              <div id="sideScadenzeList"><div style="color:#9ca3af;font-size:12px;font-style:italic;">Caricamento…</div></div>
-              <a href="scadenze.html" style="font-size:11px;color:#dc2626;text-decoration:none;font-weight:700;display:block;margin-top:6px;">Gestisci scadenze →</a>
-            </div>
-          </div>
-        </div>
-        <!-- Sync fornitore info -->
-        <div id="syncInfoPanel" style="display:none;background:rgba(16,185,129,.08);border-radius:12px;padding:10px 12px;border:1px solid rgba(16,185,129,.2);font-size:12px;color:#065f46;font-weight:700;margin-top:8px;">
-          ✅ Fatture fornitori sincronizzate
-        </div>
-      </aside>
+      <div class="sp-kpi-card">
+        <div class="sp-kpi-label">Num. spese mese</div>
+        <div class="sp-kpi-value" id="kpiNumMese">—</div>
+        <div class="sp-kpi-badge">CONTEGGIO</div>
+      </div>
     </section>
+
+    <!-- Action bar -->
+    <section class="sp-action-bar" aria-label="Azioni e filtri">
+      <button class="sp-btn primary" id="btnNew" title="Nuova spesa">＋ Nuova spesa</button>
+
+      <input type="search" id="speseSearch" class="sp-input sp-search"
+             placeholder="🔍 Cerca per nota o categoria…" autocomplete="off" />
+
+      <select id="catFilter" class="sp-select" title="Filtra per categoria">
+        <option value="">Tutte le categorie</option>
+        <option value="prodotti">Prodotti</option>
+        <option value="attrezzatura">Attrezzatura</option>
+        <option value="servizi">Servizi</option>
+        <option value="utenze">Utenze</option>
+        <option value="personale">Personale</option>
+        <option value="marketing">Marketing</option>
+        <option value="affitto">Affitto</option>
+        <option value="fornitori">Fornitori</option>
+        <option value="altro">Altro</option>
+      </select>
+
+      <select id="monthFilter" class="sp-select" title="Filtra per mese">
+        <option value="0">Tutti i mesi</option>
+        <option value="1">Gennaio</option>
+        <option value="2">Febbraio</option>
+        <option value="3">Marzo</option>
+        <option value="4">Aprile</option>
+        <option value="5">Maggio</option>
+        <option value="6">Giugno</option>
+        <option value="7">Luglio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Settembre</option>
+        <option value="10">Ottobre</option>
+        <option value="11">Novembre</option>
+        <option value="12">Dicembre</option>
+      </select>
+
+      <select id="yearFilter" class="sp-select" title="Filtra per anno">
+      </select>
+
+      <div class="sp-sort-group">
+        <button class="sp-sort-btn active" id="sortDateBtn" title="Ordina per data">📅 Data</button>
+        <button class="sp-sort-btn" id="sortAmtBtn" title="Ordina per importo">€ Importo</button>
+      </div>
+
+      <div class="sp-action-sep"></div>
+
+      <button class="sp-btn" id="btnExportSpese" title="Esporta CSV">⬇ CSV</button>
+    </section>
+
+    <!-- Expense list -->
+    <section class="sp-list-section">
+      <div class="sp-list-header">
+        <span class="sp-list-title">📋 Elenco Spese</span>
+        <span class="sp-list-count" id="listCount">—</span>
+      </div>
+      <div id="speseList">
+        <div class="sp-loading">⏳ Caricamento spese…</div>
+      </div>
+    </section>
+
+    <!-- Charts (collapsible) -->
+    <section class="sp-charts-section">
+      <div class="sp-charts-toggle" id="chartsToggle" role="button" tabindex="0"
+           aria-expanded="false" aria-controls="chartsBody">
+        <span class="sp-charts-toggle-title">📊 Grafici</span>
+        <span class="sp-charts-toggle-icon">▼</span>
+      </div>
+      <div class="sp-charts-body" id="chartsBody" aria-hidden="true">
+        <div class="sp-chart-wrap">
+          <div class="sp-chart-label">Spese mensili – ultimi 12 mesi</div>
+          <canvas id="barChart"></canvas>
+        </div>
+        <div class="sp-chart-wrap">
+          <div class="sp-chart-label">Ripartizione per categoria (periodo selezionato)</div>
+          <canvas id="donutChart"></canvas>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <!-- Popup edit spesa -->
-  <div class="modal-overlay hidden" id="popup" aria-hidden="true">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
-      <div class="modal-head">
-        <div class="modal-title" id="popupTitle">Spesa: <span id="popupDate">—</span></div>
-        <button class="modal-close" id="closeBtn">✕</button>
+  <!-- ── Add / Edit Modal ── -->
+  <div class="sp-modal-overlay hidden" id="speseModal" role="dialog" aria-modal="true"
+       aria-labelledby="modalTitle">
+    <div class="sp-modal">
+      <div class="sp-modal-head">
+        <span class="sp-modal-title" id="modalTitle">Nuova Spesa</span>
+        <button class="sp-modal-close" id="btnCancel2" title="Chiudi">✕</button>
       </div>
-      <div class="modal-body">
-        <div class="spese-modal-grid">
-          <div class="spese-field">
-            <label for="amount">Importo</label>
-            <input id="amount" type="text" inputmode="decimal" placeholder="0,00" />
+      <div class="sp-modal-body">
+        <div class="sp-field-row">
+          <div class="sp-field">
+            <label for="fDate">Data *</label>
+            <input type="date" id="fDate" required />
           </div>
-          <div class="spese-field">
-            <label for="note">Nota</label>
-            <textarea id="note" placeholder="Descrizione…"></textarea>
+          <div class="sp-field">
+            <label for="fAmount">Importo (€) *</label>
+            <input type="number" id="fAmount" min="0" step="0.01" placeholder="0,00" required />
           </div>
         </div>
-
-        <div class="spese-modal-actions">
-          <button class="incassi-btn danger" id="deleteBtn">Elimina</button>
-          <button class="incassi-btn" id="closeBtn2" type="button">Chiudi</button>
-          <button class="incassi-btn primary" id="saveBtn">Salva</button>
+        <div class="sp-field">
+          <label for="fCat">Categoria</label>
+          <select id="fCat">
+            <option value="prodotti">Prodotti</option>
+            <option value="attrezzatura">Attrezzatura</option>
+            <option value="servizi">Servizi</option>
+            <option value="utenze">Utenze</option>
+            <option value="personale">Personale</option>
+            <option value="marketing">Marketing</option>
+            <option value="affitto">Affitto</option>
+            <option value="fornitori">Fornitori</option>
+            <option value="altro" selected>Altro</option>
+          </select>
         </div>
+        <div class="sp-field">
+          <label for="fNote">Nota / Descrizione</label>
+          <textarea id="fNote" placeholder="Descrizione spesa…" rows="3"></textarea>
+        </div>
+        <div class="sp-field" id="sourceField" style="display:none">
+          <label>Fonte</label>
+          <div class="sp-field-source" id="fSource">—</div>
+        </div>
+      </div>
+      <div class="sp-modal-actions">
+        <button class="sp-btn danger" id="btnDelete" style="display:none;margin-right:auto">🗑 Elimina</button>
+        <button class="sp-btn" id="btnCancel">Annulla</button>
+        <button class="sp-btn primary" id="btnSave">💾 Salva</button>
       </div>
     </div>
   </div>
 
-  <script type="module">
-    import { db } from "./firebase.js";
-    import {
-      doc, setDoc, deleteDoc, getDocs, collection, query, orderBy, where
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  <script type="module" src="spese.js?v=rebuild_v1"></script>
 
-    const COLLECTION = "spese";
-
-    // Utils
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const isoKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-    const ymKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
-    const itMoney = (n) => new Intl.NumberFormat("it-IT", { style:"currency", currency:"EUR" }).format(Number(n)||0);
-
-    function toNum(v){
-      if(typeof v === 'number') return Number.isFinite(v) ? v : 0;
-      const s = String(v ?? '').trim();
-      if(!s) return 0;
-      let cleaned = s.replace(/[^0-9,.-]/g,'');
-      if(cleaned.includes(',')) cleaned = cleaned.replace(/\./g,'').replace(',', '.');
-      const n = Number(cleaned);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function monthTitleUpper(date){
-      return date.toLocaleString("it-IT",{month:"long",year:"numeric"}).toUpperCase();
-    }
-
-    function formatDDMMYYYY(y,m,d){
-      return `${pad2(d)}/${pad2(m+1)}/${y}`;
-    }
-
-    // --- AUTO CALCOLO IMPORTO DA NOTE (come in Incassi) ---
-    function parseAmountFromLine(line){
-      if(!line) return 0;
-      const cleaned = String(line).replace(/€/g,'').trim();
-      const matches = cleaned.match(/-?\d+(?:[\.,]\d+)?/g);
-      if(!matches || matches.length===0) return 0;
-      const last = matches[matches.length-1].replace(',', '.');
-      const n = Number(last);
-      return Number.isFinite(n) ? n : 0;
-    }
-    function sumAmountsFromNotes(text){
-      return String(text || '')
-        .split(/\r?\n/)
-        .map(l => parseAmountFromLine(l))
-        .reduce((a,b)=>a+b,0);
-    }
-    function formatForInput(n){
-      const s = (Math.round(n * 100) / 100).toFixed(2);
-      return s.endsWith('.00') ? s.slice(0,-3) : s.replace(/0$/,'').replace(/\.$/,'');
-    }
-
-    // DOM
-    const backBtn = document.getElementById("backBtn");
-    const quickNav = document.getElementById("quickNav");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const monthTitleEl = document.getElementById("monthTitle");
-    const btnNew = document.getElementById("btnNewExpense");
-
-    const monthTotalEl = document.getElementById("monthTotal");
-    const yearTotalEl = document.getElementById("yearTotal");
-    const sideMonthEl = document.getElementById("sideMonth");
-    const sideYearEl = document.getElementById("sideYear");
-    const daysEl = document.getElementById("days");
-
-    const popup = document.getElementById("popup");
-    const popupDate = document.getElementById("popupDate");
-    const noteEl = document.getElementById("note");
-    const amountEl = document.getElementById("amount");
-    const closeBtn = document.getElementById("closeBtn");
-    const closeBtn2 = document.getElementById("closeBtn2");
-    const saveBtn = document.getElementById("saveBtn");
-    const deleteBtn = document.getElementById("deleteBtn");
-
-    let cursor = new Date();
-    cursor.setDate(1);
-    let selectedKey = null;
-    let docs = []; // {id,dateKey,amount,note}
-
-    // Events nav
-    backBtn?.addEventListener("click", ()=> location.href = "index.html");
-    quickNav?.addEventListener("change", (e)=>{ const v=e.target.value; if(v) location.href=v; });
-    prevBtn?.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()-1); render(); loadOrdiniFornitoriMese().catch(()=>{}); });
-    nextBtn?.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()+1); render(); loadOrdiniFornitoriMese().catch(()=>{}); });
-
-    btnNew?.addEventListener("click", ()=>{
-      const d = new Date(cursor);
-      d.setDate(Math.min(new Date().getDate(), new Date(d.getFullYear(), d.getMonth()+1, 0).getDate()));
-      openPopup(isoKey(d));
-    });
-
-    closeBtn?.addEventListener("click", closePopup);
-    closeBtn2?.addEventListener("click", closePopup);
-    popup?.addEventListener("click", (e)=>{ if(e.target === popup) closePopup(); });
-
-    noteEl?.addEventListener('input', () => {
-      const total = sumAmountsFromNotes(noteEl.value);
-      if(total > 0){
-        amountEl.value = formatForInput(total);
-      }
-    });
-
-    saveBtn?.addEventListener("click", save);
-    deleteBtn?.addEventListener("click", remove);
-
-    async function loadAll(){
-      const snap = await getDocs(collection(db, COLLECTION));
-      docs = [];
-      snap.forEach(s => {
-        const x = s.data() || {};
-        const dateKey = String(x.date || x.data || x.giorno || s.id || '').slice(0,10);
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
-        docs.push({
-          id: s.id,
-          dateKey,
-          amount: toNum(x.amount ?? x.importo ?? x.totale ?? x.value ?? 0),
-          note: String(x.note || x.descrizione || "")
-        });
-      });
-    }
-
-    function sumForMonth(baseDate){
-      const key = ymKey(baseDate);
-      return docs.filter(x => String(x.dateKey||"").startsWith(key))
-        .reduce((s,x)=> s + (Number(x.amount)||0), 0);
-    }
-
-    function sumForYear(year){
-      const key = `${year}-`;
-      return docs.filter(x => String(x.dateKey||"").startsWith(key))
-        .reduce((s,x)=> s + (Number(x.amount)||0), 0);
-    }
-
-    function sumByDayForMonth(baseDate){
-      const key = ymKey(baseDate);
-      const sums = {};
-      for(const x of docs){
-        const dk = String(x.dateKey||"");
-        if(!dk.startsWith(key)) continue;
-        sums[dk] = (sums[dk]||0) + (Number(x.amount)||0);
-      }
-      return sums;
-    }
-
-    function openPopup(dayKey){
-      selectedKey = dayKey;
-      popupDate.textContent = dayKey;
-
-      const dayItems = docs.filter(x => x.dateKey === dayKey);
-      const sumDay = dayItems.reduce((s,x)=> s + (Number(x.amount)||0), 0);
-
-      const byId = dayItems.find(x => x.id === dayKey);
-      noteEl.value = byId ? (byId.note || "") : "";
-      amountEl.value = byId ? String(toNum(byId.amount)) : "";
-      amountEl.placeholder = sumDay ? String(sumDay.toFixed(2)) : "0.00";
-
-      popup.classList.remove("hidden");
-      popup.setAttribute("aria-hidden", "false");
-    }
-
-    function closePopup(){
-      popup.classList.add("hidden");
-      popup.setAttribute("aria-hidden", "true");
-      selectedKey = null;
-    }
-
-    async function save(){
-      if(!selectedKey) return;
-      const note = String(noteEl.value || "").trim();
-      const amount = toNum(amountEl.value);
-      await setDoc(doc(db, COLLECTION, selectedKey), {
-        date: selectedKey,
-        note,
-        amount
-      }, { merge: true });
-      closePopup();
-      await boot();
-    }
-
-    async function remove(){
-      if(!selectedKey) return;
-      if(!confirm("Eliminare il dato?")) return;
-      await deleteDoc(doc(db, COLLECTION, selectedKey));
-      closePopup();
-      await boot();
-    }
-
-    const speseSearchEl = document.getElementById("speseSearch");
-    speseSearchEl?.addEventListener("input", render);
-
-    function render(){
-      const y = cursor.getFullYear();
-      const m = cursor.getMonth();
-      const start = new Date(y, m, 1);
-      const lastDay = new Date(y, m+1, 0).getDate();
-      const searchTerm = (speseSearchEl?.value || "").toLowerCase().trim();
-
-      monthTitleEl.textContent = monthTitleUpper(start);
-
-      const monthSum = sumForMonth(start);
-      const yearSum = sumForYear(y);
-
-      monthTotalEl.textContent = itMoney(monthSum);
-      yearTotalEl.textContent = itMoney(yearSum);
-      sideMonthEl.textContent = itMoney(monthSum);
-      sideYearEl.textContent = itMoney(yearSum);
-
-      const sums = sumByDayForMonth(start);
-      daysEl.innerHTML = "";
-      let visibleCount = 0;
-
-      for(let day=1; day<=lastDay; day++){
-        const d = new Date(y, m, day);
-        const k = isoKey(d);
-        const val = sums[k] || 0;
-        const notePreview = (docs.find(x => x.dateKey === k)?.note || "").trim();
-
-        if(searchTerm && !notePreview.toLowerCase().includes(searchTerm)) continue;
-
-        const row = document.createElement("div");
-        row.className = "spese-calendar-row";
-        row.innerHTML = `
-          <div>
-            <div class="spese-date">${formatDDMMYYYY(y,m,day)}</div>
-            <div class="spese-note">${notePreview ? notePreview.replace(/</g,'&lt;').replace(/>/g,'&gt;') : "—"}</div>
-          </div>
-          <div class="spese-amt">${itMoney(val)}</div>
-        `;
-        row.addEventListener("click", ()=> openPopup(k));
-        daysEl.appendChild(row);
-        visibleCount++;
-      }
-      if(searchTerm && visibleCount === 0){
-        daysEl.innerHTML = `<div class="spese-empty">Nessun risultato per "<strong>${searchTerm.replace(/</g,'&lt;')}</strong>"</div>`;
-      }
-    }
-
-    async function boot(){
-      await loadAll();
-      render();
-      // Load connected data in background
-      loadOrdiniFornitoriMese().catch(()=>{});
-      loadScadenzeProssime().catch(()=>{});
-      syncSupplierInvoicesToSpese().catch(()=>{});
-    }
-
-    // ── Sync fatture fornitori → spese ──────────────────────────────────────
-    async function syncSupplierInvoicesToSpese(){
-      try{
-        const suppSnap = await getDocs(collection(db,'suppliers'));
-        const promises = [];
-        for(const suppDoc of suppSnap.docs){
-          const name = String(suppDoc.data().name||'Fornitore');
-          const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
-          invSnap.forEach(invDoc=>{
-            const inv = invDoc.data()||{};
-            const date = inv.dateISO || inv.invoiceDate || inv.date || '';
-            if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-            const amount = Number(inv.totalWithVat||inv.total||inv.importo||inv.amount||0);
-            if(!amount) return;
-            const note = [name, inv.description||inv.invoiceNumber||''].filter(Boolean).join(' – ');
-            const speseId = `supplier_${suppDoc.id}_${invDoc.id}`;
-            promises.push(
-              setDoc(doc(db,'spese',speseId),{
-                date, amount, note,
-                category: inv.category||'fornitori',
-                source: 'supplier_invoice',
-                supplierId: suppDoc.id,
-                invoiceId: invDoc.id,
-                syncedAt: new Date().toISOString()
-              },{ merge:true }).catch(()=>{})
-            );
-          });
-        }
-        await Promise.all(promises);
-        if(promises.length > 0){
-          const syncInfo = document.getElementById('syncInfoPanel');
-          if(syncInfo) syncInfo.style.display='block';
-          // Reload to show newly synced data
-          await loadAll(); render();
-        }
-      }catch(e){ console.warn('syncSupplierInvoicesToSpese',e); }
-    }
-
-    // ── Ordini Fornitori mese ────────────────────────────────────────────────
-    async function loadOrdiniFornitoriMese(){
-      const y = cursor.getFullYear();
-      const m = cursor.getMonth();
-      const ym = `${y}-${pad2(m+1)}`;
-      let total = 0;
-      try{
-        const suppSnap = await getDocs(collection(db,'suppliers'));
-        for(const suppDoc of suppSnap.docs){
-          const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
-          invSnap.forEach(d=>{
-            const data = d.data()||{};
-            const date = String(data.dateISO||data.invoiceDate||data.date||'');
-            if(!date.startsWith(ym)) return;
-            total += Number(data.totalWithVat||data.total||data.importo||data.amount||0);
-          });
-        }
-      }catch(e){ console.warn('loadOrdiniFornitoriMese',e); }
-      const el = document.getElementById('sideOrdiniMese');
-      if(el) el.textContent = itMoney(total);
-    }
-
-    // ── Scadenze prossime ────────────────────────────────────────────────────
-    async function loadScadenzeProssime(){
-      const today = isoKey(new Date());
-      const in30 = isoKey(new Date(Date.now()+30*24*60*60*1000));
-      const el = document.getElementById('sideScadenzeList');
-      if(!el) return;
-      try{
-        const snap = await getDocs(collection(db,'scadenze'));
-        const items = [];
-        snap.forEach(d=>{
-          const data = d.data()||{};
-          if(data.isDeleted) return;
-          const dateKey = String(data.dateISO||d.id||'').slice(0,10);
-          if(!dateKey || dateKey < today || dateKey > in30) return;
-          items.push({
-            date: dateKey,
-            note: String(data.note||data.description||'Scadenza').slice(0,40),
-            amount: Number(data.amount||data.importo||0)
-          });
-        });
-        items.sort((a,b)=>a.date.localeCompare(b.date));
-        if(!items.length){
-          el.innerHTML='<div style="color:#9ca3af;font-size:12px;font-style:italic;">Nessuna scadenza nei prossimi 30 giorni</div>';
-          return;
-        }
-        el.innerHTML = items.slice(0,5).map(item=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(220,38,38,.12);font-size:12px;">
-            <span style="color:#991b1b;font-weight:700;">${item.date}</span>
-            <span style="color:#374151;flex:1;margin:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.note}</span>
-            <span style="font-weight:800;color:#dc2626;">${item.amount?itMoney(item.amount):''}</span>
-          </div>`).join('');
-      }catch(e){
-        console.warn('loadScadenzeProssime',e);
-        if(el) el.innerHTML='<div style="color:#9ca3af;font-size:12px;">—</div>';
-      }
-    }
-
-    boot();
-  </script>
   <script type="module">
     import { exportSpese } from './services/exportService.js';
     import { listExpenses } from './services/expenseService.js';
     document.getElementById('btnExportSpese')?.addEventListener('click', async () => {
-      try {
-        const expenses = await listExpenses();
-        exportSpese(expenses);
-      } catch (e) { alert('Errore export: ' + e.message); }
+      try { const expenses = await listExpenses(); exportSpese(expenses); } catch (e) { alert('Errore export: ' + e.message); }
     });
   </script>
 

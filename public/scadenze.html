@@ -1,138 +1,163 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <base href="/">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Scadenze</title>
 
-  <!-- Stile base del gestionale + stile Incassi per avere la stessa impostazione -->
   <link rel="stylesheet" href="styles.css?v=15_20260225222215" />
   <link rel="stylesheet" href="mobile.css?v=15_20260225222215" />
-  <link rel="stylesheet" href="incassi.css?v=15_20260225222215" />
-  <link rel="stylesheet" href="scadenze.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="scadenze.css?v=rebuild_v1" />
   <script type="module" src="/auth-guard.js"></script>
 </head>
 
-<body class="page incassi-dark">
-  <!-- Top bar coerente -->
-  <header class="top-bar incassi-topbar">
-    <button class="back-btn" id="backBtn">←</button>
+<body class="page scad-page">
+
+  <!-- Top bar -->
+  <header class="top-bar scad-topbar">
+    <button class="back-btn" id="backBtn" title="Torna indietro">←</button>
     <span class="page-title">Scadenze</span>
-    
+    <select id="quickNav" class="quick-nav">
+      <option value="">Vai a…</option>
+      <option value="index.html">HOME</option>
+      <option value="clients.html">CLIENTI</option>
+      <option value="suppliers.html">FORNITORI</option>
+      <option value="scadenze.html" selected>SCADENZE</option>
+      <option value="incassi.html">INCASSI</option>
+      <option value="spese.html">SPESE</option>
+      <option value="listini.html">LISTINI</option>
+      <option value="statistiche.html">STATISTICHE</option>
+      <option value="agenda.html">AGENDA</option>
+      <option value="ordini-clienti.html">ORDINI CLIENTI</option>
+      <option value="finanze.html">FINANZE</option>
+    </select>
   </header>
 
-  <main class="container incassi-wrap safe-main">
-    <div class="incassi-head">
-      <div>
-        <h1 class="incassi-h1">Dashboard Scadenze</h1>
-        <div class="incassi-sub">Totali e calendario mese. Tap su un giorno per aggiungere/modificare.</div>
-      </div>
+  <!-- Main content -->
+  <main class="scad-main" id="scadMain">
 
-      <div class="scad-head-actions">
-        <button class="incassi-btn" id="prevBtn">◀</button>
-        <div class="incassi-btn" style="cursor:default; font-weight:900" id="monthTitle">—</div>
-        <button class="incassi-btn" id="nextBtn">▶</button>
-        <input type="search" id="scadSearch" placeholder="Cerca per nota…" autocomplete="off"
-               style="padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px;min-width:160px;background:rgba(255,255,255,.8)">
-        <button class="incassi-btn" id="btnExportScadenze" type="button" title="Esporta CSV">⬇ CSV</button>
-        <button class="incassi-btn primary" id="btnNew">Nuova scadenza</button>
+    <!-- KPI Strip -->
+    <section class="scad-kpi-strip" aria-label="KPI riepilogo">
+      <div class="scad-kpi-card">
+        <div class="scad-kpi-label">Totale anno</div>
+        <div class="scad-kpi-value" id="kpiAnno">—</div>
+        <div class="scad-kpi-badge scad-badge-brand">ANNO</div>
+      </div>
+      <div class="scad-kpi-card">
+        <div class="scad-kpi-label">Totale mese corrente</div>
+        <div class="scad-kpi-value" id="kpiMese">—</div>
+        <div class="scad-kpi-badge scad-badge-brand">MESE</div>
+      </div>
+      <div class="scad-kpi-card">
+        <div class="scad-kpi-label">Importo scaduto</div>
+        <div class="scad-kpi-value scad-danger" id="kpiScaduto">—</div>
+        <div class="scad-kpi-badge scad-badge-danger">SCADUTO</div>
+      </div>
+      <div class="scad-kpi-card">
+        <div class="scad-kpi-label">Scadenze prossime</div>
+        <div class="scad-kpi-value scad-warning" id="kpiProssime">—</div>
+        <div class="scad-kpi-badge scad-badge-warning">30 GG</div>
+      </div>
+    </section>
+
+    <!-- Action bar -->
+    <div class="scad-action-bar">
+      <button class="scad-btn scad-btn-primary" id="btnNew">＋ Nuova scadenza</button>
+      <input type="search" id="scadSearch" class="scad-search" placeholder="Cerca per nota…" autocomplete="off" />
+      <select id="filterMonth" class="scad-select">
+        <option value="">Tutti i mesi</option>
+        <option value="01">Gennaio</option>
+        <option value="02">Febbraio</option>
+        <option value="03">Marzo</option>
+        <option value="04">Aprile</option>
+        <option value="05">Maggio</option>
+        <option value="06">Giugno</option>
+        <option value="07">Luglio</option>
+        <option value="08">Agosto</option>
+        <option value="09">Settembre</option>
+        <option value="10">Ottobre</option>
+        <option value="11">Novembre</option>
+        <option value="12">Dicembre</option>
+      </select>
+      <select id="filterYear" class="scad-select">
+        <option value="">Tutti gli anni</option>
+      </select>
+      <div class="scad-sort-btns">
+        <button class="scad-btn scad-btn-sort scad-sort-active" id="sortDateBtn">Data ↓</button>
+        <button class="scad-btn scad-btn-sort" id="sortAmtBtn">Importo</button>
+      </div>
+      <button class="scad-btn" id="btnExportScadenze" title="Esporta CSV">⬇ CSV</button>
+    </div>
+
+    <!-- Chart section (collapsible) -->
+    <details class="scad-chart-section" id="chartSection">
+      <summary class="scad-chart-toggle">📊 Grafico mensile — ultimi 12 mesi</summary>
+      <div class="scad-chart-body">
+        <canvas id="scadChart" height="260"></canvas>
+      </div>
+    </details>
+
+    <!-- Deadlines list -->
+    <div id="scadList" class="scad-list" aria-live="polite">
+      <div class="scad-empty-state">
+        <div class="scad-empty-icon">📋</div>
+        <div>Caricamento scadenze…</div>
       </div>
     </div>
 
-    <section class="incassi-grid">
-      <!-- Colonna sinistra: KPI + info -->
-      <div class="incassi-col">
-        <div class="incassi-kpi-card">
-          <div class="incassi-kpi kpi-oggi" id="kpiScadMeseBox">
-            <div>
-              <div class="kpi-name">Totale mese</div>
-              <div class="kpi-val" id="monthTotal">—</div>
-            </div>
-            <div class="kpi-badge">MESE</div>
-          </div>
-
-          <div class="incassi-kpi kpi-mese" id="kpiScadAnnoBox">
-            <div>
-              <div class="kpi-name">Totale anno</div>
-              <div class="kpi-val" id="yearTotal">—</div>
-            </div>
-            <div class="kpi-badge">ANNO</div>
-          </div>
-        </div>
-
-        <div class="incassi-card promemoria-compact">
-          <div class="incassi-card-head">
-            <div>
-              <div class="card-title">Calendario mese</div>
-              <div class="card-sub">Elenco giorni con importo. Clicca per modificare.</div>
-            </div>
-          </div>
-          <div class="incassi-card-body" id="days">
-            <div class="scad-empty">Caricamento…</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Colonna destra: riepilogo -->
-      <aside class="incassi-side">
-        <div class="incassi-card">
-          <div class="incassi-card-head">
-            <div>
-              <div class="card-title">Promemoria</div>
-              <div class="card-sub">Valore usato anche nel KPI Home “Scadenze”.</div>
-            </div>
-          </div>
-          <div class="incassi-card-body">
-            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:4px 2px 2px">
-              <div style="min-width:0">
-                <div class="side-month-label" style="color:var(--muted);font-weight:800">Totale mese</div>
-                <div class="side-month-val" style="font-weight:900" id="sideMonth">—</div>
-              </div>
-              <div style="text-align:right;min-width:0">
-                <div class="side-year-label" style="color:var(--muted);font-weight:800">Totale anno</div>
-                <div class="side-year-val" style="font-weight:900" id="sideYear">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </section>
   </main>
 
-  <!-- Popup edit scadenza -->
-  <div class="modal-overlay hidden" id="popup" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
-      <div class="modal-head">
-        <div class="modal-title" id="popupTitle">Scadenza: <span id="popupDate">—</span></div>
-        <button class="modal-close" id="closeBtn">✕</button>
+  <!-- Add/Edit Modal -->
+  <div id="scadModal" class="scad-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="scad-modal">
+      <div class="scad-modal-head">
+        <h2 class="scad-modal-title" id="modalTitle">Nuova Scadenza</h2>
+        <button class="scad-modal-close" id="modalClose" aria-label="Chiudi">✕</button>
       </div>
-      <div class="modal-body">
-        <div class="scad-modal-grid">
-          <div class="scad-field">
-            <label for="amount">Importo</label>
-            <input id="amount" type="text" inputmode="decimal" placeholder="0,00" />
-            <span class="scad-field-error" id="amountError"></span>
-          </div>
-          <div class="scad-field">
-            <label for="note">Nota</label>
-            <textarea id="note" placeholder="Descrizione…"></textarea>
-            <span class="scad-field-error" id="noteError"></span>
-          </div>
+      <div class="scad-modal-body">
+        <div class="scad-field">
+          <label for="mDate">Data <span class="scad-required">*</span></label>
+          <input id="mDate" type="date" class="scad-input" required />
+          <span class="scad-field-err" id="mDateErr"></span>
+        </div>
+        <div class="scad-field">
+          <label for="mAmount">Importo (€) <span class="scad-required">*</span></label>
+          <input id="mAmount" type="number" class="scad-input" step="0.01" min="0" placeholder="0.00" required />
+          <span class="scad-field-err" id="mAmountErr"></span>
+        </div>
+        <div class="scad-field">
+          <label for="mNote">Nota</label>
+          <textarea id="mNote" class="scad-input scad-textarea" rows="3" placeholder="Descrizione…"></textarea>
+        </div>
+        <div class="scad-field">
+          <label for="mCategory">Categoria</label>
+          <select id="mCategory" class="scad-input">
+            <option value="">— Seleziona —</option>
+            <option value="rata">Rata</option>
+            <option value="bolletta">Bolletta</option>
+            <option value="tasse">Tasse</option>
+            <option value="affitto">Affitto</option>
+            <option value="altro">Altro</option>
+          </select>
         </div>
       </div>
-      <div class="modal-foot">
-        <button class="incassi-btn danger" id="deleteBtn">Elimina</button>
-        <div style="flex:1"></div>
-        <button class="incassi-btn primary" id="saveBtn">Salva</button>
+      <div class="scad-modal-foot">
+        <button class="scad-btn scad-btn-danger hidden" id="modalDelete">🗑 Elimina</button>
+        <div class="scad-modal-foot-right">
+          <button class="scad-btn" id="modalCancel">Annulla</button>
+          <button class="scad-btn scad-btn-primary" id="modalSave">💾 Salva</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="scadenze.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script type="module" src="/nav.js?v=15_20260225222215"></script>
+  <script type="module" src="scadenze.js?v=rebuild_v1"></script>
   <script type="module">
     import { exportScadenze } from './services/exportService.js';
     import { listDeadlines } from './services/deadlineService.js';
@@ -143,6 +168,7 @@
       } catch (e) { alert('Errore export: ' + e.message); }
     });
   </script>
-  <script src="scripts/dashboard-menu.js"></script>
+  <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
+
 </body>
 </html>

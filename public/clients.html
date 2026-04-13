@@ -42,6 +42,16 @@
         <input type="text" id="searchInput" placeholder="Cerca cliente..." />
       </div>
 
+      <div class="sidebar-sort-bar">
+        <span class="sort-label">Ordina:</span>
+        <select id="clientSortSelect" class="sort-select">
+          <option value="revenue">Fatturato ↓</option>
+          <option value="name">Nome A–Z</option>
+          <option value="lastVisit">Ultima visita</option>
+          <option value="orders">N° ordini</option>
+        </select>
+      </div>
+
       <div id="clientsSidebarList" class="sidebar-list"></div>
 
       <div class="sidebar-footer">
@@ -58,13 +68,19 @@
           <div class="content-sub">Giornaliero • Settimanale • Mensile</div>
         </div>
 
-        <div class="period-switch" role="tablist" aria-label="Periodo riepilogo">
-          <button class="pill active" data-period="day" type="button">Giorno</button>
-          <button class="pill" data-period="week" type="button">Sett.</button>
-          <button class="pill" data-period="month" type="button">Mese</button>
-          <button class="pill" data-period="year" type="button">Anno</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button id="btnExportClienti" class="btn btn-primary btn-sm" title="Esporta CSV">⬇ CSV clienti</button>
+          <div class="period-switch" role="tablist" aria-label="Periodo riepilogo">
+            <button class="pill active" data-period="day" type="button">Giorno</button>
+            <button class="pill" data-period="week" type="button">Sett.</button>
+            <button class="pill" data-period="month" type="button">Mese</button>
+            <button class="pill" data-period="year" type="button">Anno</button>
+          </div>
         </div>
       </div>
+
+      <!-- CLIENT DETAIL PANEL (shown when client is selected) -->
+      <div id="clientDetailPanel" class="client-detail-panel hidden" aria-live="polite"></div>
 
       <!-- KPI ANNUALI in alto (richiesta: non in fondo pagina) -->
       <div class="bottom-grid" style="margin-top:10px;">
@@ -76,6 +92,17 @@
         <div class="bottom-card">
           <div class="bottom-title">Totale fatturato annuo</div>
           <div class="bottom-value" id="kpiRevenueYear">€ 0,00</div>
+        </div>
+
+        <div class="bottom-card kpi-accent-green" id="cardTopClientMonth" role="button" tabindex="0" title="Clicca per vedere gli ordini del mese">
+          <div class="bottom-title">🏆 Top cliente mese</div>
+          <div class="bottom-value" id="kpiTopClientMonth" style="font-size:15px;line-height:1.25;">—</div>
+        </div>
+
+        <div class="bottom-card kpi-accent-purple">
+          <div class="bottom-title">🔄 Ritorno clienti</div>
+          <div class="bottom-value" id="kpiRetentionRate">—</div>
+          <div class="bottom-sub" id="kpiRetentionSub" style="font-size:11px;margin-top:4px;opacity:.7;">Clienti tornati questo mese</div>
         </div>
       </div>
 
@@ -120,11 +147,11 @@
           </div>
 
           <div class="analytics-card">
-            <div class="ac-title">Lista dei clienti per fatturato progressivo</div>
+            <div class="ac-title">🥇 Top 10 clienti per fatturato</div>
             <div class="ac-body">
               <div class="table-wrap">
                 <table class="mini-table" id="tblTopRevenue">
-                  <thead><tr><th>#</th><th>Cliente</th><th>Totale</th></tr></thead>
+                  <thead><tr><th>#</th><th>Cliente</th><th>Totale</th><th>Ordini</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>
@@ -132,12 +159,28 @@
           </div>
 
           <div class="analytics-card">
-            <div class="ac-title">Lista dei clienti per numero ordini progressivo con totale ordini</div>
+            <div class="ac-title">📊 Top 10 clienti per numero ordini</div>
             <div class="ac-body">
               <div class="table-wrap">
                 <table class="mini-table" id="tblTopOrders">
-                  <thead><tr><th>#</th><th>Cliente</th><th>Ordini</th></tr></thead>
+                  <thead><tr><th>#</th><th>Cliente</th><th>Ordini</th><th>Fatturato</th></tr></thead>
                   <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clienti inattivi -->
+          <div class="analytics-card wide" id="inactiveClientsCard">
+            <div class="ac-title-row ac-title">
+              <span>😴 Clienti inattivi (ultimi 90 giorni)</span>
+              <span id="inactiveCountBadge" class="inactive-badge">0</span>
+            </div>
+            <div class="ac-body">
+              <div class="table-wrap">
+                <table class="mini-table" id="tblInactiveClients">
+                  <thead><tr><th>#</th><th>Cliente</th><th>Ultima visita</th><th>Giorni fa</th><th>Totale storico</th></tr></thead>
+                  <tbody><tr><td colspan="5" style="opacity:.65;">Caricamento…</td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -172,7 +215,15 @@
 
 </main>
 
-<script type="module" src="./clients.js?v=69_20260306235000"></script>
+<script type="module" src="./clients.js?v=crm_v2"></script>
+
+  <script type="module">
+    import { exportClienti } from './services/exportService.js';
+    document.getElementById('btnExportClienti')?.addEventListener('click', () => {
+      if (!window._exportClientiData || window._exportClientiData.length === 0) { alert('Nessun dato da esportare.'); return; }
+      exportClienti(window._exportClientiData);
+    });
+  </script>
 
   <script type="module" src="/nav.js?v=15_20260225222215"></script>
   <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>

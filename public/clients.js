@@ -204,6 +204,62 @@ let _clients = [];
 let _orders = [];
 let _clientNameById = new Map();
 let _period = 'day';
+let _clientSort = 'revenue'; // revenue | name | lastVisit | orders
+let _selectedClientId = null;
+
+// Per-client derived stats (computed once after loadAll)
+let _clientStats = new Map(); // clientId -> { lastVisit, orderCount, totalRevenue, activityStatus, isVip }
+
+// ===============================
+// Client stats computation
+// ===============================
+function computeClientStats(){
+  const now = new Date();
+  const statsMap = new Map();
+
+  // Accumulate per-client
+  _clients.forEach(c => {
+    statsMap.set(c.id, { lastVisit: null, orderCount: 0, totalRevenue: 0 });
+  });
+
+  _orders.forEach(o => {
+    let key = orderClientKey(o);
+    if (!key) return;
+    // try to map normalized name to id
+    const c = _clients.find(cl => cl.id === key || normName(cl.name) === key);
+    if (!c) return;
+    const id = c.id;
+    if (!statsMap.has(id)) statsMap.set(id, { lastVisit: null, orderCount: 0, totalRevenue: 0 });
+    const s = statsMap.get(id);
+    const d = orderDate(o);
+    if (d && (!s.lastVisit || d > s.lastVisit)) s.lastVisit = d;
+    s.orderCount++;
+    s.totalRevenue += parseEuroLike(o.total);
+  });
+
+  // VIP threshold: top 20% by revenue among clients with orders
+  const revenues = Array.from(statsMap.values())
+    .map(s => s.totalRevenue)
+    .filter(v => v > 0)
+    .sort((a, b) => b - a);
+  const vipThreshold = revenues.length > 0 ? revenues[Math.floor(revenues.length * 0.20)] || revenues[revenues.length - 1] : Infinity;
+
+  statsMap.forEach((s, id) => {
+    // Activity status
+    if (!s.lastVisit) {
+      s.activityStatus = 'unknown';
+    } else {
+      const daysSince = Math.floor((now - s.lastVisit) / (1000 * 60 * 60 * 24));
+      s.daysSinceVisit = daysSince;
+      if (daysSince <= 30) s.activityStatus = 'active';
+      else if (daysSince <= 90) s.activityStatus = 'warning';
+      else s.activityStatus = 'inactive';
+    }
+    s.isVip = revenues.length > 0 && s.totalRevenue >= vipThreshold && s.totalRevenue > 0;
+  });
+
+  _clientStats = statsMap;
+}
 
 // ===============================
 // UI
@@ -211,23 +267,53 @@ let _period = 'day';
 function renderClientList(clients){
   els.list.innerHTML = '';
 
-  clients.forEach(c => {
+  // Apply sort
+  let sorted = [...clients];
+  if (_clientSort === 'name') {
+    sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'it'));
+  } else if (_clientSort === 'lastVisit') {
+    sorted.sort((a, b) => {
+      const sa = _clientStats.get(a.id)?.lastVisit;
+      const sb = _clientStats.get(b.id)?.lastVisit;
+      if (!sa && !sb) return 0;
+      if (!sa) return 1;
+      if (!sb) return -1;
+      return sb - sa;
+    });
+  } else if (_clientSort === 'orders') {
+    sorted.sort((a, b) => (_clientStats.get(b.id)?.orderCount || 0) - (_clientStats.get(a.id)?.orderCount || 0));
+  } else {
+    // revenue (default)
+    sorted.sort((a, b) => (b.total || 0) - (a.total || 0));
+  }
+
+  sorted.forEach(c => {
+    const stats = _clientStats.get(c.id) || {};
+    const actClass = { active: 'dot-active', warning: 'dot-warning', inactive: 'dot-inactive', unknown: 'dot-unknown' }[stats.activityStatus] || 'dot-unknown';
+    const actTitle = { active: 'Attivo (< 30 gg)', warning: 'Attenzione (30-90 gg)', inactive: 'Inattivo (> 90 gg)', unknown: 'Nessun ordine' }[stats.activityStatus] || '';
+    const lastVisitStr = stats.lastVisit ? stats.lastVisit.toLocaleDateString('it-IT') : '—';
+    const vipBadge = stats.isVip ? '<span class="vip-badge" title="VIP: top 20% per fatturato">VIP</span>' : '';
+
     const row = document.createElement('div');
-    row.className = 'client-item';
+    row.className = 'client-item' + (_selectedClientId === c.id ? ' client-item--selected' : '');
     row.dataset.name = (c.name || '').toLowerCase();
     row.dataset.city = (c.city || '').toLowerCase();
+    row.dataset.clientId = c.id;
     row.innerHTML = `
       <div class="left" style="min-width:0;flex:1 1 auto;">
-        <div class="name">${escapeHtml(c.name || '—')}</div>
-        <div class="meta">${escapeHtml(c.city || '')}</div>
+        <div class="client-name-row">
+          <span class="activity-dot ${actClass}" title="${actTitle}"></span>
+          <span class="name">${escapeHtml(c.name || '—')}</span>
+          ${vipBadge}
+        </div>
+        <div class="meta">${escapeHtml(c.city || '')} • ultima visita: ${lastVisitStr}</div>
       </div>
       <div class="right">
         <div class="total">${formatEUR(c.total || 0)}</div>
+        <div class="orders-count">${stats.orderCount || 0} ordini</div>
       </div>
     `;
-    row.addEventListener('click', () => {
-      window.location.href = `client.html?clientId=${encodeURIComponent(c.id)}`;
-    });
+    row.addEventListener('click', () => openClientDetail(c.id));
     els.list.appendChild(row);
   });
 }
@@ -236,6 +322,93 @@ function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"]/g, (m)=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
   }[m]));
+}
+
+// ===============================
+// Client Detail Panel
+// ===============================
+function openClientDetail(clientId){
+  _selectedClientId = clientId;
+  // Re-render list to highlight selected
+  const q = (els.searchInput?.value || '').toLowerCase();
+  document.querySelectorAll('.client-item').forEach(row => {
+    row.classList.toggle('client-item--selected', row.dataset.clientId === clientId);
+  });
+
+  const panel = document.getElementById('clientDetailPanel');
+  if (!panel) return;
+
+  const client = _clients.find(c => c.id === clientId);
+  if (!client) { panel.classList.add('hidden'); return; }
+
+  const stats = _clientStats.get(clientId) || {};
+  const initials = (client.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  // Last 5 orders for this client
+  const clientOrders = _orders
+    .filter(o => {
+      const key = orderClientKey(o);
+      const c = _clients.find(cl => cl.id === key || normName(cl.name) === key);
+      return c?.id === clientId;
+    })
+    .sort((a, b) => (orderDate(b)?.getTime() || 0) - (orderDate(a)?.getTime() || 0))
+    .slice(0, 5);
+
+  const ordersHtml = clientOrders.length ? clientOrders.map(o => {
+    const d = orderDate(o);
+    const dateStr = d ? d.toLocaleDateString('it-IT') : '—';
+    const href = `/order.html?orderId=${encodeURIComponent(o.__id || o.id || '')}${clientId ? `&clientId=${encodeURIComponent(clientId)}` : ''}`;
+    return `<div class="cdp-order-row">
+      <span class="cdp-order-date">${escapeHtml(dateStr)}</span>
+      <span class="cdp-order-total">${formatEUR(parseEuroLike(o.total))}</span>
+      <a href="${href}" class="cdp-order-link" title="Apri ordine">→</a>
+    </div>`;
+  }).join('') : '<div class="cdp-no-orders">Nessun ordine registrato</div>';
+
+  const actLabel = { active: '🟢 Attivo', warning: '🟡 Attenzione', inactive: '🔴 Inattivo', unknown: '⚫ Nessun ordine' }[stats.activityStatus] || '—';
+  const vipBadgeHtml = stats.isVip ? '<span class="vip-badge" style="font-size:13px;">VIP</span>' : '';
+
+  panel.innerHTML = `
+    <div class="cdp-header">
+      <div class="cdp-avatar">${escapeHtml(initials)}</div>
+      <div class="cdp-info">
+        <div class="cdp-name">${escapeHtml(client.name || '—')} ${vipBadgeHtml}</div>
+        <div class="cdp-city">${escapeHtml(client.city || '')} ${actLabel}</div>
+      </div>
+      <button class="cdp-close" id="cdpClose" title="Chiudi dettaglio">✕</button>
+    </div>
+    <div class="cdp-stats">
+      <div class="cdp-stat">
+        <div class="cdp-stat-val">${formatEUR(client.total || 0)}</div>
+        <div class="cdp-stat-label">Fatturato totale</div>
+      </div>
+      <div class="cdp-stat">
+        <div class="cdp-stat-val">${stats.orderCount || 0}</div>
+        <div class="cdp-stat-label">Visite totali</div>
+      </div>
+      <div class="cdp-stat">
+        <div class="cdp-stat-val">${stats.lastVisit ? stats.lastVisit.toLocaleDateString('it-IT') : '—'}</div>
+        <div class="cdp-stat-label">Ultima visita</div>
+      </div>
+      <div class="cdp-stat">
+        <div class="cdp-stat-val">${stats.orderCount > 0 ? formatEUR((client.total || 0) / stats.orderCount) : '—'}</div>
+        <div class="cdp-stat-label">Scontrino medio</div>
+      </div>
+    </div>
+    <div class="cdp-section-title">Ultimi ordini</div>
+    <div class="cdp-orders">${ordersHtml}</div>
+    <div class="cdp-actions">
+      <a href="client.html?clientId=${encodeURIComponent(clientId)}" class="cdp-btn cdp-btn-primary">📋 Scheda completa</a>
+      <a href="order.html?clientId=${encodeURIComponent(clientId)}" class="cdp-btn cdp-btn-secondary">➕ Nuovo ordine</a>
+    </div>
+  `;
+  panel.classList.remove('hidden');
+
+  document.getElementById('cdpClose')?.addEventListener('click', () => {
+    panel.classList.add('hidden');
+    _selectedClientId = null;
+    document.querySelectorAll('.client-item').forEach(r => r.classList.remove('client-item--selected'));
+  });
 }
 
 function filterClientList(){
@@ -306,6 +479,42 @@ function computeOrdersKpis(){
   els.kpiRevenueYear.textContent = formatEUR(inYear.reduce((s,o)=> s + parseEuroLike(o.total), 0));
   const servedSet = new Set(inYear.map(o => orderClientKey(o)).filter(Boolean));
   if (els.kpiClientsServed) els.kpiClientsServed.textContent = String(servedSet.size);
+
+  // KPI: Top cliente mese
+  const topClientEl = document.getElementById('kpiTopClientMonth');
+  if (topClientEl) {
+    const revenueByClient = new Map();
+    inMonth.forEach(o => {
+      const key = orderClientKey(o);
+      if (!key) return;
+      const name = o.clientName || o.nomeCliente || _clientNameById.get(key) || key;
+      revenueByClient.set(key, { name, total: (revenueByClient.get(key)?.total || 0) + parseEuroLike(o.total) });
+    });
+    if (revenueByClient.size > 0) {
+      const top = Array.from(revenueByClient.values()).sort((a,b)=>b.total-a.total)[0];
+      topClientEl.textContent = escapeHtml(top.name);
+      topClientEl.title = formatEUR(top.total);
+    } else {
+      topClientEl.textContent = '—';
+    }
+  }
+
+  // KPI: Ritorno clienti (clients who ordered both last month AND this month)
+  const retEl = document.getElementById('kpiRetentionRate');
+  const retSubEl = document.getElementById('kpiRetentionSub');
+  if (retEl) {
+    const prevMonthStart = new Date(m.start); prevMonthStart.setMonth(prevMonthStart.getMonth() - 1);
+    const inLastMonth = _orders.filter(o => {
+      const d = toDateSafe(o.createdAtISO || o.createdAt);
+      return d && d >= prevMonthStart && d < m.start;
+    });
+    const thisMonthClients = new Set(inMonth.map(o => orderClientKey(o)).filter(Boolean));
+    const lastMonthClients = new Set(inLastMonth.map(o => orderClientKey(o)).filter(Boolean));
+    const returned = [...thisMonthClients].filter(k => lastMonthClients.has(k)).length;
+    const rate = lastMonthClients.size > 0 ? Math.round((returned / lastMonthClients.size) * 100) : null;
+    retEl.textContent = rate !== null ? `${rate}%` : '—';
+    if (retSubEl) retSubEl.textContent = `${returned} su ${lastMonthClients.size} del mese scorso`;
+  }
 }
 
 function setPeriod(p){
@@ -441,8 +650,18 @@ async function loadAll(){
   // cache per lookup rapido nei popup (ordini -> nome cliente)
   _clientNameById = new Map(_clients.map(c => [c.id, c.name]));
 
+  // compute per-client stats (lastVisit, orderCount, VIP, activity)
+  computeClientStats();
+
   _clients.sort((a,b)=> (b.total||0) - (a.total||0));
   els.grandTotal.textContent = totalGenerale.toFixed(2);
+
+  // prepare export data
+  window._exportClientiData = _clients.map(c => {
+    const s = _clientStats.get(c.id) || {};
+    return { name: c.name, email: '', phone: '', totalOrders: c.total, city: c.city, orderCount: s.orderCount || 0, lastVisit: s.lastVisit ? s.lastVisit.toLocaleDateString('it-IT') : '' };
+  });
+
   renderClientList(_clients);
   computeOrdersKpis();
   try{ renderClientAnalytics({ clients: _clients, orders: _orders }); }catch(e){ console.warn('analytics error', e); }
@@ -461,6 +680,12 @@ els.searchInput?.addEventListener('input', filterClientList);
 
 els.pills.forEach(btn => {
   btn.addEventListener('click', () => setPeriod(btn.dataset.period));
+});
+
+document.getElementById('clientSortSelect')?.addEventListener('change', (e) => {
+  _clientSort = e.target.value;
+  renderClientList(_clients);
+  filterClientList();
 });
 
 
@@ -594,13 +819,13 @@ function buildClientAnalyticsData(clients, orders){
 
   const topRevenue = Array.from(byRevenue.values())
     .sort((a,b)=>b.total-a.total)
-    .slice(0,5)
-    .map((r, idx)=>({ n: idx+1, name: r.name || '(cliente)', total: Number(r.total.toFixed(2)), totalFmt: formatEUR(r.total) }));
+    .slice(0,10)
+    .map((r, idx)=>({ n: idx+1, name: r.name || '(cliente)', total: Number(r.total.toFixed(2)), totalFmt: formatEUR(r.total), count: byOrders.get(Array.from(byRevenue.keys())[idx])?.count || 0 }));
 
-  const topOrders = Array.from(byOrders.values())
-    .sort((a,b)=>b.count-a.count)
-    .slice(0,5)
-    .map((r, idx)=>({ n: idx+1, name: r.name || '(cliente)', count: r.count }));
+  const topOrders = Array.from(byOrders.entries())
+    .sort((a,b)=>b[1].count-a[1].count)
+    .slice(0,10)
+    .map(([key, r], idx)=>({ n: idx+1, name: r.name || '(cliente)', count: r.count, totalFmt: formatEUR(byRevenue.get(key)?.total || 0) }));
 
   return {
     labels,
@@ -648,14 +873,43 @@ function renderClientAnalytics({ clients, orders }){
   const tblRev = document.querySelector('#tblTopRevenue tbody');
   if(tblRev){
     tblRev.innerHTML = data.topRevenue.length
-      ? data.topRevenue.map((r)=>`<tr><td>${r.n}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.totalFmt)}</td></tr>`).join('')
-      : `<tr><td colspan="3" style="opacity:.65;">Nessun dato</td></tr>`;
+      ? data.topRevenue.map((r)=>`<tr><td>${r.n}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.totalFmt)}</td><td>${r.count||''}</td></tr>`).join('')
+      : `<tr><td colspan="4" style="opacity:.65;">Nessun dato</td></tr>`;
   }
   const tblOrd = document.querySelector('#tblTopOrders tbody');
   if(tblOrd){
     tblOrd.innerHTML = data.topOrders.length
-      ? data.topOrders.map((r)=>`<tr><td>${r.n}</td><td>${escapeHtml(r.name)}</td><td>${r.count}</td></tr>`).join('')
-      : `<tr><td colspan="3" style="opacity:.65;">Nessun dato</td></tr>`;
+      ? data.topOrders.map((r)=>`<tr><td>${r.n}</td><td>${escapeHtml(r.name)}</td><td>${r.count}</td><td>${escapeHtml(r.totalFmt)}</td></tr>`).join('')
+      : `<tr><td colspan="4" style="opacity:.65;">Nessun dato</td></tr>`;
+  }
+
+  // Inactive clients table
+  const tblInactive = document.querySelector('#tblInactiveClients tbody');
+  const inactiveBadge = document.getElementById('inactiveCountBadge');
+  if (tblInactive) {
+    const now90 = new Date();
+    const cutoff = new Date(now90.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const inactive = _clients
+      .map(c => {
+        const s = _clientStats.get(c.id) || {};
+        if (!s.lastVisit) return null; // no orders: not shown
+        if (s.lastVisit > cutoff) return null;
+        const daysSince = Math.floor((now90 - s.lastVisit) / (1000 * 60 * 60 * 24));
+        return { name: c.name, lastVisit: s.lastVisit, daysSince, total: c.total };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.daysSince - a.daysSince);
+
+    if (inactiveBadge) inactiveBadge.textContent = String(inactive.length);
+    tblInactive.innerHTML = inactive.length
+      ? inactive.slice(0, 20).map((r, i) => `<tr>
+          <td>${i + 1}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${r.lastVisit.toLocaleDateString('it-IT')}</td>
+          <td><span class="days-ago-badge">${r.daysSince} gg</span></td>
+          <td>${formatEUR(r.total)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="5" style="opacity:.65;">Nessun cliente inattivo — ottimo!</td></tr>`;
   }
 }
 

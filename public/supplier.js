@@ -639,6 +639,9 @@ await loadSupplier();
 await loadInvoices();
 await loadOrders();
 
+// Hide orders section on new-supplier page (no supplierId in URL)
+if(!supplierId && ordersHistorySection) ordersHistorySection.style.display = 'none';
+
 // ── Toggle storico ordini ─────────────────────────────
 toggleOrdersBtn?.addEventListener("click", () => {
   const hidden = ordersHistoryBody?.classList.toggle("hidden");

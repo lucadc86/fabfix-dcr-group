@@ -430,7 +430,8 @@
       .fc .fc-daygrid-day-number{font-size:11px !important;width:20px !important;height:20px !important;line-height:20px !important;padding:0 !important;text-align:center !important;}
       .fc-evt-pill{font-size:9px !important;padding:1px 3px !important;}
       .fc .fc-col-header-cell-cushion{font-size:10px !important;padding:3px 1px !important;}
-      #calendar{min-height:320px !important;}
+      #calendar{min-height:600px !important;}
+      .cal-card{padding:8px 6px;}
     }
 
     /* ─── Modal ─── */
@@ -548,9 +549,13 @@
       .card{padding:10px;}
       .hist-tbl{font-size:11px;}
       .hist-tbl th,.hist-tbl td{padding:6px 8px;}
-      .calendar-col,.cal-card,#calendar{max-width:100%;overflow:hidden;}
+      .calendar-col,.cal-card,#calendar{max-width:100%;overflow:visible;}
       .fc .fc-view-harness{max-width:100%;overflow-x:hidden;}
       .fc .fc-col-header-cell-cushion{padding:4px 2px !important;font-size:10px !important;letter-spacing:0;}
+      /* iPhone top-bar: allow wrap so title/nav don't get crushed */
+      .top-bar{flex-wrap:wrap;height:auto;min-height:calc(58px + env(safe-area-inset-top));padding-bottom:6px;}
+      .top-bar .page-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .top-bar .quick-nav{width:100%;margin-top:4px;order:3;}
     }
     /* iPhone small (SE, 375px) */
     @media (max-width:390px){
@@ -1517,7 +1522,13 @@
 
     // ─── Init ───
     loadClientMaps().finally(()=>{
-      initCalendar();
+      try {
+        initCalendar();
+      } catch(e) {
+        console.error('FullCalendar init error:', e);
+        const calEl = document.getElementById('calendar');
+        if(calEl) calEl.innerHTML = '<div style="padding:20px;color:#dc2626;font-weight:700;text-align:center;">⚠️ Errore caricamento calendario. Ricarica la pagina.</div>';
+      }
       loadKPIs();
       startRealtime();
     });

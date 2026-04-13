@@ -31,11 +31,10 @@ main.page-content{
 
 /* ===== Sidebar ===== */
 .clients-sidebar{
-  background: rgba(255,255,255,.82);
+  background: #ffffff;
   border: 1px solid var(--fx-border);
   border-radius: var(--fx-radius);
   box-shadow: var(--fx-shadow-sm);
-  backdrop-filter: blur(8px);
   overflow: hidden;
   display:flex;
   flex-direction: column;
@@ -53,6 +52,7 @@ main.page-content{
   font-weight: 800;
   font-size: 18px;
   letter-spacing: .2px;
+  color: #312e81;
 }
 
 .sidebar-search{
@@ -136,11 +136,10 @@ main.page-content{
 
 /* ===== Content ===== */
 .clients-content{
-  background: rgba(255,255,255,.72);
+  background: #ffffff;
   border: 1px solid var(--fx-border);
   border-radius: var(--fx-radius);
   box-shadow: var(--fx-shadow);
-  backdrop-filter: blur(10px);
   padding: 16px;
   min-height: calc(100vh - 110px);
 }
@@ -218,10 +217,14 @@ main.page-content{
 .kpi-value{ font-size: 26px; font-weight: 950; margin-top: 8px; }
 .kpi-hint{ margin-top: 6px; opacity: .70; font-size: 12.5px; }
 
-.kpi-blue{ background: rgba(59,130,246,.10); }
-.kpi-green{ background: rgba(34,197,94,.12); }
-.kpi-orange{ background: rgba(249,115,22,.13); }
-.kpi-red{ background: rgba(239,68,68,.12); }
+.kpi-blue{ background: #f0f4ff; border-left: 4px solid #4338ca; }
+.kpi-blue .kpi-value { color: #4338ca; }
+.kpi-green{ background: #f0fdf4; border-left: 4px solid #15803d; }
+.kpi-green .kpi-value { color: #15803d; }
+.kpi-orange{ background: #fff7ed; border-left: 4px solid #c2410c; }
+.kpi-orange .kpi-value { color: #c2410c; }
+.kpi-red{ background: #fef2f2; border-left: 4px solid #b91c1c; }
+.kpi-red .kpi-value { color: #b91c1c; }
 
 .bottom-grid{
   display:grid;
@@ -464,3 +467,253 @@ main.page-content{max-width:100%;}
   #tblProductsBank td:nth-child(4)::before{content:"Vendite";font-weight:800;color:#64748b;}
   #tblProductsBank td:nth-child(5)::before{content:"Ultimo prezzo";font-weight:800;color:#64748b;}
 }
+
+/* ==============================
+   CRM ENHANCEMENT — Professional
+   ============================== */
+
+/* Sidebar sort bar */
+.sidebar-sort-bar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 14px 10px 14px;
+}
+.sort-label{ font-size:11px; font-weight:700; opacity:.65; white-space:nowrap; }
+.sort-select{
+  flex:1;
+  border:1px solid var(--fx-border);
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:12px;
+  font-weight:700;
+  background:#fff;
+  outline:none;
+  cursor:pointer;
+}
+
+/* Client-item CRM additions */
+.client-name-row{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:nowrap;
+  overflow:hidden;
+}
+.client-item .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.orders-count{ font-size:11px; opacity:.65; margin-top:1px; }
+
+/* Activity dot */
+.activity-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  flex-shrink:0;
+  margin-top:1px;
+}
+.dot-active   { background:#10b981; }
+.dot-warning  { background:#f59e0b; }
+.dot-inactive { background:#ef4444; }
+.dot-unknown  { background:#94a3b8; }
+
+/* VIP badge */
+.vip-badge{
+  display:inline-block;
+  padding:1px 6px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  color:#fff;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.5px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+/* Selected client item */
+.client-item--selected{
+  background:rgba(99,102,241,.12) !important;
+  border-left:3px solid #6366f1;
+}
+
+/* ==============================
+   CLIENT DETAIL PANEL
+   ============================== */
+.client-detail-panel{
+  background:#fff;
+  border:1px solid rgba(99,102,241,.25);
+  border-radius:18px;
+  box-shadow:0 8px 30px rgba(99,102,241,.12);
+  padding:18px;
+  margin-bottom:16px;
+  animation: cdpIn .18s ease;
+}
+.client-detail-panel.hidden{ display:none; }
+@keyframes cdpIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+
+.cdp-header{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:14px;
+}
+.cdp-avatar{
+  width:52px; height:52px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;
+  font-size:18px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.cdp-info{ flex:1; min-width:0; }
+.cdp-name{ font-size:17px; font-weight:900; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cdp-city{ font-size:12px; opacity:.7; margin-top:3px; }
+.cdp-close{
+  border:0;
+  background:rgba(0,0,0,.06);
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+  font-size:14px;
+  flex-shrink:0;
+}
+.cdp-close:hover{ background:rgba(0,0,0,.12); }
+
+.cdp-stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.cdp-stat{
+  background:#f8faff;
+  border:1px solid rgba(99,102,241,.12);
+  border-radius:12px;
+  padding:10px 12px;
+  text-align:center;
+}
+.cdp-stat-val{ font-size:16px; font-weight:900; color:#6366f1; }
+.cdp-stat-label{ font-size:11px; opacity:.65; margin-top:3px; }
+
+.cdp-section-title{ font-weight:800; font-size:13px; opacity:.7; margin-bottom:8px; }
+
+.cdp-orders{ margin-bottom:14px; }
+.cdp-order-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(0,0,0,.06);
+  font-size:13px;
+}
+.cdp-order-row:last-child{ border-bottom:0; }
+.cdp-order-date{ color:#6366f1; font-weight:700; white-space:nowrap; min-width:80px; }
+.cdp-order-total{ flex:1; font-weight:800; }
+.cdp-order-link{
+  color:#6366f1;
+  text-decoration:none;
+  font-weight:800;
+  padding:4px 8px;
+  border-radius:8px;
+  background:rgba(99,102,241,.1);
+}
+.cdp-no-orders{ opacity:.65; font-size:13px; padding:8px 0; }
+
+.cdp-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.cdp-btn{
+  display:inline-flex;
+  align-items:center;
+  padding:10px 16px;
+  border-radius:12px;
+  font-weight:800;
+  font-size:13px;
+  text-decoration:none;
+  cursor:pointer;
+}
+.cdp-btn-primary{ background:#6366f1; color:#fff; }
+.cdp-btn-primary:hover{ background:#4f46e5; }
+.cdp-btn-secondary{ background:rgba(99,102,241,.1); color:#6366f1; }
+.cdp-btn-secondary:hover{ background:rgba(99,102,241,.18); }
+
+@media(max-width:600px){
+  .cdp-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+/* ==============================
+   BOTTOM-GRID ACCENT CARDS
+   ============================== */
+.kpi-accent-green{ border-left:4px solid #10b981; background:#f0fdf4 !important; }
+.kpi-accent-green .bottom-value{ color:#15803d; }
+.kpi-accent-purple{ border-left:4px solid #8b5cf6; background:#faf5ff !important; }
+.kpi-accent-purple .bottom-value{ color:#7c3aed; }
+
+/* Bottom grid 4 columns */
+.bottom-grid{ grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+@media(max-width:1000px){ .bottom-grid{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; } }
+@media(max-width:520px){ .bottom-grid{ grid-template-columns:1fr !important; } }
+
+/* ==============================
+   INACTIVE CLIENTS TABLE
+   ============================== */
+.inactive-badge{
+  display:inline-block;
+  background:#ef4444;
+  color:#fff;
+  border-radius:999px;
+  padding:2px 8px;
+  font-size:12px;
+  font-weight:900;
+  min-width:22px;
+  text-align:center;
+}
+.days-ago-badge{
+  display:inline-block;
+  background:rgba(239,68,68,.12);
+  color:#dc2626;
+  border-radius:8px;
+  padding:2px 8px;
+  font-size:12px;
+  font-weight:700;
+}
+
+/* ==============================
+   DARK MODE — CRM
+   ============================== */
+:root:not(.theme-light) .clients-sidebar,
+:root:not(.theme-light) .clients-content{ background:#1e293b; border-color:rgba(255,255,255,.1); color:#e2e8f0; }
+:root:not(.theme-light) .sort-select{ background:#0f172a; color:#e2e8f0; border-color:rgba(255,255,255,.15); }
+:root:not(.theme-light) .sidebar-search input{ background:#0f172a; color:#e2e8f0; border-color:rgba(255,255,255,.15); }
+:root:not(.theme-light) .sidebar-title{ color:#a5b4fc; }
+:root:not(.theme-light) .sidebar-footer{ background:#1e293b; border-color:rgba(255,255,255,.1); }
+:root:not(.theme-light) .client-item:hover{ background:rgba(99,102,241,.12); }
+:root:not(.theme-light) .client-item .name{ color:#e2e8f0; }
+:root:not(.theme-light) .client-item--selected{ background:rgba(99,102,241,.2) !important; }
+:root:not(.theme-light) .client-detail-panel{ background:#1e293b; border-color:rgba(99,102,241,.3); }
+:root:not(.theme-light) .cdp-close{ background:rgba(255,255,255,.1); color:#e2e8f0; }
+:root:not(.theme-light) .cdp-stat{ background:#0f172a; border-color:rgba(99,102,241,.2); }
+:root:not(.theme-light) .cdp-order-row{ border-bottom-color:rgba(255,255,255,.08); }
+:root:not(.theme-light) .kpi-card{ background:#1e293b !important; border-color:rgba(255,255,255,.08); color:#e2e8f0; }
+:root:not(.theme-light) .kpi-label{ color:#94a3b8; }
+:root:not(.theme-light) .bottom-card{ background:#1e293b !important; border-color:rgba(255,255,255,.08); color:#e2e8f0; }
+:root:not(.theme-light) .kpi-accent-green{ background:#052e16 !important; }
+:root:not(.theme-light) .kpi-accent-purple{ background:#2e1065 !important; }
+:root:not(.theme-light) .analytics-card{ background:#1e293b; border-color:rgba(255,255,255,.08); color:#e2e8f0; }
+:root:not(.theme-light) .ac-title{ background:#1e293b; color:#e2e8f0; border-bottom-color:rgba(255,255,255,.08); }
+:root:not(.theme-light) .mini-table th{ background:#1e293b; color:#94a3b8; }
+:root:not(.theme-light) .mini-table td{ border-bottom-color:rgba(255,255,255,.06); color:#e2e8f0; }
+:root:not(.theme-light) .period-switch{ background:#0f172a; border-color:rgba(255,255,255,.1); }
+:root:not(.theme-light) .pill{ color:#e2e8f0; }
+:root:not(.theme-light) .pill.active{ background:rgba(99,102,241,.25); }
+:root:not(.theme-light) .modal-card{ background:#1e293b; border-color:rgba(255,255,255,.12); color:#e2e8f0; }
+:root:not(.theme-light) .modal-head{ border-bottom-color:rgba(255,255,255,.08); }
+:root:not(.theme-light) .modal-row{ border-color:rgba(255,255,255,.08); }
+:root:not(.theme-light) .pb-kpi{ background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.06); color:#e2e8f0; }

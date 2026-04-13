@@ -548,3 +548,99 @@ header::after{
 html,body{overflow-x:hidden;}
 
 .top-bar .dashnav-btn,.topbar .dashnav-btn,.top-actions .dashnav-btn,.topbar-actions .dashnav-btn,header .dashnav-btn{margin-left:auto;}
+
+/* =========================
+   DARK MODE — Global rules
+   Applies when no .theme-light on <html> (default is dark)
+========================= */
+:root:not(.theme-light) {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --line: rgba(255,255,255,.10);
+}
+:root:not(.theme-light) body {
+  background: var(--bg, #0f172a);
+  color: var(--text, #e2e8f0);
+}
+:root:not(.theme-light) .top-bar {
+  background: #1e293b;
+  border-bottom-color: rgba(255,255,255,.08);
+}
+:root:not(.theme-light) .page-title { color: #e2e8f0; }
+:root:not(.theme-light) .back-btn {
+  background: rgba(255,255,255,.08);
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.12);
+}
+:root:not(.theme-light) .quick-nav {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.12);
+}
+:root:not(.theme-light) .kpi-card {
+  background: #1e293b;
+  border-color: rgba(255,255,255,.10);
+}
+:root:not(.theme-light) .kpi-label { color: #94a3b8; }
+:root:not(.theme-light) .kpi-value { color: #e2e8f0; }
+:root:not(.theme-light) .card-block,
+:root:not(.theme-light) .analytics-card {
+  background: #1e293b !important;
+  border-color: rgba(255,255,255,.10) !important;
+  color: #e2e8f0;
+}
+:root:not(.theme-light) input,
+:root:not(.theme-light) textarea,
+:root:not(.theme-light) select {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.15);
+}
+:root:not(.theme-light) input::placeholder,
+:root:not(.theme-light) textarea::placeholder { color: #64748b; }
+:root:not(.theme-light) table th {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: rgba(255,255,255,.10);
+}
+:root:not(.theme-light) table td {
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.08);
+}
+:root:not(.theme-light) table tr:hover td { background: rgba(255,255,255,.04); }
+:root:not(.theme-light) .modal-backdrop {
+  background: rgba(0,0,0,.7);
+}
+:root:not(.theme-light) .modal,
+:root:not(.theme-light) .dashnav-panel {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+:root:not(.theme-light) .btn {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.14);
+}
+:root:not(.theme-light) .btn.primary,
+:root:not(.theme-light) .primary-btn {
+  background: #2563eb;
+  color: #fff;
+}
+:root:not(.theme-light) .ghost-btn {
+  background: transparent;
+  color: #94a3b8;
+  border-color: rgba(255,255,255,.14);
+}
+:root:not(.theme-light) .dashnav-btn {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,.14);
+}
+:root:not(.theme-light) .dashnav-item {
+  background: #0f172a;
+  border-color: rgba(255,255,255,.10);
+}
+:root:not(.theme-light) .dashnav-item:hover { background: #1e3a8a; }
+:root:not(.theme-light) .dashnav-item-txt { color: #e2e8f0; }
