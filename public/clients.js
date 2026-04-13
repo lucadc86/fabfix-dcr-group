@@ -98,6 +98,46 @@ function buildProductDbFromOrders(orders){
   try{ localStorage.setItem(PRODUCT_DB_KEY, JSON.stringify(list)); }catch(_){}
   return list;
 }
+
+// ── RFM Segmentation ──────────────────────────────────────────────────────────
+const SEGMENT_CONFIG = {
+  vip:    { label:'⭐ VIP',      class:'seg-vip',    daysThreshold: 45,  minOrders: 5,  minRevenue: 500 },
+  active: { label:'✅ Attivo',   class:'seg-active',  daysThreshold: 60,  minOrders: 2,  minRevenue: 0 },
+  new:    { label:'🆕 Nuovo',    class:'seg-new',     daysThreshold: 30,  minOrders: 1,  maxOrders: 1 },
+  atrisk: { label:'⚠️ A rischio',class:'seg-atrisk',  daysMin: 60,        daysMax: 180,  minOrders: 2 },
+  lost:   { label:'💤 Inattivo', class:'seg-lost',    daysMin: 180,       minOrders: 1 },
+};
+
+function getClientSegment(clientData) {
+  const { daysSinceLastOrder, totalOrders, totalRevenue, firstOrderDaysAgo } = clientData;
+  if (!totalOrders) return 'no_orders';
+  if (totalOrders === 1 && firstOrderDaysAgo <= 30) return 'new';
+  if (daysSinceLastOrder <= 45 && totalOrders >= 5) return 'vip';
+  if (daysSinceLastOrder <= 60 && totalOrders >= 2) return 'active';
+  if (daysSinceLastOrder <= 45) return 'active';
+  if (daysSinceLastOrder > 60 && daysSinceLastOrder <= 180 && totalOrders >= 2) return 'atrisk';
+  if (daysSinceLastOrder > 180 && totalOrders >= 1) return 'lost';
+  return 'active';
+}
+
+function computeClientMetrics(clientId, clientName, orders) {
+  const today = Date.now();
+  const clientOrders = orders.filter(o => {
+    const key = o.clientId || orderClientKey(o);
+    return key === clientId || normName(o.clientName||o.nomeCliente||o.cliente||'') === normName(clientName);
+  });
+  if (!clientOrders.length) return { totalOrders:0, totalRevenue:0, avgOrderValue:0, lastOrderDate:null, daysSinceLastOrder:9999, firstOrderDaysAgo:9999, segment:'no_orders' };
+  const totals = clientOrders.map(o => parseEuroLike(o.total));
+  const totalRevenue = totals.reduce((s,v)=>s+v,0);
+  const avgOrderValue = totalRevenue / clientOrders.length;
+  const dates = clientOrders.map(o=>orderDate(o)).filter(Boolean).sort((a,b)=>b-a);
+  const lastOrderDate = dates[0] || null;
+  const firstOrderDate = dates[dates.length-1] || null;
+  const daysSinceLastOrder = lastOrderDate ? Math.floor((today - lastOrderDate.getTime())/86400000) : 9999;
+  const firstOrderDaysAgo = firstOrderDate ? Math.floor((today - firstOrderDate.getTime())/86400000) : 9999;
+  const segment = getClientSegment({ daysSinceLastOrder, totalOrders:clientOrders.length, totalRevenue, firstOrderDaysAgo });
+  return { totalOrders:clientOrders.length, totalRevenue, avgOrderValue, lastOrderDate, daysSinceLastOrder, firstOrderDaysAgo, segment, orders:clientOrders };
+}
 function fmtDateTime(v){
   const d = v ? new Date(v) : null;
   return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('it-IT') : '—';
@@ -197,13 +237,19 @@ const els = {
   kpiClientsServed: document.getElementById('kpiClientsServed'),
   kpiOrdersYearQty: document.getElementById('kpiOrdersYearQty'),
   kpiRevenueYear: document.getElementById('kpiRevenueYear'),
+  kpiAOV: document.getElementById('kpiAOV'),
+  kpiNewClients: document.getElementById('kpiNewClients'),
+  kpiAtRisk: document.getElementById('kpiAtRisk'),
   pills: Array.from(document.querySelectorAll('.pill[data-period]')),
+  segmentFilter: document.getElementById('segmentFilter'),
 };
 
 let _clients = [];
 let _orders = [];
 let _clientNameById = new Map();
+let _clientMetrics = new Map(); // clientId -> metrics
 let _period = 'day';
+let _activeSegmentFilter = '';
 
 // ===============================
 // UI
@@ -211,22 +257,52 @@ let _period = 'day';
 function renderClientList(clients){
   els.list.innerHTML = '';
 
-  clients.forEach(c => {
+  const search = (els.searchInput?.value || '').toLowerCase();
+  const segFilter = els.segmentFilter?.value || _activeSegmentFilter || '';
+
+  let filtered = clients.filter(c => {
+    const matchSearch = !search || (c.name||'').toLowerCase().includes(search) || (c.city||'').toLowerCase().includes(search);
+    const m = _clientMetrics.get(c.id);
+    const matchSeg = !segFilter || (m && m.segment === segFilter);
+    return matchSearch && matchSeg;
+  });
+
+  if (!filtered.length) {
+    els.list.innerHTML = '<div style="padding:12px;color:#9ca3af;font-size:13px;font-style:italic;">Nessun cliente trovato</div>';
+    return;
+  }
+
+  filtered.forEach(c => {
+    const m = _clientMetrics.get(c.id);
+    const segment = m?.segment || 'no_orders';
+    const segConfig = SEGMENT_CONFIG[segment] || null;
+    const lastOrderStr = m?.lastOrderDate ? m.lastOrderDate.toLocaleDateString('it-IT') : null;
+    const daysSince = m?.daysSinceLastOrder;
+    const daysLabel = !daysSince || daysSince >= 9999 ? '' : daysSince === 0 ? 'Oggi' : daysSince === 1 ? 'Ieri' : `${daysSince}gg fa`;
+
     const row = document.createElement('div');
     row.className = 'client-item';
     row.dataset.name = (c.name || '').toLowerCase();
     row.dataset.city = (c.city || '').toLowerCase();
+    row.dataset.segment = segment;
     row.innerHTML = `
       <div class="left" style="min-width:0;flex:1 1 auto;">
-        <div class="name">${escapeHtml(c.name || '—')}</div>
-        <div class="meta">${escapeHtml(c.city || '')}</div>
+        <div class="name" style="display:flex;align-items:center;gap:6px;">
+          <span>${escapeHtml(c.name || '—')}</span>
+          ${segConfig ? `<span class="seg-badge ${segConfig.class}">${segConfig.label}</span>` : ''}
+        </div>
+        <div class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          ${c.city ? `<span>${escapeHtml(c.city)}</span>` : ''}
+          ${m?.totalOrders ? `<span>· ${m.totalOrders} ord.</span>` : ''}
+          ${lastOrderStr ? `<span style="color:#6b7280;">· ${daysLabel || lastOrderStr}</span>` : ''}
+        </div>
       </div>
       <div class="right">
         <div class="total">${formatEUR(c.total || 0)}</div>
       </div>
     `;
     row.addEventListener('click', () => {
-      window.location.href = `client.html?clientId=${encodeURIComponent(c.id)}`;
+      showClientQuickView(c.id, c.name);
     });
     els.list.appendChild(row);
   });
@@ -239,10 +315,58 @@ function escapeHtml(s){
 }
 
 function filterClientList(){
-  const q = (els.searchInput?.value || '').toLowerCase();
-  document.querySelectorAll('.client-item').forEach(row => {
-    row.style.display = (row.dataset.name.includes(q) || row.dataset.city.includes(q)) ? '' : 'none';
-  });
+  renderClientList(_clients);
+}
+
+// ── Client quick-view ─────────────────────────────────────────────────────────
+function showClientQuickView(clientId, clientName) {
+  const panel = document.getElementById('clientQuickView');
+  if (!panel) { window.location.href = `client.html?clientId=${encodeURIComponent(clientId)}`; return; }
+
+  const m = _clientMetrics.get(clientId);
+  const qvName = document.getElementById('qvName');
+  const qvSegment = document.getElementById('qvSegment');
+  const qvStats = document.getElementById('qvStats');
+  const qvLastOrders = document.getElementById('qvLastOrders');
+  const qvLink = document.getElementById('qvLink');
+
+  if (qvName) qvName.textContent = clientName || clientId;
+  const seg = m?.segment || 'no_orders';
+  const segConf = SEGMENT_CONFIG[seg];
+  if (qvSegment) qvSegment.innerHTML = segConf ? `<span class="seg-badge ${segConf.class}">${segConf.label}</span>` : '';
+
+  if (qvStats) {
+    qvStats.innerHTML = [
+      { label:'Ordini totali', value: m?.totalOrders ?? 0 },
+      { label:'Fatturato', value: formatEUR(m?.totalRevenue ?? 0) },
+      { label:'Ord. medio (AOV)', value: formatEUR(m?.avgOrderValue ?? 0) },
+      { label:'Ultima purchase', value: m?.lastOrderDate ? m.lastOrderDate.toLocaleDateString('it-IT') : '—' },
+      { label:'Giorni inattivo', value: m?.daysSinceLastOrder < 9999 ? `${m.daysSinceLastOrder}gg` : '—' },
+      { label:'Primo ordine', value: m?.firstOrderDaysAgo < 9999 ? `${m.firstOrderDaysAgo}gg fa` : '—' },
+    ].map(k => `<div style="background:rgba(0,0,0,.03);border-radius:10px;padding:8px 10px;"><div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">${k.label}</div><div style="font-size:16px;font-weight:900;margin-top:2px;">${k.value}</div></div>`).join('');
+  }
+
+  // Last 3 orders
+  const clientOrders = (m?.orders || []).sort((a,b)=>(orderDate(b)?.getTime()||0)-(orderDate(a)?.getTime()||0)).slice(0,3);
+  if (qvLastOrders && clientOrders.length) {
+    qvLastOrders.innerHTML = `<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;text-transform:uppercase;">Ultimi ordini</div>`
+      + clientOrders.map(o => {
+        const d = orderDate(o);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px;">
+          <span style="color:#374151;">${d ? d.toLocaleDateString('it-IT') : '—'} · ${escapeHtml(orderPaymentLabel(o))}</span>
+          <span style="font-weight:800;">${formatEUR(parseEuroLike(o.total))}</span>
+        </div>`;
+      }).join('');
+  } else if (qvLastOrders) {
+    qvLastOrders.innerHTML = '';
+  }
+
+  if (qvLink) qvLink.href = `client.html?clientId=${encodeURIComponent(clientId)}`;
+  panel.style.display = '';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const qvCloseBtn = document.getElementById('qvCloseBtn');
+  if (qvCloseBtn) { qvCloseBtn.onclick = () => { panel.style.display = 'none'; }; }
 }
 
 function calcPeriodBounds(now, period){
@@ -303,9 +427,51 @@ function computeOrdersKpis(){
     return d && d >= y.start && d < y.end;
   });
   els.kpiOrdersYearQty.textContent = String(inYear.length);
-  els.kpiRevenueYear.textContent = formatEUR(inYear.reduce((s,o)=> s + parseEuroLike(o.total), 0));
+  const yearRevenue = inYear.reduce((s,o)=> s + parseEuroLike(o.total), 0);
+  els.kpiRevenueYear.textContent = formatEUR(yearRevenue);
   const servedSet = new Set(inYear.map(o => orderClientKey(o)).filter(Boolean));
   if (els.kpiClientsServed) els.kpiClientsServed.textContent = String(servedSet.size);
+
+  // AOV (Average Order Value) - all time
+  const allRevenue = _orders.reduce((s,o)=>s+parseEuroLike(o.total),0);
+  const aov = _orders.length ? allRevenue / _orders.length : 0;
+  if (els.kpiAOV) els.kpiAOV.textContent = formatEUR(aov);
+
+  // New clients this month (first order ever in this month)
+  const newClientsSet = new Set();
+  const monthStart = m.start.getTime();
+  const monthEnd = m.end.getTime();
+  for (const [clientId, metrics] of _clientMetrics) {
+    if (metrics.totalOrders === 1 && metrics.firstOrderDaysAgo <= 30) {
+      const clientOrders = _orders.filter(o => {
+        const key = o.clientId || orderClientKey(o);
+        return key === clientId;
+      });
+      if (clientOrders.length) {
+        const d = orderDate(clientOrders[0]);
+        if (d && d.getTime() >= monthStart && d.getTime() < monthEnd) newClientsSet.add(clientId);
+      }
+    }
+  }
+  if (els.kpiNewClients) els.kpiNewClients.textContent = String(newClientsSet.size);
+
+  // At-risk count
+  let atRiskCount = 0;
+  for (const [, metrics] of _clientMetrics) {
+    if (metrics.segment === 'atrisk') atRiskCount++;
+  }
+  if (els.kpiAtRisk) els.kpiAtRisk.textContent = String(atRiskCount);
+
+  // Segment counts
+  const segCounts = { vip:0, active:0, new:0, atrisk:0, lost:0 };
+  for (const [, metrics] of _clientMetrics) {
+    if (segCounts[metrics.segment] !== undefined) segCounts[metrics.segment]++;
+  }
+  const segIds = { vip:'segVip', active:'segActive', new:'segNew', atrisk:'segAtRisk', lost:'segLost' };
+  for (const [seg, elId] of Object.entries(segIds)) {
+    const el = document.getElementById(elId);
+    if (el) el.textContent = String(segCounts[seg]);
+  }
 }
 
 function setPeriod(p){
@@ -440,6 +606,13 @@ async function loadAll(){
 
   // cache per lookup rapido nei popup (ordini -> nome cliente)
   _clientNameById = new Map(_clients.map(c => [c.id, c.name]));
+
+  // Compute RFM metrics for each client
+  _clientMetrics = new Map();
+  for (const c of _clients) {
+    const metrics = computeClientMetrics(c.id, c.name, _orders);
+    _clientMetrics.set(c.id, metrics);
+  }
 
   _clients.sort((a,b)=> (b.total||0) - (a.total||0));
   els.grandTotal.textContent = totalGenerale.toFixed(2);

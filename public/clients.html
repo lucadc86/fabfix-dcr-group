@@ -42,6 +42,18 @@
         <input type="text" id="searchInput" placeholder="Cerca cliente..." />
       </div>
 
+      <!-- Segment filter -->
+      <div style="padding:0 14px 10px;">
+        <select id="segmentFilter" style="width:100%;padding:7px 10px;border:1px solid rgba(15,23,42,.12);border-radius:10px;background:rgba(255,255,255,.9);font-size:12px;font-weight:700;outline:none;cursor:pointer;">
+          <option value="">🏷️ Tutti i segmenti</option>
+          <option value="vip">⭐ VIP</option>
+          <option value="active">✅ Attivi</option>
+          <option value="atrisk">⚠️ A rischio</option>
+          <option value="new">🆕 Nuovi</option>
+          <option value="lost">💤 Inattivi</option>
+        </select>
+      </div>
+
       <div id="clientsSidebarList" class="sidebar-list"></div>
 
       <div class="sidebar-footer">
@@ -54,8 +66,8 @@
     <section class="clients-content" aria-label="Riepilogo clienti">
       <div class="content-head">
         <div>
-          <h1 class="content-title">Riepilogo</h1>
-          <div class="content-sub">Giornaliero • Settimanale • Mensile</div>
+          <h1 class="content-title">Riepilogo Clienti</h1>
+          <div class="content-sub">Analisi vendite • Segmentazione • KPI in tempo reale</div>
         </div>
 
         <div class="period-switch" role="tablist" aria-label="Periodo riepilogo">
@@ -66,48 +78,79 @@
         </div>
       </div>
 
-      <!-- KPI ANNUALI in alto (richiesta: non in fondo pagina) -->
+      <!-- KPI ANNUALI in alto -->
       <div class="bottom-grid" style="margin-top:10px;">
         <div class="bottom-card" id="cardOrdersYear" role="button" tabindex="0">
-          <div class="bottom-title">Totale ordini annui (quantità)</div>
+          <div class="bottom-title">📦 Ordini anno (totale)</div>
           <div class="bottom-value" id="kpiOrdersYearQty">0</div>
         </div>
 
         <div class="bottom-card">
-          <div class="bottom-title">Totale fatturato annuo</div>
+          <div class="bottom-title">💶 Fatturato annuo</div>
           <div class="bottom-value" id="kpiRevenueYear">€ 0,00</div>
+        </div>
+
+        <div class="bottom-card kpi-extra" id="cardNewClients" role="button" tabindex="0">
+          <div class="bottom-title">🆕 Nuovi clienti (mese)</div>
+          <div class="bottom-value" id="kpiNewClients">0</div>
+        </div>
+
+        <div class="bottom-card kpi-extra" id="cardAtRisk" role="button" tabindex="0" style="cursor:pointer;">
+          <div class="bottom-title">⚠️ A rischio (90gg)</div>
+          <div class="bottom-value" id="kpiAtRisk" style="color:#d97706;">0</div>
         </div>
       </div>
 
       <div class="kpi-grid">
         <div class="kpi-card kpi-blue" id="cardOrdersToday" role="button" tabindex="0">
-          <div class="kpi-label">Ordini (quantità)</div>
+          <div class="kpi-label">📦 Ordini</div>
           <div class="kpi-value" id="kpiOrdersQty">0</div>
           <div class="kpi-hint" id="kpiOrdersHint">—</div>
         </div>
 
         <div class="kpi-card kpi-green" id="cardRevenueToday" role="button" tabindex="0">
-          <div class="kpi-label">Fatturato</div>
+          <div class="kpi-label">💶 Fatturato</div>
           <div class="kpi-value" id="kpiRevenue">€ 0,00</div>
           <div class="kpi-hint" id="kpiRevenueHint">—</div>
         </div>
 
         <div class="kpi-card kpi-orange" id="cardOrdersMonth" role="button" tabindex="0">
-          <div class="kpi-label">Ordini mese (quantità)</div>
+          <div class="kpi-label">📅 Ordini mese</div>
           <div class="kpi-value" id="kpiOrdersMonthQty">0</div>
           <div class="kpi-hint">Mese corrente</div>
         </div>
 
-        <div class="kpi-card kpi-red">
-          <div class="kpi-label">Fatturato mese</div>
+        <div class="kpi-card kpi-purple" id="cardRevenueMonth" role="button" tabindex="0">
+          <div class="kpi-label">💹 Fatturato mese</div>
           <div class="kpi-value" id="kpiRevenueMonth">€ 0,00</div>
           <div class="kpi-hint">Mese corrente</div>
         </div>
 
-        <div class="kpi-card kpi-blue">
-          <div class="kpi-label">Clienti serviti</div>
+        <div class="kpi-card kpi-teal">
+          <div class="kpi-label">👥 Clienti serviti</div>
           <div class="kpi-value" id="kpiClientsServed">0</div>
-          <div class="kpi-hint">Almeno 1 ordine</div>
+          <div class="kpi-hint">Anno corrente</div>
+        </div>
+
+        <div class="kpi-card kpi-slate">
+          <div class="kpi-label">💰 AOV (ord. medio)</div>
+          <div class="kpi-value" id="kpiAOV">€ 0,00</div>
+          <div class="kpi-hint">Valore medio ordine</div>
+        </div>
+      </div>
+
+      <!-- Client quick-view panel (shown on click) -->
+      <div id="clientQuickView" style="display:none;margin-bottom:14px;background:var(--card,#f0f7ff);border:1px solid rgba(31,79,216,.2);border-radius:16px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <span style="font-weight:900;font-size:16px;" id="qvName">—</span>
+          <span id="qvSegment"></span>
+          <button onclick="document.getElementById('clientQuickView').style.display='none'" style="border:none;background:rgba(0,0,0,.05);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;" id="qvStats"></div>
+        <div id="qvLastOrders"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a id="qvLink" href="#" style="display:inline-block;padding:7px 14px;background:#1f4fd8;color:#fff;border-radius:10px;font-weight:700;font-size:12px;text-decoration:none;">Scheda completa →</a>
+          <button id="qvCloseBtn" style="padding:7px 14px;background:rgba(0,0,0,.05);border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;">Chiudi</button>
         </div>
       </div>
 
@@ -115,12 +158,12 @@
       <section class="clients-analytics" id="clientsAnalytics">
         <div class="analytics-grid">
           <div class="analytics-card wide">
-            <div class="ac-title">Fatturato anno mese x mese</div>
+            <div class="ac-title">📈 Fatturato anno mese x mese</div>
             <div class="ac-body"><canvas id="chartRevenue" height="160"></canvas></div>
           </div>
 
           <div class="analytics-card">
-            <div class="ac-title">Lista dei clienti per fatturato progressivo</div>
+            <div class="ac-title">🏆 Top clienti per fatturato</div>
             <div class="ac-body">
               <div class="table-wrap">
                 <table class="mini-table" id="tblTopRevenue">
@@ -132,14 +175,26 @@
           </div>
 
           <div class="analytics-card">
-            <div class="ac-title">Lista dei clienti per numero ordini progressivo con totale ordini</div>
+            <div class="ac-title">🔁 Top clienti per ordini + AOV</div>
             <div class="ac-body">
               <div class="table-wrap">
                 <table class="mini-table" id="tblTopOrders">
-                  <thead><tr><th>#</th><th>Cliente</th><th>Ordini</th></tr></thead>
+                  <thead><tr><th>#</th><th>Cliente</th><th>Ordini</th><th>AOV</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          <!-- Segmentazione RFM -->
+          <div class="analytics-card wide">
+            <div class="ac-title">🎯 Segmentazione clienti</div>
+            <div class="ac-body" id="segmentationPanel" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+              <div class="segment-kpi" data-seg="vip" role="button" tabindex="0"><div class="seg-icon">⭐</div><div class="seg-label">VIP</div><div class="seg-count" id="segVip">0</div></div>
+              <div class="segment-kpi" data-seg="active" role="button" tabindex="0"><div class="seg-icon">✅</div><div class="seg-label">Attivi</div><div class="seg-count" id="segActive">0</div></div>
+              <div class="segment-kpi" data-seg="new" role="button" tabindex="0"><div class="seg-icon">🆕</div><div class="seg-label">Nuovi</div><div class="seg-count" id="segNew">0</div></div>
+              <div class="segment-kpi" data-seg="atrisk" role="button" tabindex="0"><div class="seg-icon">⚠️</div><div class="seg-label">A rischio</div><div class="seg-count" id="segAtRisk">0</div></div>
+              <div class="segment-kpi" data-seg="lost" role="button" tabindex="0"><div class="seg-icon">💤</div><div class="seg-label">Inattivi</div><div class="seg-count" id="segLost">0</div></div>
             </div>
           </div>
         </div>
