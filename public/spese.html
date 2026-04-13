@@ -227,8 +227,8 @@
     // Events nav
     backBtn?.addEventListener("click", ()=> location.href = "index.html");
     quickNav?.addEventListener("change", (e)=>{ const v=e.target.value; if(v) location.href=v; });
-    prevBtn?.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()-1); render(); });
-    nextBtn?.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()+1); render(); });
+    prevBtn?.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()-1); render(); loadOrdiniFornitoriMese().catch(()=>{}); });
+    nextBtn?.addEventListener("click", ()=>{ cursor.setMonth(cursor.getMonth()+1); render(); loadOrdiniFornitoriMese().catch(()=>{}); });
 
     btnNew?.addEventListener("click", ()=>{
       const d = new Date(cursor);
