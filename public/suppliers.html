@@ -34,6 +34,7 @@
     <option value="statistiche.html">STATISTICHE</option>
     <option value="agenda.html">AGENDA</option>
     <option value="ordini-clienti.html">ORDINI CLIENTI</option>
+      <option value="finanze.html">FINANZE</option>
   </select>
 </header>
 
@@ -96,11 +97,15 @@
       <div style="margin-top:24px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div style="font-weight:900;font-size:18px;color:#0f172a;">📦 Storico Ordini Fornitori</div>
-          <button id="addOrderGlobalBtn" class="btn btn-primary btn-sm" style="background:#1f4fd8;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-weight:800;cursor:pointer;">＋ Nuovo ordine</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button id="btnToggleStorico" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:10px;padding:7px 14px;font-weight:800;cursor:pointer;font-size:13px;">▼ Mostra storico</button>
+            <button id="addOrderGlobalBtn" class="btn btn-primary btn-sm" style="background:#1f4fd8;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-weight:800;cursor:pointer;">＋ Nuovo ordine</button>
+          </div>
         </div>
+        <div id="storicoBody" style="display:none;">
 
         <!-- Form aggiunta ordine rapido -->
-        <div id="quickOrderForm" style="display:none;background:#f0f5ff;border:1px solid #c7d9ff;border-radius:16px;padding:16px;margin-bottom:16px;">
+        <div id="quickOrderForm" style="display:none;background:#f0f5ff;border:1px solid #c7d9ff;border-radius:16px;padding:16px;margin-bottom:16px;margin-top:12px;">
           <div style="font-weight:800;font-size:14px;margin-bottom:12px;color:#1e3a8a;">Aggiungi ordine fornitore</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div>
@@ -142,6 +147,7 @@
         <div id="ordersHistoryList" style="display:flex;flex-direction:column;gap:12px;">
           <div style="color:#9ca3af;font-style:italic;padding:12px 0;">Caricamento storico ordini…</div>
         </div>
+        </div><!-- /#storicoBody -->
       </div>
     </section>
 
@@ -151,6 +157,7 @@
 <script type="module" src="./suppliers.js?v=15_20260225222215"></script>
 <script type="module" src="/nav.js?v=15_20260225222215"></script>
 <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 </body>
 </html>

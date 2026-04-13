@@ -621,16 +621,27 @@ function renderClientAnalytics({ clients, orders }){
   if(rev && window.Chart){
     try{ rev.height = 220; }catch(_){ }
     const ctx = rev.getContext('2d');
+    if(window.ChartDataLabels) Chart.register(ChartDataLabels);
     __clientCharts.push(new Chart(ctx,{
       type:'bar',
       data:{ labels: data.labels, datasets:[{ label:'Fatturato', data: data.monthlyRevenue, borderWidth:1, backgroundColor:'rgba(59,130,246,0.55)', borderColor:'rgba(59,130,246,0.95)' }] },
       options:{
         responsive:true,
         maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(ctx)=> formatEUR(ctx.parsed.y || 0) } } },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label:(ctx)=> formatEUR(ctx.parsed.y || 0) } },
+          datalabels:{
+            display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+            anchor:'end', align:'top',
+            formatter:(v)=>formatEUR(v),
+            font:{size:10,weight:'700'},
+            color:'rgba(59,130,246,0.9)',
+            clamp:true, clip:false, padding:{top:2}
+          }
+        },
         scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=> formatEUR(v) } } }
-      },
-      plugins:[{ id:'value-labels', afterDatasetsDraw(chart){ const {ctx} = chart; ctx.save(); ctx.font='12px sans-serif'; ctx.fillStyle='#233'; ctx.textAlign='center'; const meta = chart.getDatasetMeta(0); meta.data.forEach((bar, idx)=>{ const v = data.monthlyRevenue[idx]; if(!v) return; ctx.fillText(formatEUR(v), bar.x, bar.y - 8); }); ctx.restore(); }}]
+      }
     }));
   }
 

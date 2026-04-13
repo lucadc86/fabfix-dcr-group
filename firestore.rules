@@ -88,6 +88,10 @@ service cloud.firestore {
       allow read, create, update, delete: if isStaff();
     }
 
+    match /spese/{docId} {
+      allow read, create, update, delete: if isStaff();
+    }
+
     match /expensesHistory/{docId} {
       allow read, create: if isStaff();
       allow update, delete: if false;

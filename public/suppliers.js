@@ -162,6 +162,7 @@ function renderSuppliersChart(list){
   const labels = list.map(s=>String(s.name||'Senza nome'));
   const values = list.map(s=>parseEuroLike(s.total));
   if(suppliersChart) { try{suppliersChart.destroy();}catch(_){} }
+  if(window.ChartDataLabels) Chart.register(ChartDataLabels);
   suppliersChart = new Chart(canvas.getContext('2d'), {
     type:'bar',
     data:{ labels, datasets:[{ data: values, backgroundColor:'rgba(59,130,246,0.55)', borderColor:'rgba(59,130,246,0.95)', borderWidth:1, borderRadius:8, maxBarThickness:42 }] },
@@ -169,7 +170,19 @@ function renderSuppliersChart(list){
       responsive:true,
       maintainAspectRatio:false,
       animation:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=>`€ ${eur(ctx.parsed.y||0)}` } } },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:(ctx)=>`€ ${eur(ctx.parsed.y||0)}` } },
+        datalabels:{
+          display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+          anchor:'end', align:'top',
+          formatter:(v)=>'€ '+eur(v),
+          font:{size:10,weight:'700'},
+          color:'rgba(59,130,246,0.9)',
+          clamp:true, clip:false,
+          padding:{top:2}
+        }
+      },
       scales:{ y:{ beginAtZero:true, ticks:{ callback:(value)=>'€ '+eur(value) } }, x:{ ticks:{ autoSkip:false, maxRotation:40, minRotation:0 } } }
     }
   });
@@ -222,6 +235,7 @@ function renderMonthlyOrdersChart(){
       maxBarThickness: 42
     }));
   if(monthlyOrdersChart){ try{monthlyOrdersChart.destroy();}catch(_){} }
+  if(window.ChartDataLabels) Chart.register(ChartDataLabels);
   monthlyOrdersChart = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: { labels: monthLabels, datasets },
@@ -231,7 +245,15 @@ function renderMonthlyOrdersChart(){
       animation: false,
       plugins: {
         legend: { display: true, position: 'bottom' },
-        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: € ${eur(ctx.parsed.y||0)}` } }
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: € ${eur(ctx.parsed.y||0)}` } },
+        datalabels: {
+          display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+          anchor:'center', align:'center',
+          formatter:(v)=>v>=100?'€'+eur(v):'',
+          font:{size:9,weight:'700'},
+          color:'#fff',
+          clamp:true, clip:true
+        }
       },
       scales: {
         x: { stacked: true, ticks: { autoSkip: false, maxRotation: 40, minRotation: 0 } },
@@ -455,6 +477,24 @@ if(qoSaveBtn){
       qoSaveBtn.textContent='💾 Salva ordine';
     }
   });
+}
+
+// ── Toggle Storico Ordini ──────────────────────────────────────────────────
+const btnToggleStorico = document.getElementById('btnToggleStorico');
+const storicoBody = document.getElementById('storicoBody');
+if(btnToggleStorico && storicoBody){
+  btnToggleStorico.addEventListener('click',()=>{
+    const open = storicoBody.style.display === 'none';
+    storicoBody.style.display = open ? 'block' : 'none';
+    btnToggleStorico.textContent = open ? '▲ Nascondi storico' : '▼ Mostra storico';
+  });
+}
+// Auto-open storicoBody when "Nuovo ordine" is clicked
+if(addOrderGlobalBtn && storicoBody){
+  addOrderGlobalBtn.addEventListener('click',()=>{
+    storicoBody.style.display='block';
+    if(btnToggleStorico) btnToggleStorico.textContent='▲ Nascondi storico';
+  }, true); // capture phase so it runs before the existing click listener
 }
 
 loadOrdersHistory();

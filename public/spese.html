@@ -78,22 +78,38 @@
         <div class="incassi-card">
           <div class="incassi-card-head">
             <div>
-              <div class="card-title">Promemoria</div>
-              <div class="card-sub">Riepilogo rapido del mese/anno.</div>
+              <div class="card-title">📊 Riepilogo mese</div>
+              <div class="card-sub">Spese, Ordini Fornitori e Scadenze.</div>
             </div>
           </div>
           <div class="incassi-card-body">
-            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px">
               <div>
-                <div style="color:var(--muted);font-weight:800">Totale mese</div>
-                <div style="font-size:34px;font-weight:900" id="sideMonth">—</div>
+                <div style="color:var(--muted);font-weight:800">Spese mese</div>
+                <div style="font-size:28px;font-weight:900" id="sideMonth">—</div>
               </div>
               <div>
-                <div style="color:var(--muted);font-weight:800">Totale anno</div>
-                <div style="font-size:22px;font-weight:900" id="sideYear">—</div>
+                <div style="color:var(--muted);font-weight:800">Anno</div>
+                <div style="font-size:18px;font-weight:900" id="sideYear">—</div>
               </div>
             </div>
+            <!-- Ordini Fornitori -->
+            <div style="background:rgba(59,130,246,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px;border:1px solid rgba(59,130,246,.18);">
+              <div style="font-size:12px;font-weight:800;color:#1e40af;margin-bottom:4px;">📦 Ordini Fornitori (mese)</div>
+              <div style="font-size:22px;font-weight:900;color:#1f4fd8;" id="sideOrdiniMese">—</div>
+              <a href="suppliers.html" style="font-size:11px;color:#1f4fd8;text-decoration:none;font-weight:700;">Vai ai fornitori →</a>
+            </div>
+            <!-- Scadenze -->
+            <div style="background:rgba(220,38,38,.07);border-radius:12px;padding:10px 12px;border:1px solid rgba(220,38,38,.18);">
+              <div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:6px;">🔴 Scadenze in scadenza</div>
+              <div id="sideScadenzeList"><div style="color:#9ca3af;font-size:12px;font-style:italic;">Caricamento…</div></div>
+              <a href="scadenze.html" style="font-size:11px;color:#dc2626;text-decoration:none;font-weight:700;display:block;margin-top:6px;">Gestisci scadenze →</a>
+            </div>
           </div>
+        </div>
+        <!-- Sync fornitore info -->
+        <div id="syncInfoPanel" style="display:none;background:rgba(16,185,129,.08);border-radius:12px;padding:10px 12px;border:1px solid rgba(16,185,129,.2);font-size:12px;color:#065f46;font-weight:700;margin-top:8px;">
+          ✅ Fatture fornitori sincronizzate
         </div>
       </aside>
     </section>
@@ -130,7 +146,7 @@
   <script type="module">
     import { db } from "./firebase.js";
     import {
-      doc, setDoc, deleteDoc, getDocs, collection
+      doc, setDoc, deleteDoc, getDocs, collection, query, orderBy, where
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const COLLECTION = "spese";
@@ -369,6 +385,107 @@
     async function boot(){
       await loadAll();
       render();
+      // Load connected data in background
+      loadOrdiniFornitoriMese().catch(()=>{});
+      loadScadenzeProssime().catch(()=>{});
+      syncSupplierInvoicesToSpese().catch(()=>{});
+    }
+
+    // ── Sync fatture fornitori → spese ──────────────────────────────────────
+    async function syncSupplierInvoicesToSpese(){
+      try{
+        const suppSnap = await getDocs(collection(db,'suppliers'));
+        const promises = [];
+        for(const suppDoc of suppSnap.docs){
+          const name = String(suppDoc.data().name||'Fornitore');
+          const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+          invSnap.forEach(invDoc=>{
+            const inv = invDoc.data()||{};
+            const date = inv.dateISO || inv.invoiceDate || inv.date || '';
+            if(!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+            const amount = Number(inv.totalWithVat||inv.total||inv.importo||inv.amount||0);
+            if(!amount) return;
+            const note = [name, inv.description||inv.invoiceNumber||''].filter(Boolean).join(' – ');
+            const speseId = `supplier_${suppDoc.id}_${invDoc.id}`;
+            promises.push(
+              setDoc(doc(db,'spese',speseId),{
+                date, amount, note,
+                category: inv.category||'fornitori',
+                source: 'supplier_invoice',
+                supplierId: suppDoc.id,
+                invoiceId: invDoc.id,
+                syncedAt: new Date().toISOString()
+              },{ merge:true }).catch(()=>{})
+            );
+          });
+        }
+        await Promise.all(promises);
+        if(promises.length > 0){
+          const syncInfo = document.getElementById('syncInfoPanel');
+          if(syncInfo) syncInfo.style.display='block';
+          // Reload to show newly synced data
+          await loadAll(); render();
+        }
+      }catch(e){ console.warn('syncSupplierInvoicesToSpese',e); }
+    }
+
+    // ── Ordini Fornitori mese ────────────────────────────────────────────────
+    async function loadOrdiniFornitoriMese(){
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth();
+      const ym = `${y}-${pad2(m+1)}`;
+      let total = 0;
+      try{
+        const suppSnap = await getDocs(collection(db,'suppliers'));
+        for(const suppDoc of suppSnap.docs){
+          const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+          invSnap.forEach(d=>{
+            const data = d.data()||{};
+            const date = String(data.dateISO||data.invoiceDate||data.date||'');
+            if(!date.startsWith(ym)) return;
+            total += Number(data.totalWithVat||data.total||data.importo||data.amount||0);
+          });
+        }
+      }catch(e){ console.warn('loadOrdiniFornitoriMese',e); }
+      const el = document.getElementById('sideOrdiniMese');
+      if(el) el.textContent = itMoney(total);
+    }
+
+    // ── Scadenze prossime ────────────────────────────────────────────────────
+    async function loadScadenzeProssime(){
+      const today = isoKey(new Date());
+      const in30 = isoKey(new Date(Date.now()+30*24*60*60*1000));
+      const el = document.getElementById('sideScadenzeList');
+      if(!el) return;
+      try{
+        const snap = await getDocs(collection(db,'scadenze'));
+        const items = [];
+        snap.forEach(d=>{
+          const data = d.data()||{};
+          if(data.isDeleted) return;
+          const dateKey = String(data.dateISO||d.id||'').slice(0,10);
+          if(!dateKey || dateKey < today || dateKey > in30) return;
+          items.push({
+            date: dateKey,
+            note: String(data.note||data.description||'Scadenza').slice(0,40),
+            amount: Number(data.amount||data.importo||0)
+          });
+        });
+        items.sort((a,b)=>a.date.localeCompare(b.date));
+        if(!items.length){
+          el.innerHTML='<div style="color:#9ca3af;font-size:12px;font-style:italic;">Nessuna scadenza nei prossimi 30 giorni</div>';
+          return;
+        }
+        el.innerHTML = items.slice(0,5).map(item=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(220,38,38,.12);font-size:12px;">
+            <span style="color:#991b1b;font-weight:700;">${item.date}</span>
+            <span style="color:#374151;flex:1;margin:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.note}</span>
+            <span style="font-weight:800;color:#dc2626;">${item.amount?itMoney(item.amount):''}</span>
+          </div>`).join('');
+      }catch(e){
+        console.warn('loadScadenzeProssime',e);
+        if(el) el.innerHTML='<div style="color:#9ca3af;font-size:12px;">—</div>';
+      }
     }
 
     boot();

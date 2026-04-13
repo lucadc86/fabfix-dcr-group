@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <base href="/">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finanze — DCR GROUP</title>
+  <link rel="stylesheet" href="styles.css?v=15_20260225222215"/>
+  <link rel="stylesheet" href="mobile.css?v=15_20260225222215"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root{
+      --fin-brand:#1f4fd8;
+      --fin-green:#16a34a;
+      --fin-red:#dc2626;
+      --fin-orange:#ea580c;
+      --fin-purple:#7c3aed;
+      --fin-bg:#f0f4ff;
+      --fin-card:#fff;
+      --fin-border:rgba(31,79,216,.12);
+      --fin-shadow:0 4px 20px rgba(15,23,42,.08);
+    }
+    body.finanze-page{background:var(--fin-bg);min-height:100vh;}
+
+    /* ── Top bar ── */
+    .fin-topbar{
+      position:fixed;top:0;left:0;right:0;
+      height:calc(56px + env(safe-area-inset-top));
+      padding-top:env(safe-area-inset-top);
+      background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);
+      display:flex;align-items:center;gap:10px;
+      padding-left:14px;padding-right:14px;
+      z-index:500;box-shadow:0 2px 12px rgba(0,0,0,.25);
+    }
+    .fin-back{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:18px;cursor:pointer;line-height:1;}
+    .fin-title{color:#fff;font-weight:900;font-size:18px;letter-spacing:-.3px;flex:1;}
+    .fin-sub-title{color:rgba(255,255,255,.65);font-size:12px;font-weight:600;}
+    .fin-month-nav{display:flex;align-items:center;gap:6px;}
+    .fin-month-btn{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:14px;font-weight:700;cursor:pointer;}
+    .fin-month-btn:hover{background:rgba(255,255,255,.2);}
+    .fin-month-label{color:#fff;font-weight:800;font-size:13px;min-width:120px;text-align:center;}
+
+    /* ── Content ── */
+    .fin-content{
+      padding:calc(72px + env(safe-area-inset-top)) 16px 30px;
+      max-width:1100px;margin:0 auto;
+    }
+
+    /* ── KPI strip ── */
+    .fin-kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:10px;
+      margin-bottom:18px;
+    }
+    .fin-kpi{
+      background:var(--fin-card);
+      border-radius:16px;
+      padding:14px 12px;
+      border:1px solid var(--fin-border);
+      box-shadow:var(--fin-shadow);
+      display:flex;flex-direction:column;gap:4px;
+      cursor:pointer;transition:transform .1s;
+    }
+    .fin-kpi:hover{transform:translateY(-2px);}
+    .fin-kpi.green{border-left:4px solid var(--fin-green);}
+    .fin-kpi.red{border-left:4px solid var(--fin-red);}
+    .fin-kpi.blue{border-left:4px solid var(--fin-brand);}
+    .fin-kpi.orange{border-left:4px solid var(--fin-orange);}
+    .fin-kpi.purple{border-left:4px solid var(--fin-purple);}
+    .fin-kpi-label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;}
+    .fin-kpi-value{font-size:20px;font-weight:900;color:#0f172a;line-height:1.1;}
+    .fin-kpi.green .fin-kpi-value{color:var(--fin-green);}
+    .fin-kpi.red .fin-kpi-value{color:var(--fin-red);}
+    .fin-kpi.blue .fin-kpi-value{color:var(--fin-brand);}
+    .fin-kpi.orange .fin-kpi-value{color:var(--fin-orange);}
+    .fin-kpi-sub{font-size:11px;color:#94a3b8;}
+
+    /* ── Cards grid ── */
+    .fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    .fin-grid.full{grid-template-columns:1fr;}
+    .fin-card{background:var(--fin-card);border-radius:16px;padding:16px;border:1px solid var(--fin-border);box-shadow:var(--fin-shadow);}
+    .fin-card-title{font-size:14px;font-weight:900;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+    .fin-card-title .badge{display:inline-flex;background:var(--fin-bg);color:var(--fin-brand);border-radius:8px;padding:2px 8px;font-size:11px;font-weight:800;margin-left:auto;}
+    .chart-wrap{height:220px;position:relative;}
+    .chart-wrap.tall{height:260px;}
+
+    /* ── Tables ── */
+    .fin-table{width:100%;border-collapse:collapse;}
+    .fin-table th{font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;border-bottom:2px solid #f1f5f9;text-align:left;}
+    .fin-table td{padding:9px 10px;border-bottom:1px solid #f8fafc;font-size:13px;color:#0f172a;}
+    .fin-table tr:last-child td{border-bottom:none;}
+    .fin-table tr:hover td{background:#f8fafc;}
+    .fin-amt{text-align:right;font-weight:800;}
+    .fin-amt.pos{color:var(--fin-green);}
+    .fin-amt.neg{color:var(--fin-red);}
+    .fin-date{color:#64748b;font-size:12px;white-space:nowrap;}
+    .fin-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;}
+    .fin-pill.paid{background:#dcfce7;color:#15803d;}
+    .fin-pill.unpaid{background:#fee2e2;color:#dc2626;}
+    .fin-pill.pending{background:#fef3c7;color:#d97706;}
+    .fin-pill.scadenza{background:#fde8d8;color:#c2410c;}
+
+    /* ── Empty state ── */
+    .fin-empty{text-align:center;padding:24px;color:#94a3b8;font-size:13px;font-style:italic;}
+
+    /* ── Saldo bar ── */
+    .saldo-bar{
+      height:8px;border-radius:999px;background:#e2e8f0;
+      overflow:hidden;margin:8px 0;
+    }
+    .saldo-bar-fill{
+      height:100%;border-radius:999px;
+      transition:width .4s ease;
+    }
+    .saldo-bar-fill.pos{background:linear-gradient(90deg,#16a34a,#22c55e);}
+    .saldo-bar-fill.neg{background:linear-gradient(90deg,#dc2626,#ef4444);}
+
+    /* ── Alert box ── */
+    .fin-alert{
+      display:flex;align-items:flex-start;gap:10px;
+      background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;
+      padding:12px 14px;margin-bottom:12px;
+      font-size:13px;color:#9a3412;
+    }
+    .fin-alert.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+    .fin-alert.success{background:#f0fdf4;border-color:#bbf7d0;color:#14532d;}
+
+    /* ── Month section header ── */
+    .fin-section-header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:16px;flex-wrap:wrap;gap:8px;
+    }
+    .fin-section-title{font-size:22px;font-weight:900;color:#0f172a;}
+    .fin-section-sub{font-size:13px;color:#64748b;}
+    .fin-link-btn{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:6px 12px;border-radius:10px;border:1px solid var(--fin-border);
+      background:var(--fin-card);color:var(--fin-brand);
+      font-size:12px;font-weight:700;text-decoration:none;
+      transition:background .1s;cursor:pointer;
+    }
+    .fin-link-btn:hover{background:var(--fin-bg);}
+
+    /* ── Year tabs ── */
+    .year-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+    .year-tab{background:rgba(255,255,255,.7);border:1px solid var(--fin-border);border-radius:10px;padding:5px 14px;font-size:13px;font-weight:700;color:#475569;cursor:pointer;transition:all .1s;}
+    .year-tab.active{background:var(--fin-brand);color:#fff;border-color:var(--fin-brand);}
+
+    @media(max-width:900px){
+      .fin-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+    }
+    @media(max-width:700px){
+      .fin-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .fin-grid{grid-template-columns:1fr;}
+      .chart-wrap{height:180px;}
+    }
+    @media(max-width:420px){
+      .fin-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+      .fin-kpi{padding:10px;}
+      .fin-kpi-value{font-size:16px;}
+      .fin-content{padding-left:10px;padding-right:10px;}
+    }
+  </style>
+  <script type="module" src="/auth-guard.js"></script>
+</head>
+
+<body class="finanze-page">
+
+<header class="fin-topbar">
+  <button class="fin-back" onclick="window.location.href='index.html'">←</button>
+  <div>
+    <div class="fin-title">💰 FINANZE</div>
+    <div class="fin-sub-title">Centro di controllo finanziario</div>
+  </div>
+  <div class="fin-month-nav">
+    <button class="fin-month-btn" id="finPrevMonth">◀</button>
+    <div class="fin-month-label" id="finMonthLabel">—</div>
+    <button class="fin-month-btn" id="finNextMonth">▶</button>
+  </div>
+</header>
+
+<div class="fin-content">
+
+  <!-- Year tabs -->
+  <div class="year-tabs" id="finYearTabs"></div>
+
+  <!-- KPI strip -->
+  <div class="fin-kpi-grid">
+    <div class="fin-kpi green" onclick="scrollToSection('secIncassi')">
+      <div class="fin-kpi-label">💚 Incassato mese</div>
+      <div class="fin-kpi-value" id="kpiIncassiMese">—</div>
+      <div class="fin-kpi-sub" id="kpiIncassiAnnoSub">Anno: —</div>
+    </div>
+    <div class="fin-kpi red" onclick="scrollToSection('secSpese')">
+      <div class="fin-kpi-label">🔴 Spese mese</div>
+      <div class="fin-kpi-value" id="kpiSpeseMese">—</div>
+      <div class="fin-kpi-sub" id="kpiSpeseAnnoSub">Anno: —</div>
+    </div>
+    <div class="fin-kpi orange" onclick="scrollToSection('secFornitori')">
+      <div class="fin-kpi-label">📦 Ordini fornitori mese</div>
+      <div class="fin-kpi-value" id="kpiForniMese">—</div>
+      <div class="fin-kpi-sub" id="kpiForniAnnoSub">Anno: —</div>
+    </div>
+    <div class="fin-kpi purple" onclick="scrollToSection('secScadenze')">
+      <div class="fin-kpi-label">🔔 Scadenze mese</div>
+      <div class="fin-kpi-value" id="kpiScadenzeMese">—</div>
+      <div class="fin-kpi-sub" id="kpiScadenzeNextSub">Prossimi 30gg: —</div>
+    </div>
+    <div class="fin-kpi blue" id="kpiSaldoCard">
+      <div class="fin-kpi-label">⚖️ Saldo netto mese</div>
+      <div class="fin-kpi-value" id="kpiSaldo">—</div>
+      <div class="fin-kpi-sub">Incassato − Spese − Fornitori</div>
+    </div>
+  </div>
+
+  <!-- Alert scadenze urgenti -->
+  <div id="alertScadenze" style="display:none;"></div>
+
+  <!-- Cash flow chart (full width) -->
+  <div class="fin-grid full" style="margin-bottom:14px;">
+    <div class="fin-card">
+      <div class="fin-card-title">📈 Cash Flow mensile — <span id="cashFlowYear" style="color:var(--fin-brand);">—</span></div>
+      <div class="chart-wrap tall"><canvas id="cashFlowChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Incassi vs Spese + Saldo -->
+  <div class="fin-grid" style="margin-bottom:14px;">
+    <div class="fin-card">
+      <div class="fin-card-title">💸 Spese mensili <span class="badge" id="speseChartYear">—</span></div>
+      <div class="chart-wrap"><canvas id="speseChart"></canvas></div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-card-title">💰 Saldo netto mensile <span class="badge" id="saldoChartYear">—</span></div>
+      <div class="chart-wrap"><canvas id="saldoChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Scadenze in arrivo -->
+  <div class="fin-card" id="secScadenze" style="margin-bottom:14px;">
+    <div class="fin-card-title">
+      🔔 Scadenze in scadenza
+      <a href="scadenze.html" class="fin-link-btn" style="margin-left:auto;font-size:11px;">Gestisci →</a>
+    </div>
+    <div id="scadenzeTable"><div class="fin-empty">Caricamento…</div></div>
+  </div>
+
+  <!-- Incassi recenti + Fornitori -->
+  <div class="fin-grid" style="margin-bottom:14px;">
+    <div class="fin-card" id="secIncassi">
+      <div class="fin-card-title">
+        💚 Ultimi incassi
+        <a href="incassi.html" class="fin-link-btn" style="margin-left:auto;font-size:11px;">Vedi tutti →</a>
+      </div>
+      <div id="incassiTable"><div class="fin-empty">Caricamento…</div></div>
+    </div>
+    <div class="fin-card" id="secSpese">
+      <div class="fin-card-title">
+        🔴 Ultime spese
+        <a href="spese.html" class="fin-link-btn" style="margin-left:auto;font-size:11px;">Vedi tutte →</a>
+      </div>
+      <div id="speseTable"><div class="fin-empty">Caricamento…</div></div>
+    </div>
+  </div>
+
+  <!-- Fatture fornitori -->
+  <div class="fin-card" id="secFornitori" style="margin-bottom:14px;">
+    <div class="fin-card-title">
+      📦 Fatture fornitori
+      <a href="suppliers.html" class="fin-link-btn" style="margin-left:auto;font-size:11px;">Gestisci →</a>
+    </div>
+    <div id="fornitoriTable"><div class="fin-empty">Caricamento…</div></div>
+  </div>
+
+  <!-- Previsione 30/60/90 giorni -->
+  <div class="fin-card" style="margin-bottom:14px;">
+    <div class="fin-card-title">🔭 Previsione finanziaria — scadenze prossimi 90 giorni</div>
+    <div id="previsioneTable"><div class="fin-empty">Caricamento…</div></div>
+  </div>
+
+</div><!-- /.fin-content -->
+
+<script type="module">
+  import { db } from "./firebase.js";
+  import {
+    collection, getDocs, query, orderBy, limit, where
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  Chart.register(ChartDataLabels);
+
+  const MONTHS = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+  const pad2 = (n)=>String(n).padStart(2,'0');
+  const eur = (n)=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(Number(n)||0);
+  const eurCompact = (n)=>{
+    const v=Number(n)||0;
+    if(Math.abs(v)>=1000) return (v/1000).toLocaleString('it-IT',{maximumFractionDigits:1})+'k';
+    return v.toLocaleString('it-IT',{maximumFractionDigits:0});
+  };
+  const isoToDate = (iso)=>new Date(iso+'T00:00:00');
+  const todayISO = ()=>new Date().toISOString().slice(0,10);
+
+  let cursorDate = new Date(); cursorDate.setDate(1);
+  let selectedYear = new Date().getFullYear();
+
+  // Charts
+  let cashFlowChart = null, speseChartInst = null, saldoChartInst = null;
+
+  // ── Scroll utility ──
+  window.scrollToSection = (id)=>{
+    document.getElementById(id)?.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  // ── Month nav ──
+  document.getElementById('finPrevMonth')?.addEventListener('click',()=>{
+    cursorDate.setMonth(cursorDate.getMonth()-1);
+    updateMonthLabel();
+    loadMonthData();
+  });
+  document.getElementById('finNextMonth')?.addEventListener('click',()=>{
+    cursorDate.setMonth(cursorDate.getMonth()+1);
+    updateMonthLabel();
+    loadMonthData();
+  });
+
+  function updateMonthLabel(){
+    const label = cursorDate.toLocaleString('it-IT',{month:'long',year:'numeric'}).toUpperCase();
+    document.getElementById('finMonthLabel').textContent = label;
+  }
+
+  // ── Year tabs ──
+  function buildYearTabs(years){
+    const container = document.getElementById('finYearTabs');
+    if(!container) return;
+    container.innerHTML = years.map(y=>`
+      <button class="year-tab${y===selectedYear?' active':''}" data-year="${y}">${y}</button>
+    `).join('');
+    container.querySelectorAll('.year-tab').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        selectedYear = Number(btn.dataset.year);
+        container.querySelectorAll('.year-tab').forEach(b=>b.classList.toggle('active',Number(b.dataset.year)===selectedYear));
+        document.getElementById('cashFlowYear').textContent = selectedYear;
+        document.getElementById('speseChartYear').textContent = selectedYear;
+        document.getElementById('saldoChartYear').textContent = selectedYear;
+        loadYearCharts();
+      });
+    });
+  }
+
+  // ── Main init ──
+  async function init(){
+    updateMonthLabel();
+    const years = await detectYears();
+    buildYearTabs(years);
+    document.getElementById('cashFlowYear').textContent = selectedYear;
+    document.getElementById('speseChartYear').textContent = selectedYear;
+    document.getElementById('saldoChartYear').textContent = selectedYear;
+    await Promise.all([loadMonthData(), loadYearCharts(), loadScadenze(), loadIncassi(), loadSpese(), loadFornitori(), loadPrevisione()]);
+  }
+
+  async function detectYears(){
+    const now = new Date().getFullYear();
+    return [now-1, now, now+1].filter(y=>y>=2023);
+  }
+
+  // ── Month data (KPIs) ──
+  async function loadMonthData(){
+    const y = cursorDate.getFullYear();
+    const m = cursorDate.getMonth();
+    const ymStr = `${y}-${pad2(m+1)}`;
+
+    let incassiMese=0, speseMese=0, forniMese=0, scadenzeMese=0;
+    let incassiAnno=0, speseAnno=0, forniAnno=0;
+
+    // Incassi
+    try{
+      const snap = await getDocs(collection(db,'incassi'));
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey) return;
+        const amount = Number(data.amount||0);
+        if(dateKey.startsWith(ymStr)) incassiMese+=amount;
+        if(dateKey.startsWith(String(y))) incassiAnno+=amount;
+      });
+    }catch(e){console.warn('finanze incassi',e);}
+
+    // Spese
+    try{
+      const snap = await getDocs(collection(db,'spese'));
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey) return;
+        const amount = Number(data.amount||0);
+        if(dateKey.startsWith(ymStr)) speseMese+=amount;
+        if(dateKey.startsWith(String(y))) speseAnno+=amount;
+      });
+    }catch(e){console.warn('finanze spese',e);}
+
+    // Ordini Fornitori
+    try{
+      const suppSnap = await getDocs(collection(db,'suppliers'));
+      for(const suppDoc of suppSnap.docs){
+        const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+        invSnap.forEach(d=>{
+          const data=d.data()||{};
+          const dateKey = String(data.dateISO||data.invoiceDate||data.date||'').slice(0,10);
+          if(!dateKey) return;
+          const amount = Number(data.totalWithVat||data.total||data.importo||data.amount||0);
+          if(dateKey.startsWith(ymStr)) forniMese+=amount;
+          if(dateKey.startsWith(String(y))) forniAnno+=amount;
+        });
+      }
+    }catch(e){console.warn('finanze fornitori',e);}
+
+    // Scadenze
+    try{
+      const snap = await getDocs(collection(db,'scadenze'));
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        if(data.isDeleted) return;
+        const dateKey = String(data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey) return;
+        const amount = Number(data.amount||data.importo||0);
+        if(dateKey.startsWith(ymStr)) scadenzeMese+=amount;
+      });
+    }catch(e){console.warn('finanze scadenze',e);}
+
+    // Saldo
+    const saldo = incassiMese - speseMese - forniMese;
+
+    // Update KPIs
+    document.getElementById('kpiIncassiMese').textContent = eur(incassiMese);
+    document.getElementById('kpiIncassiAnnoSub').textContent = `Anno: ${eur(incassiAnno)}`;
+    document.getElementById('kpiSpeseMese').textContent = eur(speseMese);
+    document.getElementById('kpiSpeseAnnoSub').textContent = `Anno: ${eur(speseAnno)}`;
+    document.getElementById('kpiForniMese').textContent = eur(forniMese);
+    document.getElementById('kpiForniAnnoSub').textContent = `Anno: ${eur(forniAnno)}`;
+    document.getElementById('kpiScadenzeMese').textContent = eur(scadenzeMese);
+
+    const saldoEl = document.getElementById('kpiSaldo');
+    saldoEl.textContent = eur(saldo);
+    const saldoCard = document.getElementById('kpiSaldoCard');
+    if(saldoCard){
+      saldoCard.className = 'fin-kpi '+(saldo>=0?'green':'red');
+    }
+
+    // Upcoming scadenze count
+    const today = todayISO();
+    const in30 = new Date(Date.now()+30*24*60*60*1000).toISOString().slice(0,10);
+    try{
+      const snap2 = await getDocs(collection(db,'scadenze'));
+      let cnt=0;
+      snap2.forEach(d=>{
+        const data=d.data()||{};
+        if(data.isDeleted) return;
+        const dk=String(data.dateISO||d.id||'').slice(0,10);
+        if(dk>=today&&dk<=in30) cnt++;
+      });
+      document.getElementById('kpiScadenzeNextSub').textContent=`Prossimi 30gg: ${cnt}`;
+    }catch(_){}
+  }
+
+  // ── Year charts ──
+  async function loadYearCharts(){
+    const y = selectedYear;
+    const incassiByMonth = Array(12).fill(0);
+    const speseByMonth = Array(12).fill(0);
+    const forniByMonth = Array(12).fill(0);
+
+    // Incassi
+    try{
+      const snap = await getDocs(collection(db,'incassi'));
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey.startsWith(String(y))) return;
+        const m=parseInt(dateKey.slice(5,7))-1;
+        if(m>=0&&m<12) incassiByMonth[m]+=Number(data.amount||0);
+      });
+    }catch(e){}
+
+    // Spese
+    try{
+      const snap = await getDocs(collection(db,'spese'));
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey.startsWith(String(y))) return;
+        const m=parseInt(dateKey.slice(5,7))-1;
+        if(m>=0&&m<12) speseByMonth[m]+=Number(data.amount||0);
+      });
+    }catch(e){}
+
+    // Fornitori
+    try{
+      const suppSnap = await getDocs(collection(db,'suppliers'));
+      for(const suppDoc of suppSnap.docs){
+        const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+        invSnap.forEach(d=>{
+          const data=d.data()||{};
+          const dateKey=String(data.dateISO||data.invoiceDate||data.date||'').slice(0,10);
+          if(!dateKey.startsWith(String(y))) return;
+          const m=parseInt(dateKey.slice(5,7))-1;
+          if(m>=0&&m<12) forniByMonth[m]+=Number(data.totalWithVat||data.total||data.importo||data.amount||0);
+        });
+      }
+    }catch(e){}
+
+    const saldoByMonth = incassiByMonth.map((inc,i)=>inc-speseByMonth[i]-forniByMonth[i]);
+
+    // Cash Flow chart
+    const cfCanvas = document.getElementById('cashFlowChart');
+    if(cfCanvas && window.Chart){
+      if(cashFlowChart){ try{cashFlowChart.destroy();}catch(_){} }
+      cashFlowChart = new Chart(cfCanvas,{
+        type:'bar',
+        data:{
+          labels:MONTHS,
+          datasets:[
+            { label:'Incassato', data:incassiByMonth, backgroundColor:'rgba(22,163,74,.70)', borderRadius:5, maxBarThickness:30 },
+            { label:'Spese', data:speseByMonth, backgroundColor:'rgba(239,68,68,.65)', borderRadius:5, maxBarThickness:30 },
+            { label:'Fornitori', data:forniByMonth, backgroundColor:'rgba(249,115,22,.65)', borderRadius:5, maxBarThickness:30 }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, animation:false,
+          plugins:{
+            legend:{ position:'bottom', labels:{ boxWidth:12, padding:10, font:{size:11} } },
+            tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${eur(ctx.parsed.y)}` } },
+            datalabels:{
+              display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+              anchor:'end', align:'top',
+              formatter:(v)=>v>=100?eurCompact(v):'',
+              font:{size:8,weight:'700'},
+              color:(ctx)=>ctx.datasetIndex===0?'#15803d':(ctx.datasetIndex===1?'#dc2626':'#c2410c'),
+              clamp:true, clip:false, padding:{top:1}
+            }
+          },
+          scales:{
+            x:{ grid:{display:false}, ticks:{font:{size:11}} },
+            y:{ beginAtZero:true, ticks:{callback:(v)=>eurCompact(v), font:{size:10}} }
+          }
+        }
+      });
+    }
+
+    // Spese chart
+    const spCanvas = document.getElementById('speseChart');
+    if(spCanvas && window.Chart){
+      if(speseChartInst){ try{speseChartInst.destroy();}catch(_){} }
+      speseChartInst = new Chart(spCanvas,{
+        type:'bar',
+        data:{ labels:MONTHS, datasets:[{ label:'Spese+Fornitori', data:speseByMonth.map((s,i)=>s+forniByMonth[i]), backgroundColor:'rgba(239,68,68,.70)', borderRadius:5 }] },
+        options:{
+          responsive:true, maintainAspectRatio:false, animation:false,
+          plugins:{
+            legend:{display:false},
+            tooltip:{callbacks:{label:(ctx)=>eur(ctx.parsed.y)}},
+            datalabels:{
+              display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+              anchor:'end',align:'top',
+              formatter:(v)=>v>=100?eurCompact(v):'',
+              font:{size:9,weight:'700'},color:'rgba(239,68,68,.9)',
+              clamp:true,clip:false,padding:{top:2}
+            }
+          },
+          scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,ticks:{callback:(v)=>eurCompact(v),font:{size:10}}}}
+        }
+      });
+    }
+
+    // Saldo chart
+    const saCanvas = document.getElementById('saldoChart');
+    if(saCanvas && window.Chart){
+      if(saldoChartInst){ try{saldoChartInst.destroy();}catch(_){} }
+      saldoChartInst = new Chart(saCanvas,{
+        type:'bar',
+        data:{ labels:MONTHS, datasets:[{
+          label:'Saldo', data:saldoByMonth,
+          backgroundColor:saldoByMonth.map(v=>v>=0?'rgba(22,163,74,.75)':'rgba(239,68,68,.75)'),
+          borderRadius:5
+        }] },
+        options:{
+          responsive:true, maintainAspectRatio:false, animation:false,
+          plugins:{
+            legend:{display:false},
+            tooltip:{callbacks:{label:(ctx)=>eur(ctx.parsed.y)}},
+            datalabels:{
+              display:(ctx)=>ctx.dataset.data[ctx.dataIndex]!==0,
+              anchor:(ctx)=>ctx.dataset.data[ctx.dataIndex]>=0?'end':'start',
+              align:(ctx)=>ctx.dataset.data[ctx.dataIndex]>=0?'top':'bottom',
+              formatter:(v)=>Math.abs(v)>=100?eurCompact(v):'',
+              font:{size:9,weight:'700'},
+              color:(ctx)=>Array.isArray(ctx.dataset.backgroundColor)?ctx.dataset.backgroundColor[ctx.dataIndex]:ctx.dataset.backgroundColor,
+              clamp:true,clip:false,padding:{top:2,bottom:2}
+            }
+          },
+          scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:false,ticks:{callback:(v)=>eurCompact(v),font:{size:10}}}}
+        }
+      });
+    }
+  }
+
+  // ── Scadenze table ──
+  async function loadScadenze(){
+    const el = document.getElementById('scadenzeTable');
+    if(!el) return;
+    const today = todayISO();
+    const in90 = new Date(Date.now()+90*24*60*60*1000).toISOString().slice(0,10);
+    try{
+      const snap = await getDocs(collection(db,'scadenze'));
+      const items = [];
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        if(data.isDeleted) return;
+        const dateKey = String(data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey||dateKey<today||dateKey>in90) return;
+        items.push({
+          date:dateKey,
+          note:String(data.note||data.description||'Scadenza').slice(0,50),
+          amount:Number(data.amount||data.importo||0),
+          paid:data.paid||false
+        });
+      });
+      items.sort((a,b)=>a.date.localeCompare(b.date));
+
+      // Alert for urgent (within 7 days)
+      const in7 = new Date(Date.now()+7*24*60*60*1000).toISOString().slice(0,10);
+      const urgent = items.filter(x=>x.date<=in7&&!x.paid);
+      if(urgent.length){
+        const alertEl = document.getElementById('alertScadenze');
+        if(alertEl){
+          alertEl.style.display='block';
+          alertEl.innerHTML=`<div class="fin-alert">⚠️ <strong>${urgent.length} scadenza/e urgente/i</strong> nei prossimi 7 giorni per ${eur(urgent.reduce((s,x)=>s+x.amount,0))} totali. <a href="scadenze.html" style="color:inherit;font-weight:700;text-decoration:underline;">Gestisci →</a></div>`;
+        }
+      }
+
+      if(!items.length){ el.innerHTML='<div class="fin-empty">Nessuna scadenza nei prossimi 90 giorni 🎉</div>'; return; }
+
+      el.innerHTML=`<table class="fin-table"><thead><tr>
+        <th>Data</th><th>Descrizione</th><th class="fin-amt">Importo</th><th>Stato</th>
+      </tr></thead><tbody>${items.map(item=>{
+        const daysLeft = Math.round((isoToDate(item.date)-new Date())/(24*60*60*1000));
+        const urgent = daysLeft<=7;
+        const pill = item.paid?'<span class="fin-pill paid">✅ Pagata</span>':
+                     urgent?'<span class="fin-pill unpaid">⚠️ Urgente</span>':
+                     '<span class="fin-pill scadenza">📅 In scadenza</span>';
+        return `<tr>
+          <td><span class="fin-date">${item.date}</span><br><small style="color:#94a3b8;">${daysLeft}gg</small></td>
+          <td>${item.note}</td>
+          <td class="fin-amt ${item.paid?'':'neg'}">${item.amount?eur(item.amount):'—'}</td>
+          <td>${pill}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+    }catch(e){
+      el.innerHTML=`<div class="fin-empty">Errore caricamento scadenze</div>`;
+      console.warn('loadScadenze',e);
+    }
+  }
+
+  // ── Incassi recenti ──
+  async function loadIncassi(){
+    const el = document.getElementById('incassiTable');
+    if(!el) return;
+    try{
+      const snap = await getDocs(collection(db,'incassi'));
+      const items = [];
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
+        const amount = Number(data.amount||0);
+        if(!dateKey||!amount) return;
+        const note = String(data.note||data.entries?.map(e=>e.clientName||'').filter(Boolean).join(', ')||'Incasso').slice(0,40);
+        items.push({ date:dateKey, note, amount });
+      });
+      items.sort((a,b)=>b.date.localeCompare(a.date));
+      const recent = items.slice(0,10);
+      if(!recent.length){ el.innerHTML='<div class="fin-empty">Nessun incasso registrato</div>'; return; }
+      el.innerHTML=`<table class="fin-table"><thead><tr>
+        <th>Data</th><th>Note</th><th class="fin-amt">Importo</th>
+      </tr></thead><tbody>${recent.map(item=>`<tr>
+        <td><span class="fin-date">${item.date}</span></td>
+        <td style="font-size:12px;color:#475569;">${item.note}</td>
+        <td class="fin-amt pos">${eur(item.amount)}</td>
+      </tr>`).join('')}</tbody></table>`;
+    }catch(e){
+      el.innerHTML='<div class="fin-empty">Errore caricamento incassi</div>';
+    }
+  }
+
+  // ── Spese recenti ──
+  async function loadSpese(){
+    const el = document.getElementById('speseTable');
+    if(!el) return;
+    try{
+      const snap = await getDocs(collection(db,'spese'));
+      const items = [];
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        const dateKey = String(data.date||data.dateISO||d.id||'').slice(0,10);
+        const amount = Number(data.amount||0);
+        if(!dateKey||!amount) return;
+        const note = String(data.note||data.category||data.categoria||'Spesa').slice(0,40);
+        const source = data.source==='supplier_invoice'?'📦':'💸';
+        items.push({ date:dateKey, note, amount, source });
+      });
+      items.sort((a,b)=>b.date.localeCompare(a.date));
+      const recent = items.slice(0,10);
+      if(!recent.length){ el.innerHTML='<div class="fin-empty">Nessuna spesa registrata</div>'; return; }
+      el.innerHTML=`<table class="fin-table"><thead><tr>
+        <th>Data</th><th>Descrizione</th><th class="fin-amt">Importo</th>
+      </tr></thead><tbody>${recent.map(item=>`<tr>
+        <td><span class="fin-date">${item.date}</span></td>
+        <td style="font-size:12px;color:#475569;">${item.source} ${item.note}</td>
+        <td class="fin-amt neg">${eur(item.amount)}</td>
+      </tr>`).join('')}</tbody></table>`;
+    }catch(e){
+      el.innerHTML='<div class="fin-empty">Errore caricamento spese</div>';
+    }
+  }
+
+  // ── Fatture fornitori ──
+  async function loadFornitori(){
+    const el = document.getElementById('fornitoriTable');
+    if(!el) return;
+    try{
+      const suppSnap = await getDocs(collection(db,'suppliers'));
+      const items = [];
+      for(const suppDoc of suppSnap.docs){
+        const name = String(suppDoc.data().name||'Fornitore');
+        const invSnap = await getDocs(collection(db,'suppliers',suppDoc.id,'invoices'));
+        invSnap.forEach(d=>{
+          const data=d.data()||{};
+          const dateKey = String(data.dateISO||data.invoiceDate||data.date||'').slice(0,10);
+          const amount = Number(data.totalWithVat||data.total||data.importo||data.amount||0);
+          if(!dateKey||!amount) return;
+          items.push({
+            date:dateKey, supplier:name, amount,
+            desc:String(data.description||data.invoiceNumber||'Fattura').slice(0,35),
+            status:data.status||'da-pagare',
+            photoUrl:data.photoUrl||null
+          });
+        });
+      }
+      items.sort((a,b)=>b.date.localeCompare(a.date));
+      const recent = items.slice(0,15);
+      if(!recent.length){ el.innerHTML='<div class="fin-empty">Nessuna fattura fornitore registrata</div>'; return; }
+      el.innerHTML=`<table class="fin-table"><thead><tr>
+        <th>Data</th><th>Fornitore</th><th>Descrizione</th><th class="fin-amt">Importo</th><th>Stato</th>
+      </tr></thead><tbody>${recent.map(item=>{
+        const pill = item.status==='pagata'?'<span class="fin-pill paid">✅ Pagata</span>':'<span class="fin-pill unpaid">❌ Da pagare</span>';
+        const photo = item.photoUrl?`<a href="${item.photoUrl}" target="_blank" style="font-size:11px;color:#1f4fd8;margin-left:6px;">📷</a>`:'';
+        return `<tr>
+          <td><span class="fin-date">${item.date}</span></td>
+          <td style="font-weight:700;">${item.supplier}</td>
+          <td style="font-size:12px;color:#475569;">${item.desc}${photo}</td>
+          <td class="fin-amt neg">${eur(item.amount)}</td>
+          <td>${pill}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+    }catch(e){
+      el.innerHTML='<div class="fin-empty">Errore caricamento fatture</div>';
+    }
+  }
+
+  // ── Previsione ──
+  async function loadPrevisione(){
+    const el = document.getElementById('previsioneTable');
+    if(!el) return;
+    const today = todayISO();
+    const in90 = new Date(Date.now()+90*24*60*60*1000).toISOString().slice(0,10);
+    try{
+      const snap = await getDocs(collection(db,'scadenze'));
+      const items = [];
+      snap.forEach(d=>{
+        const data=d.data()||{};
+        if(data.isDeleted||data.paid) return;
+        const dateKey = String(data.dateISO||d.id||'').slice(0,10);
+        if(!dateKey||dateKey<today||dateKey>in90) return;
+        const amount = Number(data.amount||data.importo||0);
+        items.push({ date:dateKey, note:String(data.note||'Scadenza').slice(0,50), amount });
+      });
+      items.sort((a,b)=>a.date.localeCompare(b.date));
+
+      // Group by 30-day bucket
+      const buckets = {'0-30':[],'31-60':[],'61-90':[]};
+      items.forEach(item=>{
+        const daysLeft = Math.round((isoToDate(item.date)-new Date())/(24*60*60*1000));
+        if(daysLeft<=30) buckets['0-30'].push(item);
+        else if(daysLeft<=60) buckets['31-60'].push(item);
+        else buckets['61-90'].push(item);
+      });
+
+      const totalScad = items.reduce((s,x)=>s+x.amount,0);
+      if(!items.length){ el.innerHTML='<div class="fin-empty">Nessuna scadenza nei prossimi 90 giorni</div>'; return; }
+
+      el.innerHTML=`
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+          ${[['0-30','🔴','Prossimi 30gg'],['31-60','🟠','Da 31 a 60gg'],['61-90','🟡','Da 61 a 90gg']].map(([k,ico,lbl])=>`
+            <div style="background:#f8fafc;border-radius:12px;padding:12px;border:1px solid #e2e8f0;">
+              <div style="font-size:12px;font-weight:700;color:#64748b;">${ico} ${lbl}</div>
+              <div style="font-size:22px;font-weight:900;color:#0f172a;margin:4px 0;">${buckets[k].length}</div>
+              <div style="font-size:13px;font-weight:800;color:#dc2626;">${eur(buckets[k].reduce((s,x)=>s+x.amount,0))}</div>
+            </div>`).join('')}
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#475569;margin-bottom:8px;">Totale impegni: <strong style="color:#dc2626;">${eur(totalScad)}</strong></div>
+        <table class="fin-table"><thead><tr>
+          <th>Data</th><th>Descrizione</th><th class="fin-amt">Importo</th><th>Scadenza</th>
+        </tr></thead><tbody>${items.slice(0,20).map(item=>{
+          const daysLeft = Math.round((isoToDate(item.date)-new Date())/(24*60*60*1000));
+          const urgClass = daysLeft<=7?'neg':daysLeft<=30?'orange':'';
+          return `<tr>
+            <td><span class="fin-date">${item.date}</span></td>
+            <td style="font-size:12px;">${item.note}</td>
+            <td class="fin-amt ${urgClass}">${item.amount?eur(item.amount):'—'}</td>
+            <td><span style="font-size:12px;font-weight:700;color:${daysLeft<=7?'#dc2626':daysLeft<=30?'#d97706':'#64748b'};">${daysLeft}gg</span></td>
+          </tr>`;
+        }).join('')}</tbody></table>`;
+    }catch(e){
+      el.innerHTML='<div class="fin-empty">Errore caricamento previsione</div>';
+    }
+  }
+
+  init();
+</script>
+
+<script type="module" src="/nav.js?v=15_20260225222215"></script>
+<script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
+</body>
+</html>

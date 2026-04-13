@@ -159,6 +159,7 @@
       <option value="statistiche.html">STATISTICHE</option>
       <option value="agenda.html">AGENDA</option>
       <option value="ordini-clienti.html">ORDINI CLIENTI</option>
+      <option value="finanze.html">FINANZE</option>
     </select>
   </header>
 
@@ -288,7 +289,16 @@
         { label: "Fatturato", data: Array(12).fill(0), borderColor: "#1f4fd8", backgroundColor: "rgba(31,79,216,.10)", tension: .35, fill: true, pointRadius: 4 },
         { label: "Incassato", data: Array(12).fill(0), borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,.08)", tension: .35, fill: true, pointRadius: 4 }
       ]},
-      options: { ...chartDefaults }
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins,
+        datalabels: {
+          display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
+          anchor: 'end', align: 'top',
+          formatter: (v) => eurCompact(v),
+          font: { size: 9, weight: '700' },
+          color: (ctx) => ctx.datasetIndex === 0 ? '#1f4fd8' : '#16a34a',
+          clamp: true, clip: false, padding: { bottom: 2 }
+        }
+      }}
     });
 
     const speseChart = new Chart(document.getElementById("chartSpese"), {
@@ -296,7 +306,16 @@
       data: { labels: MONTHS, datasets: [
         { label: "Spese", data: Array(12).fill(0), backgroundColor: "rgba(239,68,68,.75)", borderRadius: 6 }
       ]},
-      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false },
+        datalabels: {
+          display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
+          anchor: 'end', align: 'top',
+          formatter: (v) => eurCompact(v),
+          font: { size: 9, weight: '700' },
+          color: 'rgba(239,68,68,0.9)',
+          clamp: true, clip: false, padding: { top: 2 }
+        }
+      }}
     });
 
     const saldoChart = new Chart(document.getElementById("chartSaldo"), {

@@ -302,6 +302,7 @@ async function renderChart() {
   const canvas = $("chartMain");
   if (!canvas || !window.Chart) return;
   try { chartMain?.destroy(); } catch {}
+  if(window.ChartDataLabels) Chart.register(ChartDataLabels);
   chartMain = new Chart(canvas, {
     type: 'bar',
     data: { labels: MONTHS, datasets: [{ label:'Incassi', data: series.values, borderWidth:1 }] },
@@ -310,10 +311,17 @@ async function renderChart() {
       plugins:{
         legend:{ display:false },
         tooltip:{ callbacks:{ label:(ctx)=>euro(ctx.parsed.y || 0) } },
+        datalabels:{
+          display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+          anchor:'end', align:'top',
+          formatter:(v)=>euro(v),
+          font:{size:10,weight:'700'},
+          color:'#374151',
+          clamp:true, clip:false, padding:{top:2}
+        }
       },
       scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=>euro(v) } } }
-    },
-    plugins:[{ id:'value-labels', afterDatasetsDraw(chart){ const {ctx} = chart; ctx.save(); ctx.font='12px sans-serif'; ctx.fillStyle='#233'; ctx.textAlign='center'; const meta = chart.getDatasetMeta(0); meta.data.forEach((bar, idx)=>{ const v = series.values[idx]; if(!v) return; ctx.fillText(euro(v), bar.x, bar.y - 8); }); ctx.restore(); }}]
+    }
   });
 }
 
