@@ -215,6 +215,7 @@
       <button type="button" id="shareWhats" class="secondary">Invia WhatsApp</button>
       <button type="button" id="exportPdf" class="secondary">Ricevuta PDF</button>
       <button type="button" id="exportImg" class="secondary">Ricevuta immagine</button>
+      <button type="button" id="exportOrdersCsv" class="secondary" title="Esporta tutti gli ordini in CSV">⬇ CSV Ordini</button>
       <button type="button" id="reset" class="danger">Svuota</button>
     </div>
 
@@ -229,6 +230,10 @@
       <div>
         <h2 style="margin:0 0 6px 0;">Storico preventivi</h2>
         <div class="small">Dal più recente. Azioni: Apri, PDF, WhatsApp, Elimina.</div>
+      </div>
+      <div style="margin-top:8px;">
+        <input type="search" id="historySearch" placeholder="Filtra per cliente…" autocomplete="off"
+               style="padding:8px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.15);font-size:14px;min-width:200px;width:100%;box-sizing:border-box">
       </div>
     </div>
     <div style="overflow-x:auto;">
@@ -254,6 +259,16 @@
 
   <script type="module" src="/nav.js?v=15_20260225222215"></script>
   <script type="module" src="ordini-clienti.js?v=15_20260225222215"></script>
+  <script type="module">
+    import { exportOrdini } from './services/exportService.js';
+    import { listOrders } from './services/orderService.js';
+    document.getElementById('exportOrdersCsv')?.addEventListener('click', async () => {
+      try {
+        const orders = await listOrders();
+        exportOrdini(orders);
+      } catch (e) { alert('Errore export: ' + e.message); }
+    });
+  </script>
   <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
 </body>
 </html>

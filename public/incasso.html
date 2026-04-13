@@ -11,6 +11,12 @@
 
   <link rel="stylesheet" href="./styles.css?v=15_20260225222215">
   <link rel="stylesheet" href="./incassi.css?v=15_20260225222215">
+  <style>
+    .form-group input.field-error{border-color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.12)!important}
+    .form-group .field-error-msg{color:#ef4444;font-size:11px;font-weight:700;margin-top:3px;display:none}
+    .form-group input.field-error+.field-error-msg{display:block}
+    .form-group input.field-ok{border-color:#16a34a!important}
+  </style>
 </head>
 
 <body>
@@ -30,11 +36,13 @@
     <div class="form-group">
       <label>Nota incasso</label>
       <input type="text" id="noteInput">
+      <span class="field-error-msg">Inserisci una nota</span>
     </div>
 
     <div class="form-group">
       <label>Importo incasso (€)</label>
       <input type="number" id="amountInput" step="0.01">
+      <span class="field-error-msg">Inserisci un importo valido (> 0)</span>
     </div>
   </div>
 

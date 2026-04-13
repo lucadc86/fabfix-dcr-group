@@ -34,6 +34,9 @@
         <button class="incassi-btn" id="prevBtn">◀</button>
         <div class="incassi-btn" style="cursor:default; font-weight:900" id="monthTitle">—</div>
         <button class="incassi-btn" id="nextBtn">▶</button>
+        <input type="search" id="speseSearch" placeholder="Cerca per nota…" autocomplete="off"
+               style="padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px;min-width:160px;background:rgba(255,255,255,.8)">
+        <button class="incassi-btn" id="btnExportSpese" type="button" title="Esporta CSV">⬇ CSV</button>
         <button class="incassi-btn primary" id="btnNewExpense">Nuova spesa</button>
       </div>
     </div>
@@ -313,11 +316,15 @@
       await boot();
     }
 
+    const speseSearchEl = document.getElementById("speseSearch");
+    speseSearchEl?.addEventListener("input", render);
+
     function render(){
       const y = cursor.getFullYear();
       const m = cursor.getMonth();
       const start = new Date(y, m, 1);
       const lastDay = new Date(y, m+1, 0).getDate();
+      const searchTerm = (speseSearchEl?.value || "").toLowerCase().trim();
 
       monthTitleEl.textContent = monthTitleUpper(start);
 
@@ -331,16 +338,18 @@
 
       const sums = sumByDayForMonth(start);
       daysEl.innerHTML = "";
+      let visibleCount = 0;
 
       for(let day=1; day<=lastDay; day++){
         const d = new Date(y, m, day);
         const k = isoKey(d);
         const val = sums[k] || 0;
+        const notePreview = (docs.find(x => x.dateKey === k)?.note || "").trim();
+
+        if(searchTerm && !notePreview.toLowerCase().includes(searchTerm)) continue;
 
         const row = document.createElement("div");
         row.className = "spese-calendar-row";
-
-        const notePreview = (docs.find(x => x.dateKey === k)?.note || "").trim();
         row.innerHTML = `
           <div>
             <div class="spese-date">${formatDDMMYYYY(y,m,day)}</div>
@@ -348,9 +357,12 @@
           </div>
           <div class="spese-amt">${itMoney(val)}</div>
         `;
-
         row.addEventListener("click", ()=> openPopup(k));
         daysEl.appendChild(row);
+        visibleCount++;
+      }
+      if(searchTerm && visibleCount === 0){
+        daysEl.innerHTML = `<div class="spese-empty">Nessun risultato per "<strong>${searchTerm.replace(/</g,'&lt;')}</strong>"</div>`;
       }
     }
 
@@ -360,6 +372,16 @@
     }
 
     boot();
+  </script>
+  <script type="module">
+    import { exportSpese } from './services/exportService.js';
+    import { listExpenses } from './services/expenseService.js';
+    document.getElementById('btnExportSpese')?.addEventListener('click', async () => {
+      try {
+        const expenses = await listExpenses();
+        exportSpese(expenses);
+      } catch (e) { alert('Errore export: ' + e.message); }
+    });
   </script>
 
   <script type="module" src="/nav.js?v=15_20260225222215"></script>

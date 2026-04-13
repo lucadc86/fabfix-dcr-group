@@ -48,6 +48,12 @@ if (!date) {
 noteInput?.addEventListener("input", () => {
   const auto = autoAmountFromNote(noteInput.value);
   if (auto !== null && !amountInput.value) amountInput.value = String(auto);
+  if (noteInput.value.trim()) { noteInput.classList.remove('field-error'); }
+});
+
+amountInput?.addEventListener("input", () => {
+  const v = Number(amountInput.value);
+  if (Number.isFinite(v) && v > 0) { amountInput.classList.remove('field-error'); }
 });
 
 async function loadExpenses() {
@@ -88,7 +94,25 @@ saveBtn.onclick = async () => {
   const note = noteInput.value.trim();
   const amount = Number(amountInput.value);
 
-  if (!note || !Number.isFinite(amount) || amount <= 0) return alert("Compila tutti i campi");
+  // Inline validation
+  let hasErrors = false;
+  if (!note) {
+    noteInput.classList.add('field-error');
+    noteInput.classList.remove('field-ok');
+    hasErrors = true;
+  } else {
+    noteInput.classList.remove('field-error');
+    noteInput.classList.add('field-ok');
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    amountInput.classList.add('field-error');
+    amountInput.classList.remove('field-ok');
+    hasErrors = true;
+  } else {
+    amountInput.classList.remove('field-error');
+    amountInput.classList.add('field-ok');
+  }
+  if (hasErrors) return;
 
   await addExpense({
     note,
@@ -99,6 +123,8 @@ saveBtn.onclick = async () => {
 
   noteInput.value = "";
   amountInput.value = "";
+  noteInput.classList.remove('field-ok');
+  amountInput.classList.remove('field-ok');
 
   loadExpenses();
 };

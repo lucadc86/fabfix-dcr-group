@@ -36,6 +36,9 @@
         <button class="incassi-btn" id="prevBtn">◀</button>
         <div class="incassi-btn" style="cursor:default; font-weight:900" id="monthTitle">—</div>
         <button class="incassi-btn" id="nextBtn">▶</button>
+        <input type="search" id="scadSearch" placeholder="Cerca per nota…" autocomplete="off"
+               style="padding:8px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px;min-width:160px;background:rgba(255,255,255,.8)">
+        <button class="incassi-btn" id="btnExportScadenze" type="button" title="Esporta CSV">⬇ CSV</button>
         <button class="incassi-btn primary" id="btnNew">Nuova scadenza</button>
       </div>
     </div>
@@ -112,10 +115,12 @@
           <div class="scad-field">
             <label for="amount">Importo</label>
             <input id="amount" type="text" inputmode="decimal" placeholder="0,00" />
+            <span class="scad-field-error" id="amountError"></span>
           </div>
           <div class="scad-field">
             <label for="note">Nota</label>
             <textarea id="note" placeholder="Descrizione…"></textarea>
+            <span class="scad-field-error" id="noteError"></span>
           </div>
         </div>
       </div>
@@ -128,6 +133,16 @@
   </div>
 
   <script type="module" src="scadenze.js"></script>
+  <script type="module">
+    import { exportScadenze } from './services/exportService.js';
+    import { listDeadlines } from './services/deadlineService.js';
+    document.getElementById('btnExportScadenze')?.addEventListener('click', async () => {
+      try {
+        const deadlines = await listDeadlines();
+        exportScadenze(deadlines);
+      } catch (e) { alert('Errore export: ' + e.message); }
+    });
+  </script>
   <script src="scripts/dashboard-menu.js"></script>
 </body>
 </html>

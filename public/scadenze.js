@@ -38,6 +38,8 @@ const daysEl = document.getElementById("days");
 const sideMonthEl = document.getElementById("sideMonth");
 const sideYearEl = document.getElementById("sideYear");
 const btnNew = document.getElementById("btnNew");
+const scadSearchEl = document.getElementById("scadSearch");
+scadSearchEl?.addEventListener("input", render);
 
 // Popup
 const popup = document.getElementById("popup");
@@ -47,6 +49,29 @@ const amountEl = document.getElementById("amount");
 const saveBtn = document.getElementById("saveBtn");
 const deleteBtn = document.getElementById("deleteBtn");
 const closeBtn = document.getElementById("closeBtn");
+const amountError = document.getElementById("amountError");
+const noteError = document.getElementById("noteError");
+
+function clearFieldErrors(){
+  amountEl?.classList.remove("field-error","field-ok");
+  noteEl?.classList.remove("field-error");
+  if(amountError) amountError.style.display = "none";
+  if(noteError) noteError.style.display = "none";
+}
+
+amountEl?.addEventListener("input", ()=>{
+  const v = toNum(amountEl.value);
+  if(amountEl.value.trim()==="" || (Number.isFinite(v) && v >= 0)){
+    amountEl.classList.remove("field-error");
+    if(amountError) amountError.style.display = "none";
+  }
+});
+noteEl?.addEventListener("input", ()=>{
+  if(noteEl.value.trim()){
+    noteEl.classList.remove("field-error");
+    if(noteError) noteError.style.display = "none";
+  }
+});
 
 // =========================================================
 // State
@@ -104,6 +129,7 @@ function sumByDayForMonth(baseDate){
 function openPopup(dayKey){
   selectedKey = dayKey;
   popupDate.textContent = dayKey;
+  clearFieldErrors();
 
   // Se esiste un doc con id uguale al giorno, lo carichiamo per modificare nota/importo.
   // Se ci sono più record nello stesso giorno (vecchi), mostriamo la somma come riferimento.
@@ -130,6 +156,7 @@ function render(){
   const month = cursor.getMonth();
   const start = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0).getDate();
+  const searchTerm = (scadSearchEl?.value || "").toLowerCase().trim();
 
   monthTitle.textContent = start.toLocaleDateString("it-IT", { month:"long", year:"numeric" }).toUpperCase();
 
@@ -143,17 +170,18 @@ function render(){
 
   const sums = sumByDayForMonth(start);
   daysEl.innerHTML = "";
+  let visibleCount = 0;
 
   for(let day = 1; day <= lastDay; day++){
     const d = new Date(year, month, day);
     const k = isoKey(d);
     const val = sums[k] || 0;
+    const notePreview = (paymentsDocs.find(x => x.dateKey === k)?.note || "").trim();
+
+    if(searchTerm && !notePreview.toLowerCase().includes(searchTerm)) continue;
 
     const row = document.createElement("div");
     row.className = "scad-calendar-row";
-
-    // nota: prendiamo la prima nota del giorno (se esiste) solo per anteprima
-    const notePreview = (paymentsDocs.find(x => x.dateKey === k)?.note || "").trim();
     row.innerHTML = `
       <div>
         <div class="scad-date">${pad2(day)}/${pad2(month+1)}/${year}</div>
@@ -163,6 +191,10 @@ function render(){
     `;
     row.addEventListener("click", ()=> openPopup(k));
     daysEl.appendChild(row);
+    visibleCount++;
+  }
+  if(searchTerm && visibleCount === 0){
+    daysEl.innerHTML = `<div class="scad-empty">Nessun risultato per "<strong>${searchTerm.replace(/</g,'&lt;')}</strong>"</div>`;
   }
 }
 
@@ -197,6 +229,20 @@ saveBtn?.addEventListener("click", async ()=>{
   if(!selectedKey) return;
   const note = String(noteEl.value || "").trim();
   const amount = toNum(amountEl.value);
+  let hasError = false;
+  // Reject explicit negative or non-numeric amounts (amount=0 is valid for reminders)
+  if(amountEl.value.trim() !== "" && (Number.isNaN(amount) || amount < 0)){
+    amountEl.classList.add("field-error");
+    if(amountError){ amountError.textContent = "Inserisci un importo valido (≥ 0)"; amountError.style.display = "block"; }
+    hasError = true;
+  }
+  // Require at least a note OR a positive amount (amount=0 alone is not meaningful)
+  if(!note && amount <= 0){
+    noteEl.classList.add("field-error");
+    if(noteError){ noteError.textContent = "Aggiungi una nota o un importo"; noteError.style.display = "block"; }
+    hasError = true;
+  }
+  if(hasError) return;
   const payload = {
     date: selectedKey,
     note,

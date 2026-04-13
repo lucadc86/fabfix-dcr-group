@@ -9,6 +9,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DCR GROUP</title>
+  <link rel="manifest" href="/manifest.json">
 
   <style>
     :root{
@@ -62,7 +63,7 @@
     
     .summary-grid{
       display:grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 14px;
       margin-bottom: 18px;
     }
@@ -95,6 +96,9 @@
       font-size: 12px;
       opacity: .78;
       margin-top: 6px;
+    }
+    @media (max-width: 1000px){
+      .summary-grid{ grid-template-columns: repeat(3, 1fr); }
     }
     @media (max-width: 860px){
       .summary-grid{ grid-template-columns: repeat(2, 1fr); }
@@ -208,7 +212,7 @@
     /* Summary cards (home) */
     .summary{
       display:grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
       margin: 0 0 14px 0;
     }
@@ -240,6 +244,9 @@
       font-size: 11px;
       opacity: .78;
       margin-top: 6px;
+    }
+    @media (max-width: 1000px){
+      .summary{ grid-template-columns: repeat(3, 1fr); }
     }
     @media (max-width: 980px){
       .summary{ grid-template-columns: repeat(2, 1fr); }
@@ -293,6 +300,14 @@
           <div class="summary-value" id="homeScadenze">—</div>
         </div>
         <div class="summary-sub">Promemoria</div>
+      </a>
+
+      <a class="summary-card" href="statistiche.html" id="homeCardSaldo">
+        <div>
+          <div class="summary-title">Saldo Netto</div>
+          <div class="summary-value" id="homeSaldo">—</div>
+        </div>
+        <div class="summary-sub">Incassato − Spese (anno)</div>
       </a>
     </section>
 
@@ -367,10 +382,42 @@
         </div>
       </a>
 
+      <!-- STATISTICHE -->
+      <a class="card" href="statistiche.html">
+        <div class="card-inner">
+          <div class="icon">📊</div>
+          <div class="label">Statistiche</div>
+        </div>
+      </a>
+
+      <!-- RICERCA GLOBALE -->
+      <a class="card" href="search.html">
+        <div class="card-inner">
+          <div class="icon">🔍</div>
+          <div class="label">Cerca</div>
+        </div>
+      </a>
+
       <a class="card wide" href="https://dcr-ordini.web.app?preview=1" style="background:rgba(36,211,102,.15);border-color:rgba(36,211,102,.45);">
         <div class="card-inner">
           <div class="icon" style="font-size:32px">🛒</div>
           <div class="label" style="color:#24d366">Apri portale ordini clienti DCR GROUP</div>
+          <div class="hint">→</div>
+        </div>
+      </a>
+
+      <a class="card wide" href="admin-portale.html" style="background:rgba(31,79,216,.10);border-color:rgba(31,79,216,.35);">
+        <div class="card-inner">
+          <div class="icon" style="font-size:26px">⚙️</div>
+          <div class="label" style="color:#1f4fd8">Admin Portale Clienti</div>
+          <div class="hint">→</div>
+        </div>
+      </a>
+
+      <a class="card" href="audit-log.html" style="background:rgba(100,116,139,.08);border-color:rgba(100,116,139,.25);">
+        <div class="card-inner">
+          <div class="icon" style="font-size:26px">🕵️</div>
+          <div class="label" style="color:#475569">Audit Log</div>
           <div class="hint">→</div>
         </div>
       </a>
@@ -380,5 +427,12 @@
   <!-- Sidebar (fallback select) + bottone AI flottante -->
   <script type="module" src="/nav.js?v=15_20260225222215"></script>
   <script type="module" src="home.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

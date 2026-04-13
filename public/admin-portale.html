@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <base href="/">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Portale Clienti — DCR GROUP</title>
+  <link rel="stylesheet" href="styles.css?v=15_20260225222215" />
+  <link rel="stylesheet" href="mobile.css?v=15_20260225222215" />
+  <style>
+    .page-content { max-width: 860px; }
+
+    /* ── Section card ── */
+    .admin-card {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--card-border-soft, rgba(15,23,42,.10));
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: var(--card-shadow, 0 10px 26px rgba(15,23,42,.06));
+    }
+    .admin-card h2 {
+      font-size: 16px;
+      font-weight: 900;
+      margin: 0 0 14px;
+      color: var(--text-dark, #0f172a);
+    }
+    .admin-card .sub { font-size: 13px; color: var(--text-muted, #475569); margin-bottom: 14px; }
+
+    /* ── Form ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-row.full { grid-template-columns: 1fr; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; font-weight: 700; color: var(--text-muted, #475569); text-transform: uppercase; letter-spacing: .3px; }
+    .field input, .field select {
+      padding: 11px 12px;
+      border: 1.5px solid rgba(15,23,42,.12);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #f8fafc;
+      color: var(--text-dark, #0f172a);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--brand, #1f4fd8);
+      box-shadow: 0 0 0 3px rgba(31,79,216,.12);
+      background: #fff;
+    }
+
+    /* ── CTA ── */
+    .cta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .btn-admin {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform .1s, opacity .15s;
+    }
+    .btn-admin:active { transform: scale(.97); }
+    .btn-admin.primary { background: var(--brand, #1f4fd8); color: #fff; }
+    .btn-admin.primary:hover { background: var(--brand-dark, #163da8); }
+    .btn-admin.danger { background: #ffe4e6; color: #9f1239; border: 1px solid rgba(239,68,68,.3); }
+    .btn-admin.secondary { background: #eef2ff; color: var(--brand, #1f4fd8); border: 1px solid rgba(31,79,216,.2); }
+
+    /* ── Client list table ── */
+    .clients-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .clients-table th {
+      background: #f1f5f9;
+      padding: 9px 12px;
+      text-align: left;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--text-muted, #475569);
+      border-bottom: 1px solid rgba(15,23,42,.08);
+    }
+    .clients-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(15,23,42,.06);
+      vertical-align: middle;
+    }
+    .clients-table tr:last-child td { border-bottom: none; }
+    .clients-table tr:hover td { background: #f8faff; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .badge.on  { background: #dcfce7; color: #166534; }
+    .badge.off { background: #f1f5f9; color: #64748b; }
+
+    /* ── Status message ── */
+    #adminStatus {
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 14px;
+      display: none;
+    }
+    #adminStatus.ok  { background: #dcfce7; color: #166534; display: block; }
+    #adminStatus.err { background: #fee2e2; color: #b91c1c; display: block; }
+
+    /* ── Loading ── */
+    .skel { background: rgba(15,23,42,.06); border-radius: 8px; animation: pulse 1.2s infinite; height: 40px; margin-bottom: 8px; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  </style>
+  <script type="module" src="/auth-guard.js"></script>
+</head>
+
+<body class="page">
+  <header class="top-bar">
+    <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+    <span class="page-title">Admin Portale Clienti</span>
+    <select id="quickNav" class="quick-nav">
+      <option value="">Vai a…</option>
+      <option value="index.html">HOME</option>
+      <option value="clients.html">CLIENTI</option>
+      <option value="admin-portale.html">ADMIN PORTALE</option>
+    </select>
+  </header>
+
+  <main class="page-content">
+
+    <!-- ── Crea nuovo account portale ── -->
+    <div class="admin-card">
+      <h2>➕ Abilita accesso portale per un cliente</h2>
+      <p class="sub">Crea un account nel portale ordini per un cliente esistente. L'accesso verrà attivato immediatamente.</p>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Cliente</label>
+          <select id="clientSelect">
+            <option value="">— Seleziona cliente —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Email di accesso portale</label>
+          <input type="email" id="portalEmail" placeholder="email@cliente.it" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Password iniziale</label>
+          <input type="text" id="portalPassword" placeholder="min 8 caratteri" />
+        </div>
+        <div class="field">
+          <label>Sconto cliente (%)</label>
+          <input type="number" id="portalDiscount" min="0" max="100" step="0.5" placeholder="0" />
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="field">
+          <label>Note accesso</label>
+          <input type="text" id="portalNotes" placeholder="Note opzionali sull'account" />
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn-admin primary" id="btnCreate">✅ Crea accesso portale</button>
+        <button class="btn-admin secondary" id="btnGenPwd">🔑 Genera password</button>
+      </div>
+      <div id="adminStatus"></div>
+    </div>
+
+    <!-- ── Lista clienti con portale abilitato ── -->
+    <div class="admin-card">
+      <h2>👥 Clienti con accesso portale</h2>
+      <p class="sub">Gestisci gli account attivi. Puoi disabilitare o aggiornare le impostazioni.</p>
+      <div id="portalClientsList">
+        <div class="skel"></div>
+        <div class="skel" style="opacity:.7"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { db } from './firebase.js';
+    import {
+      collection, getDocs, doc, setDoc, updateDoc, serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const statusEl = document.getElementById('adminStatus');
+    const clientSelect = document.getElementById('clientSelect');
+    const btnCreate = document.getElementById('btnCreate');
+    const btnGenPwd = document.getElementById('btnGenPwd');
+
+    function showStatus(msg, type = 'ok') {
+      statusEl.textContent = msg;
+      statusEl.className = type;
+      setTimeout(() => { statusEl.className = ''; statusEl.textContent = ''; }, 5000);
+    }
+
+    function genPassword(len = 10) {
+      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+      let pwd = '';
+      for (let i = 0; i < len; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+      return pwd;
+    }
+
+    function eur(n) {
+      return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(n) || 0);
+    }
+
+    // ── Load clients ──
+    async function loadClients() {
+      const snap = await getDocs(collection(db, 'clients'));
+      const clients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      clientSelect.innerHTML = '<option value="">— Seleziona cliente —</option>';
+      clients.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name || c.nome || c.id;
+        clientSelect.appendChild(opt);
+      });
+      return clients;
+    }
+
+    // ── Load portal accounts ──
+    async function loadPortalAccounts() {
+      const container = document.getElementById('portalClientsList');
+      try {
+        const snap = await getDocs(collection(db, 'portalAccounts'));
+        const accounts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        if (!accounts.length) {
+          container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:8px 0">Nessun account portale creato.</p>';
+          return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'clients-table';
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Email</th>
+              <th>Sconto</th>
+              <th>Stato</th>
+              <th>Creato</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+
+        for (const acc of accounts) {
+          const tr = document.createElement('tr');
+          const enabled = acc.enabled !== false;
+          const createdAt = acc.createdAt?.toDate ? acc.createdAt.toDate().toLocaleDateString('it-IT') : (acc.createdAtISO || '—');
+
+          const tdName = document.createElement('td');
+          tdName.style.fontWeight = '700';
+          tdName.textContent = acc.clientName || acc.clientId || '—';
+
+          const tdEmail = document.createElement('td');
+          tdEmail.textContent = acc.email || '—';
+
+          const tdDiscount = document.createElement('td');
+          tdDiscount.textContent = acc.discount ? acc.discount + '%' : '—';
+
+          const tdStatus = document.createElement('td');
+          const badge = document.createElement('span');
+          badge.className = `badge ${enabled ? 'on' : 'off'}`;
+          badge.textContent = enabled ? '✅ Attivo' : '⏸ Disabilitato';
+          tdStatus.appendChild(badge);
+
+          const tdCreated = document.createElement('td');
+          tdCreated.textContent = createdAt;
+
+          const tdActions = document.createElement('td');
+          const toggleBtn = document.createElement('button');
+          toggleBtn.className = 'btn-admin secondary';
+          toggleBtn.dataset.id = acc.id;
+          toggleBtn.dataset.action = 'toggle';
+          toggleBtn.style.cssText = 'padding:7px 12px;font-size:12px';
+          toggleBtn.textContent = enabled ? '⏸ Disabilita' : '▶ Abilita';
+          tdActions.appendChild(toggleBtn);
+
+          tr.appendChild(tdName);
+          tr.appendChild(tdEmail);
+          tr.appendChild(tdDiscount);
+          tr.appendChild(tdStatus);
+          tr.appendChild(tdCreated);
+          tr.appendChild(tdActions);
+          tbody.appendChild(tr);
+        }
+
+        container.innerHTML = '';
+        container.appendChild(table);
+
+        // Toggle button
+        container.addEventListener('click', async (e) => {
+          const btn = e.target.closest('[data-action="toggle"]');
+          if (!btn) return;
+          const id = btn.dataset.id;
+          const acc = accounts.find(a => a.id === id);
+          if (!acc) return;
+          btn.disabled = true;
+          try {
+            await updateDoc(doc(db, 'portalAccounts', id), {
+              enabled: !(acc.enabled !== false),
+              updatedAt: serverTimestamp(),
+            });
+            await loadPortalAccounts();
+          } catch (err) {
+            showStatus('Errore: ' + err.message, 'err');
+          }
+        });
+
+      } catch (err) {
+        const p = document.createElement('p');
+        p.style.cssText = 'color:#ef4444;font-size:13px';
+        p.textContent = 'Errore caricamento: ' + (err.message || String(err));
+        container.innerHTML = '';
+        container.appendChild(p);
+      }
+    }
+
+    function validate() {
+      const email = document.getElementById('portalEmail').value.trim();
+      const password = document.getElementById('portalPassword').value.trim();
+      const clientId = clientSelect.value;
+      const errors = [];
+      if (!clientId) errors.push('Seleziona un cliente');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Email non valida');
+      if (!password || password.length < 8) errors.push('Password troppo corta (min 8 caratteri)');
+      return errors;
+    }
+
+    // ── Create account ──
+    btnCreate.addEventListener('click', async () => {
+      const errors = validate();
+      if (errors.length) { showStatus('⚠️ ' + errors.join(' — '), 'err'); return; }
+
+      const clientId = clientSelect.value;
+      const clientName = clientSelect.options[clientSelect.selectedIndex]?.textContent || '';
+      const email = document.getElementById('portalEmail').value.trim();
+      const password = document.getElementById('portalPassword').value.trim();
+      const discount = Number(document.getElementById('portalDiscount').value) || 0;
+      const notes = document.getElementById('portalNotes').value.trim();
+
+      btnCreate.disabled = true;
+      btnCreate.textContent = 'Creazione…';
+
+      try {
+        const accountId = `${clientId}_portal`;
+        await setDoc(doc(db, 'portalAccounts', accountId), {
+          clientId,
+          clientName,
+          email,
+          discount,
+          notes,
+          enabled: true,
+          portalEnabled: true,
+          createdAtISO: new Date().toISOString(),
+          createdAt: serverTimestamp(),
+        }, { merge: true });
+
+        // Also update the client document to mark portal as enabled
+        await updateDoc(doc(db, 'clients', clientId), {
+          portalEnabled: true,
+          portalEmail: email,
+          updatedAt: serverTimestamp(),
+        }).catch(() => {});
+
+        showStatus(`✅ Accesso portale creato per ${clientName} (${email}). Comunica la password all'utente.`, 'ok');
+        document.getElementById('portalEmail').value = '';
+        document.getElementById('portalPassword').value = '';
+        document.getElementById('portalDiscount').value = '';
+        document.getElementById('portalNotes').value = '';
+        clientSelect.value = '';
+        await loadPortalAccounts();
+      } catch (err) {
+        showStatus('❌ Errore: ' + err.message, 'err');
+      } finally {
+        btnCreate.disabled = false;
+        btnCreate.textContent = '✅ Crea accesso portale';
+      }
+    });
+
+    // Generate password
+    btnGenPwd.addEventListener('click', () => {
+      const pwd = genPassword();
+      document.getElementById('portalPassword').value = pwd;
+      // Show briefly
+      showStatus('Password generata: ' + pwd + ' — Copiala prima di salvare!', 'ok');
+    });
+
+    // ── Init ──
+    Promise.all([loadClients(), loadPortalAccounts()]).catch(console.error);
+  </script>
+  <script type="module" src="/nav.js?v=15_20260225222215"></script>
+  <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>
+</body>
+</html>

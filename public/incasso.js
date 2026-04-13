@@ -146,14 +146,16 @@ async function loadIncassi() {
   dayTotalEl.textContent = total.toFixed(2);
 }
 
+noteInput?.addEventListener("input", ()=>{ if(noteInput.value.trim()) noteInput.classList.remove("field-error"); });
+amountInput?.addEventListener("input", ()=>{ const v = Number(amountInput.value); if(Number.isFinite(v) && v > 0) amountInput.classList.remove("field-error"); });
+
 addBtn.addEventListener("click", async () => {
   const note = noteInput.value.trim();
   const amount = Number(amountInput.value);
-
-  if (!note || isNaN(amount)) {
-    alert("Compila nota e importo");
-    return;
-  }
+  let hasError = false;
+  if (!note) { noteInput.classList.add("field-error"); hasError = true; }
+  if (!amount || isNaN(amount) || amount <= 0) { amountInput.classList.add("field-error"); hasError = true; }
+  if (hasError) return;
 
   await addDoc(collection(db, "incassi"), {
     date,
@@ -163,6 +165,8 @@ addBtn.addEventListener("click", async () => {
 
   noteInput.value = "";
   amountInput.value = "";
+  noteInput.classList.remove("field-error","field-ok");
+  amountInput.classList.remove("field-error","field-ok");
 
   loadIncassi();
 });

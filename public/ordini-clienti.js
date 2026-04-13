@@ -402,15 +402,24 @@ async function loadHistory(){
       historyBodyEl.innerHTML = `<tr><td colspan="5" class="muted">Nessun preventivo salvato.</td></tr>`;
       return;
     }
-    const rows = [];
+    const allRows = [];
     snap.forEach(docu => {
       const d = docu.data() || {};
       const num = d.numberLabel || formatPrevNum(d.number);
       const date = d.date || "";
       const client = d.clientName || "";
       const tot = Number(d.total || 0);
-      rows.push({ id: docu.id, num, date, client, tot });
+      allRows.push({ id: docu.id, num, date, client, tot });
     });
+
+    const searchEl = document.getElementById("historySearch");
+    const term = (searchEl?.value || "").toLowerCase().trim();
+    const rows = term ? allRows.filter(r => r.client.toLowerCase().includes(term)) : allRows;
+
+    if(rows.length === 0){
+      historyBodyEl.innerHTML = `<tr><td colspan="5" class="muted">Nessun preventivo trovato.</td></tr>`;
+      return;
+    }
 
     historyBodyEl.innerHTML = rows.map(r => `
       <tr>
@@ -486,6 +495,16 @@ if (historyBodyEl){
       console.error(err);
       alert("Operazione non riuscita.");
     }
+  });
+}
+
+// History search filter
+const historySearchEl = document.getElementById("historySearch");
+if(historySearchEl){
+  let _historyDebounce;
+  historySearchEl.addEventListener("input", ()=>{
+    clearTimeout(_historyDebounce);
+    _historyDebounce = setTimeout(loadHistory, 200);
   });
 }
 

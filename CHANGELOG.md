@@ -2,6 +2,19 @@
 
 ## vNEXT (build SAFE)
 
+### 🚀 Top di Gamma — Livello 1 (zero costo)
+- **Dark/Light mode toggle**: pulsante visibile in ogni pagina (nav.js), tema persistito in localStorage; dark mode su `body.page`
+- **Banner offline**: banner rosso in alto quando la connessione è assente (rilevamento `window.online/offline`)
+- **Ricerca globale** (`search.html`): ricerca full-text su clienti, ordini, fornitori, incassi, spese, scadenze con filtri per categoria e debounce
+- **Search FAB**: bottone flottante 🔍 in ogni pagina che porta alla ricerca globale
+- **Export CSV**: modulo `services/exportService.js` + pulsanti "⬇ CSV" su incassi.html, spese.html, ordini-clienti.html
+- **Admin Portale** (`admin-portale.html`): pagina per creare/abilitare/disabilitare account portale ordini per i clienti (collezione `portalAccounts`)
+- **Session timeout**: avviso toast a 30 min di inattività, logout automatico a 35 min (auth-guard.js)
+- **Validazione form inline**: campo note e importo con feedback visivo rosso/verde (spesa.js + spesa.html) invece del semplice alert
+- **Statistiche avanzate** (`statistiche.html`): redesign completo con 6 KPI, 4 grafici, selettore anno, top clienti
+- **KPI Saldo Netto** in home page (incassato − spese anno)
+- Ricerca globale e Admin Portale aggiunte al grid home
+
 ### Data integrity / Firestore
 - Introdotti services centralizzati in `public/services/`:
   - `firestoreService`, `schemaService`, `queryRegistry`, `incomeService`, `kpiService`, `orderService`, `expenseService`, `deadlineService`, `clientAnalyticsService`.

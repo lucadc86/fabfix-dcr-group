@@ -8,7 +8,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Statistiche</title>
+  <title>Statistiche — DCR GROUP</title>
 
   <link rel="stylesheet" href="styles.css?v=15_20260225222215" />
   <link rel="stylesheet" href="mobile.css?v=15_20260225222215" />
@@ -17,23 +17,126 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
-    /* Solo layout specifico grafici, tutto il resto arriva da styles.css */
-    .page-content{max-width:900px}
-    .h1{margin:0 0 6px;font-size:30px;font-weight:900}
-    .sub{margin:0 0 14px;color:var(--text-muted);font-size:13px}
-    .card{padding:14px}
-    .chart-wrap{width:100%;height:260px;position:relative}
-    .kpis{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:10px;margin-top:12px}
-    .kpi{border:2px solid rgba(15,23,42,.10);border-radius:16px;padding:12px;background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .kpi .name{font-weight:900}
-    .kpi .val{font-weight:900;font-size:20px}
-    .kpi small{color:var(--text-muted);display:block;margin-top:2px}
-    .status{margin-top:10px;font-size:12px;color:var(--text-muted)}
-    @media (max-width:560px){
-      .page-content{padding-top:82px}
-      .h1{font-size:26px}
-      .chart-wrap{height:220px}
-      .kpis{grid-template-columns:1fr}
+    .page-content { max-width: 960px; }
+
+    /* ── Toolbar anno ── */
+    .stat-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .stat-toolbar h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 900;
+      flex: 1;
+    }
+    .year-btn {
+      border: 1.5px solid var(--card-border, rgba(31,79,216,.22));
+      background: var(--card-bg, #fff);
+      color: var(--text-dark, #0f172a);
+      border-radius: 22px;
+      padding: 7px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .year-btn.active {
+      background: var(--brand, #1f4fd8);
+      color: #fff;
+      border-color: var(--brand, #1f4fd8);
+    }
+    .stat-sub {
+      margin: 0 0 18px;
+      color: var(--text-muted, #475569);
+      font-size: 13px;
+    }
+
+    /* ── KPI grid ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--card-border, rgba(31,79,216,.18));
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      box-shadow: var(--card-shadow, 0 10px 26px rgba(15,23,42,.06));
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .kpi-card .k-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted, #475569);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .kpi-card .k-value {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--text-dark, #0f172a);
+      line-height: 1.1;
+    }
+    .kpi-card .k-sub {
+      font-size: 11px;
+      color: var(--text-muted, #475569);
+      margin-top: 2px;
+    }
+    .kpi-card.positive .k-value { color: #16a34a; }
+    .kpi-card.negative .k-value { color: #ef4444; }
+    .kpi-card.info .k-value    { color: var(--brand, #1f4fd8); }
+
+    /* ── Charts ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .chart-card {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--card-border-soft, rgba(15,23,42,.10));
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--card-shadow, 0 10px 26px rgba(15,23,42,.06));
+    }
+    .chart-card.full { grid-column: 1 / -1; }
+    .chart-title {
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: var(--text-dark, #0f172a);
+    }
+    .chart-wrap { width: 100%; height: 240px; position: relative; }
+    .chart-wrap.tall { height: 280px; }
+
+    /* ── Status bar ── */
+    .stat-status {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted, #475569);
+      margin-top: 16px;
+      padding-bottom: 24px;
+    }
+
+    @media (max-width: 700px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card.full { grid-column: 1; }
+      .chart-wrap { height: 200px; }
+      .chart-wrap.tall { height: 220px; }
+      .kpi-card .k-value { font-size: 18px; }
+    }
+    @media (max-width: 420px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .stat-toolbar h1 { font-size: 22px; }
     }
   </style>
   <script type="module" src="/auth-guard.js"></script>
@@ -43,215 +146,331 @@
   <header class="top-bar">
     <button class="back-btn" onclick="window.location.href='index.html'">←</button>
     <span class="page-title">Statistiche</span>
-  
-  <select id="quickNav" class="quick-nav"><option value="">Vai a…</option><option value="index.html">HOME</option><option value="clients.html">CLIENTI</option><option value="suppliers.html">FORNITORI</option><option value="scadenze.html">SCADENZE</option><option value="incassi.html">INCASSI</option><option value="spese.html">SPESE</option><option value="listini.html">LISTINI</option><option value="statistiche.html">STATISTICHE</option><option value="agenda.html">AGENDA</option><option value="ordini-clienti.html">ORDINI CLIENTI</option></select>
-</header>
+    <select id="quickNav" class="quick-nav">
+      <option value="">Vai a…</option>
+      <option value="index.html">HOME</option>
+      <option value="clients.html">CLIENTI</option>
+      <option value="suppliers.html">FORNITORI</option>
+      <option value="scadenze.html">SCADENZE</option>
+      <option value="incassi.html">INCASSI</option>
+      <option value="spese.html">SPESE</option>
+      <option value="listini.html">LISTINI</option>
+      <option value="statistiche.html">STATISTICHE</option>
+      <option value="agenda.html">AGENDA</option>
+      <option value="ordini-clienti.html">ORDINI CLIENTI</option>
+    </select>
+  </header>
 
   <main class="page-content">
-    <h1 class="h1">Statistiche</h1>
-    <p class="sub">Confronto rapido: Totali Clienti vs Totali Fornitori</p>
 
-    <section class="card">
-      <div class="chart-wrap">
-        <canvas id="barChart"></canvas>
+    <!-- Toolbar anno -->
+    <div class="stat-toolbar">
+      <h1>Statistiche</h1>
+      <div id="yearButtons"></div>
+    </div>
+    <p class="stat-sub" id="statSub">Caricamento…</p>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card info">
+        <div class="k-label">Fatturato Clienti</div>
+        <div class="k-value" id="kFatturato">—</div>
+        <div class="k-sub" id="kFatturatoSub">ordini anno</div>
       </div>
-
-      <div class="kpis">
-        <div class="kpi">
-          <div>
-            <div class="name">Clienti</div>
-            <small>Totale generale clienti (€)</small>
-          </div>
-          <div class="val" id="kpiClients">—</div>
-        </div>
-
-        <div class="kpi">
-          <div>
-            <div class="name">Fornitori</div>
-            <small>Totale generale fornitori (€)</small>
-          </div>
-          <div class="val" id="kpiSuppliers">—</div>
-        </div>
+      <div class="kpi-card positive">
+        <div class="k-label">Incassato</div>
+        <div class="k-value" id="kIncassi">—</div>
+        <div class="k-sub" id="kIncassiSub">incassi anno</div>
       </div>
-
-      <div class="status" id="statusText">Caricamento dati…</div>
-    </section>
-
-    <div style="height:14px"></div>
-
-    <p class="sub" style="margin-top:0">Confronto rapido: Totale Clienti vs Totale Incassi</p>
-    <section class="card">
-      <div class="chart-wrap">
-        <canvas id="barChart2"></canvas>
+      <div class="kpi-card">
+        <div class="k-label">Spese</div>
+        <div class="k-value" id="kSpese">—</div>
+        <div class="k-sub">spese registrate anno</div>
       </div>
+      <div class="kpi-card" id="kpiSaldoCard">
+        <div class="k-label">Saldo Netto</div>
+        <div class="k-value" id="kSaldo">—</div>
+        <div class="k-sub">incassato − spese</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Media Mensile</div>
+        <div class="k-value" id="kMedia">—</div>
+        <div class="k-sub">incassato / mesi attivi</div>
+      </div>
+      <div class="kpi-card info">
+        <div class="k-label">Clienti Attivi</div>
+        <div class="k-value" id="kClienti">—</div>
+        <div class="k-sub">con almeno un ordine</div>
+      </div>
+    </div>
 
-      <div class="kpis">
-        <div class="kpi">
-          <div>
-            <div class="name">Clienti</div>
-            <small>Totale generale clienti (€)</small>
-          </div>
-          <div class="val" id="kpiClients2">—</div>
-        </div>
+    <!-- Charts -->
+    <div class="charts-grid">
 
-        <div class="kpi">
-          <div>
-            <div class="name">Incassi</div>
-            <small>Totale generale incassi (€)</small>
-          </div>
-          <div class="val" id="kpiIncomes">—</div>
+      <!-- Chart 1: Fatturato vs Incassi mensili -->
+      <div class="chart-card full">
+        <div class="chart-title">📈 Fatturato vs Incassi — mensile</div>
+        <div class="chart-wrap tall">
+          <canvas id="chartTrend"></canvas>
         </div>
       </div>
-    </section>
+
+      <!-- Chart 2: Spese mensili -->
+      <div class="chart-card">
+        <div class="chart-title">💸 Spese mensili</div>
+        <div class="chart-wrap">
+          <canvas id="chartSpese"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Saldo netto mensile -->
+      <div class="chart-card">
+        <div class="chart-title">💰 Saldo netto mensile (incassi − spese)</div>
+        <div class="chart-wrap">
+          <canvas id="chartSaldo"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Top clienti -->
+      <div class="chart-card full">
+        <div class="chart-title">🏆 Top clienti per fatturato</div>
+        <div class="chart-wrap">
+          <canvas id="chartClienti"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="stat-status" id="statStatus">Caricamento dati…</div>
+
   </main>
 
   <script type="module">
-    import { db } from "./firebase.js";
-    import {
-      collection,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getNormalizedIncomesAndOrders, getYearlyMonthlySeries } from "./services/incomeService.js";
+    import { listExpenses } from "./services/expenseService.js";
+    import { listOrders } from "./services/orderService.js";
 
-    const statusText = document.getElementById("statusText");
+    // ── Helpers ──
+    const eur = (n) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(n) || 0);
+    const MONTHS = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
 
-    // Chart
-    const ctx = document.getElementById("barChart");
-    const chart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: ["Clienti (totale generale)", "Fornitori (totale generale)"],
-        datasets: [{
-          label: "Totale generale (€)",
-          data: [0, 0],
-          backgroundColor: ["#16a34a", "#ef4444"],
-          borderColor: ["#15803d", "#b91c1c"],
-          borderWidth: 1
-        }]
+    let currentYear = new Date().getFullYear();
+    const availableYears = [];
+
+    // ── Charts setup ──
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { position: "bottom", labels: { boxWidth: 14, padding: 12, font: { size: 12 } } },
+        tooltip: { callbacks: { label: (c) => " " + eur(c.raw) } }
       },
+      scales: {
+        x: { grid: { color: "rgba(0,0,0,.05)" }, ticks: { font: { size: 11 } } },
+        y: { grid: { color: "rgba(0,0,0,.06)" }, ticks: { callback: (v) => "€" + Number(v||0).toLocaleString("it-IT"), font: { size: 11 } } }
+      }
+    };
+
+    const trendChart = new Chart(document.getElementById("chartTrend"), {
+      type: "line",
+      data: { labels: MONTHS, datasets: [
+        { label: "Fatturato", data: Array(12).fill(0), borderColor: "#1f4fd8", backgroundColor: "rgba(31,79,216,.10)", tension: .35, fill: true, pointRadius: 4 },
+        { label: "Incassato", data: Array(12).fill(0), borderColor: "#16a34a", backgroundColor: "rgba(22,163,74,.08)", tension: .35, fill: true, pointRadius: 4 }
+      ]},
+      options: { ...chartDefaults }
+    });
+
+    const speseChart = new Chart(document.getElementById("chartSpese"), {
+      type: "bar",
+      data: { labels: MONTHS, datasets: [
+        { label: "Spese", data: Array(12).fill(0), backgroundColor: "rgba(239,68,68,.75)", borderRadius: 6 }
+      ]},
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+    });
+
+    const saldoChart = new Chart(document.getElementById("chartSaldo"), {
+      type: "bar",
+      data: { labels: MONTHS, datasets: [
+        { label: "Saldo Netto", data: Array(12).fill(0), backgroundColor: Array(12).fill("#16a34a"), borderRadius: 6 }
+      ]},
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: (c) => "€ " + Number(c.raw || 0).toFixed(2)
-            }
-          }
-        },
+        ...chartDefaults,
+        plugins: { ...chartDefaults.plugins, legend: { display: false } },
         scales: {
-          y: {
-            ticks: {
-              callback: (v) => "€ " + Number(v || 0).toFixed(0)
-            }
-          }
+          ...chartDefaults.scales,
+          y: { ...chartDefaults.scales.y, beginAtZero: false }
         }
       }
     });
 
-    // Chart 2: Clienti vs Incassi
-    const ctx2 = document.getElementById("barChart2");
-    const chart2 = new Chart(ctx2, {
+    const clientiChart = new Chart(document.getElementById("chartClienti"), {
       type: "bar",
-      data: {
-        labels: ["Clienti (totale generale)", "Incassi (totale generale)"],
-        datasets: [{
-          label: "Totale generale (€)",
-          data: [0, 0],
-          backgroundColor: ["#16a34a", "#ef4444"],
-          borderColor: ["#15803d", "#b91c1c"],
-          borderWidth: 1
-        }]
-      },
+      data: { labels: [], datasets: [
+        { label: "Fatturato", data: [], backgroundColor: "rgba(31,79,216,.75)", borderRadius: 6 }
+      ]},
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: (c) => "€ " + Number(c.raw || 0).toFixed(2)
-            }
-          }
-        },
+        ...chartDefaults,
+        indexAxis: "y",
+        plugins: { ...chartDefaults.plugins, legend: { display: false } },
         scales: {
-          y: {
-            ticks: {
-              callback: (v) => "€ " + Number(v || 0).toFixed(0)
-            }
-          }
+          x: { ...chartDefaults.scales.x, ticks: { callback: (v) => "€" + Number(v||0).toLocaleString("it-IT"), font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
         }
       }
     });
 
-    function parseEuroLike(v){
-      if (typeof v === "number") return Number.isFinite(v) ? v : 0;
-      const s = String(v ?? "").trim();
-      if (!s) return 0;
-      let cleaned = s.replace(/[^0-9,.-]/g, "");
-      if (cleaned.includes(",")) cleaned = cleaned.replace(/\./g, "").replace(",", ".");
-      const n = Number(cleaned);
-      return Number.isFinite(n) ? n : 0;
+    // ── Year buttons ──
+    function buildYearButtons(years) {
+      const container = document.getElementById("yearButtons");
+      container.style.display = "flex";
+      container.style.gap = "8px";
+      container.style.flexWrap = "wrap";
+      container.innerHTML = "";
+      years.forEach((y) => {
+        const btn = document.createElement("button");
+        btn.className = "year-btn" + (y === currentYear ? " active" : "");
+        btn.textContent = y;
+        btn.addEventListener("click", () => {
+          if (y === currentYear) return;
+          currentYear = y;
+          container.querySelectorAll(".year-btn").forEach((b) => b.classList.toggle("active", Number(b.textContent) === currentYear));
+          renderYear(currentYear);
+        });
+        container.appendChild(btn);
+      });
     }
 
-    function setChartValues(totalClienti, totalFornitori, totalIncassi){
-      chart.data.datasets[0].data = [parseEuroLike(totalClienti), parseEuroLike(totalFornitori)];
-      chart.update();
+    // ── Main render ──
+    async function renderYear(year) {
+      const statusEl = document.getElementById("statStatus");
+      const subEl = document.getElementById("statSub");
+      statusEl.textContent = "Caricamento dati " + year + "…";
 
-      chart2.data.datasets[0].data = [parseEuroLike(totalClienti), parseEuroLike(totalIncassi)];
-      chart2.update();
+      try {
+        const [{ incomes, orders }, expenses] = await Promise.all([
+          getNormalizedIncomesAndOrders(),
+          listExpenses(),
+        ]);
 
-      const eur = (n)=> new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n||0));
-      // KPI cards
-      const cEl = document.getElementById("kpiClients");
-      const sEl = document.getElementById("kpiSuppliers");
-      if(cEl) cEl.textContent = eur(totalClienti);
-      if(sEl) sEl.textContent = eur(totalFornitori);
+        const prefix = String(year) + "-";
 
-      const c2El = document.getElementById("kpiClients2");
-      const iEl = document.getElementById("kpiIncomes");
-      if(c2El) c2El.textContent = eur(totalClienti);
-      if(iEl) iEl.textContent = eur(totalIncassi);
-    }
+        // ── Monthly fatturato (orders by createdAtISO) ──
+        const fattMensile = Array(12).fill(0);
+        for (const o of orders) {
+          const d = String(o.createdAtISO || "");
+          if (!d.startsWith(prefix)) continue;
+          const m = parseInt(d.slice(5, 7), 10) - 1;
+          if (m >= 0 && m < 12) fattMensile[m] += Number(o.total || 0);
+        }
 
-    async function loadTotals(){
-      try{
-        statusText.textContent = "Caricamento totali…";
+        // ── Monthly incassi ──
+        const incMensile = Array(12).fill(0);
+        for (const i of incomes) {
+          const d = String(i.dateISO || "");
+          if (!d.startsWith(prefix)) continue;
+          const m = parseInt(d.slice(5, 7), 10) - 1;
+          if (m >= 0 && m < 12) incMensile[m] += Number(i.amount || 0);
+        }
 
-        // ✅ Coerenza con le altre pagine:
-        // - Clienti: totale generale = somma di orders.total (come in clients.js)
-        // - Fornitori: totale generale = somma di suppliers.total (come in suppliers.js)
+        // ── Monthly spese ──
+        const speseMensile = Array(12).fill(0);
+        for (const e of expenses) {
+          const d = String(e.dateISO || e.date || "");
+          if (!d.startsWith(prefix)) continue;
+          const m = parseInt(d.slice(5, 7), 10) - 1;
+          if (m >= 0 && m < 12) speseMensile[m] += Number(e.amount || 0);
+        }
 
-        const ordersSnap = await getDocs(collection(db, "orders"));
-        let totalClienti = 0;
-        ordersSnap.forEach(d => {
-          const o = d.data() || {};
-          totalClienti += parseEuroLike(o.total ?? o.grandTotal ?? o.subtotal);
-        });
+        // ── Saldo netto mensile ──
+        const saldoMensile = incMensile.map((inc, i) => inc - speseMensile[i]);
+        const saldoColors = saldoMensile.map((v) => v >= 0 ? "rgba(22,163,74,.75)" : "rgba(239,68,68,.75)");
 
-        const suppliersSnap = await getDocs(collection(db, "suppliers"));
-        let totalFornitori = 0;
-        suppliersSnap.forEach(d => {
-          const s = d.data() || {};
-          totalFornitori += parseEuroLike(s.total ?? s.grandTotal ?? s.subtotal);
-        });
+        // ── Top clienti ──
+        const clientMap = new Map();
+        for (const o of orders) {
+          if (!String(o.createdAtISO || "").startsWith(prefix)) continue;
+          const name = String(o.clientName || o.clientId || "Sconosciuto").trim() || "Sconosciuto";
+          clientMap.set(name, (clientMap.get(name) || 0) + Number(o.total || 0));
+        }
+        const topClienti = [...clientMap.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10);
 
-        // Incassi: totale generale = somma degli importi (come pagina incassi)
-        const incassiSnap = await getDocs(collection(db, "incassi"));
-        let totalIncassi = 0;
-        incassiSnap.forEach(d => {
-          const i = d.data() || {};
-          totalIncassi += parseEuroLike(i.amount);
-        });
+        // ── KPI totals ──
+        const totFatt   = fattMensile.reduce((s, v) => s + v, 0);
+        const totInc    = incMensile.reduce((s, v) => s + v, 0);
+        const totSpese  = speseMensile.reduce((s, v) => s + v, 0);
+        const saldo     = totInc - totSpese;
+        const mesiAttivi = incMensile.filter((v) => v > 0).length || 1;
+        const media     = totInc / mesiAttivi;
+        const clientiAttivi = new Set(orders.filter((o) => String(o.createdAtISO || "").startsWith(prefix)).map((o) => o.clientId || o.clientName)).size;
 
-        setChartValues(totalClienti, totalFornitori, totalIncassi);
-        statusText.textContent = "Dati aggiornati.";
-      } catch (e){
-        console.error(e);
-        statusText.textContent =
-          "❌ Errore nel leggere i totali. Controlla permessi Firestore (rules) e nome collezioni.";
+        // ── Update KPI cards ──
+        document.getElementById("kFatturato").textContent   = eur(totFatt);
+        document.getElementById("kFatturatoSub").textContent = orders.filter((o) => String(o.createdAtISO||"").startsWith(prefix)).length + " ordini " + year;
+        document.getElementById("kIncassi").textContent     = eur(totInc);
+        document.getElementById("kIncassiSub").textContent  = incomes.filter((i) => String(i.dateISO||"").startsWith(prefix)).length + " incassi " + year;
+        document.getElementById("kSpese").textContent       = eur(totSpese);
+        document.getElementById("kSaldo").textContent       = eur(saldo);
+        document.getElementById("kMedia").textContent       = eur(media);
+        document.getElementById("kClienti").textContent     = clientiAttivi;
+
+        const saldoCard = document.getElementById("kpiSaldoCard");
+        saldoCard.classList.remove("positive", "negative");
+        saldoCard.classList.add(saldo >= 0 ? "positive" : "negative");
+
+        // ── Update charts ──
+        trendChart.data.datasets[0].data = fattMensile.map((v) => Math.round(v * 100) / 100);
+        trendChart.data.datasets[1].data = incMensile.map((v) => Math.round(v * 100) / 100);
+        trendChart.update();
+
+        speseChart.data.datasets[0].data = speseMensile.map((v) => Math.round(v * 100) / 100);
+        speseChart.update();
+
+        saldoChart.data.datasets[0].data = saldoMensile.map((v) => Math.round(v * 100) / 100);
+        saldoChart.data.datasets[0].backgroundColor = saldoColors;
+        saldoChart.update();
+
+        clientiChart.data.labels = topClienti.map(([name]) => name.length > 22 ? name.slice(0, 20) + "…" : name);
+        clientiChart.data.datasets[0].data = topClienti.map(([, v]) => Math.round(v * 100) / 100);
+        clientiChart.update();
+
+        subEl.textContent = "Anno " + year + " — dati aggiornati";
+        statusEl.textContent = "✓ Dati caricati.";
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "❌ Errore nel caricamento. Controlla permessi Firestore.";
       }
     }
 
-    loadTotals();
+    // ── Init ──
+    async function init() {
+      const statusEl = document.getElementById("statStatus");
+      try {
+        // Determine available years from orders
+        const { orders, incomes } = await getNormalizedIncomesAndOrders();
+        const yearsSet = new Set();
+        for (const o of orders) {
+          const y = parseInt(String(o.createdAtISO || "").slice(0, 4), 10);
+          if (y >= 2020 && y <= 2030) yearsSet.add(y);
+        }
+        for (const i of incomes) {
+          const y = parseInt(String(i.dateISO || "").slice(0, 4), 10);
+          if (y >= 2020 && y <= 2030) yearsSet.add(y);
+        }
+        if (!yearsSet.has(currentYear)) yearsSet.add(currentYear);
+        const years = [...yearsSet].sort((a, b) => b - a);
+        buildYearButtons(years);
+        await renderYear(currentYear);
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "❌ Errore inizializzazione.";
+      }
+    }
+
+    init();
   </script>
   <script type="module" src="/nav.js?v=15_20260225222215"></script>
   <script src="scripts/dashboard-menu.js?v=15_20260225222215"></script>

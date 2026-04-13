@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <base href="/">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Audit Log</title>
+  <link rel="stylesheet" href="styles.css?v=16_2026031207" />
+  <link rel="stylesheet" href="mobile.css?v=16_2026031207" />
+  <script type="module" src="/auth-guard.js"></script>
+  <style>
+    .al-wrap{max-width:960px;margin:80px auto 32px;padding:0 16px}
+    .al-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+    .al-head h1{margin:0;font-size:26px;font-weight:900}
+    .al-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .al-filters select,.al-filters input{padding:8px 12px;border-radius:12px;border:1px solid var(--line,rgba(0,0,0,.12));font-size:14px;background:rgba(255,255,255,.85);min-width:140px}
+    .al-table-wrap{overflow-x:auto;border:1px solid var(--line,rgba(0,0,0,.1));border-radius:16px;background:#fff}
+    .al-table{width:100%;border-collapse:collapse;font-size:14px}
+    .al-table th{background:rgba(0,0,0,.04);padding:10px 14px;text-align:left;font-weight:800;white-space:nowrap;border-bottom:1px solid var(--line,rgba(0,0,0,.1))}
+    .al-table td{padding:10px 14px;border-bottom:1px solid var(--line,rgba(0,0,0,.06));vertical-align:top}
+    .al-table tr:last-child td{border-bottom:none}
+    .al-table tr:hover td{background:rgba(0,0,0,.015)}
+    .al-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800}
+    .al-badge.save{background:#dcfce7;color:#166534}
+    .al-badge.delete,.al-badge.soft_delete{background:#fee2e2;color:#991b1b}
+    .al-badge.update{background:#eff6ff;color:#1d4ed8}
+    .al-badge.add{background:#fef9c3;color:#854d0e}
+    .al-source{color:var(--muted,#64748b);font-weight:700;font-size:12px}
+    .al-payload{font-size:12px;color:#475569;max-width:320px;white-space:pre-wrap;word-break:break-all}
+    .al-empty{padding:28px;text-align:center;color:var(--muted,#64748b);font-style:italic}
+    .al-loading{padding:28px;text-align:center;color:var(--muted,#64748b)}
+    .al-more{text-align:center;padding:14px}
+    @media(max-width:600px){
+      .al-table th:nth-child(5),.al-table td:nth-child(5){display:none}
+      .al-wrap{margin-top:72px}
+    }
+  </style>
+</head>
+<body class="page">
+  <header class="top-bar">
+    <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+    <span class="page-title">Audit Log</span>
+  </header>
+
+  <main class="al-wrap">
+    <div class="al-head">
+      <h1>🕵️ Audit Log</h1>
+      <div class="al-filters">
+        <select id="alSource">
+          <option value="">Tutte le fonti</option>
+          <option value="expensesHistory">Spese</option>
+          <option value="scadenzeHistory">Scadenze</option>
+          <option value="incassiHistory">Incassi</option>
+        </select>
+        <select id="alAction">
+          <option value="">Tutte le azioni</option>
+          <option value="save">save</option>
+          <option value="update">update</option>
+          <option value="delete">delete</option>
+          <option value="SOFT_DELETE">soft_delete</option>
+          <option value="ADD">add</option>
+        </select>
+        <input type="date" id="alDateFrom" title="Da data">
+        <input type="date" id="alDateTo" title="A data">
+        <button class="btn primary" id="alRefresh" style="padding:8px 16px;font-size:14px">↺ Aggiorna</button>
+      </div>
+    </div>
+
+    <div class="al-table-wrap">
+      <table class="al-table" id="alTable">
+        <thead>
+          <tr>
+            <th>Fonte</th>
+            <th>Azione</th>
+            <th>Riferimento</th>
+            <th>Data/ora</th>
+            <th>Dettagli</th>
+          </tr>
+        </thead>
+        <tbody id="alBody">
+          <tr><td colspan="5" class="al-loading">Caricamento…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="al-more" id="alMoreWrap" style="display:none">
+      <button class="btn" id="alMore">Carica altri 50</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { db } from "./firebase.js";
+    import {
+      collection, getDocs, query, orderBy, limit
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const SOURCES = ["expensesHistory", "scadenzeHistory", "incassiHistory"];
+    const PAGE_SIZE = 50;
+
+    const alBody = document.getElementById("alBody");
+    const alMoreWrap = document.getElementById("alMoreWrap");
+    const alMore = document.getElementById("alMore");
+    const alSource = document.getElementById("alSource");
+    const alAction = document.getElementById("alAction");
+    const alDateFrom = document.getElementById("alDateFrom");
+    const alDateTo = document.getElementById("alDateTo");
+    const alRefresh = document.getElementById("alRefresh");
+
+    let allEntries = [];
+    let displayedCount = 0;
+
+    function badgeClass(action) {
+      const a = String(action || "").toLowerCase();
+      if (a === "save" || a === "update" || a === "upsert") return "save";
+      if (a === "delete" || a === "soft_delete") return "delete";
+      if (a === "add") return "add";
+      return "update";
+    }
+
+    function formatDateTime(ts) {
+      if (!ts) return "—";
+      let d;
+      if (ts && typeof ts.toDate === "function") d = ts.toDate();
+      else if (ts && ts.seconds) d = new Date(ts.seconds * 1000);
+      else d = new Date(ts);
+      if (isNaN(d)) return "—";
+      return d.toLocaleString("it-IT");
+    }
+
+    function payloadSummary(entry, source) {
+      const p = entry.payload || {};
+      const parts = [];
+      if (entry.day || entry.deadlineId || p.date) parts.push("📅 " + (entry.day || entry.deadlineId || p.date));
+      if (p.amount !== undefined) parts.push("€ " + Number(p.amount || 0).toFixed(2));
+      if (p.note) parts.push("📝 " + String(p.note).slice(0, 60) + (String(p.note).length > 60 ? "…" : ""));
+      if (entry.expenseId) parts.push("ID: " + entry.expenseId);
+      if (!parts.length && entry.action) parts.push(entry.action);
+      return parts.join(" · ") || "—";
+    }
+
+    function renderRow(entry) {
+      const action = String(entry.action || entry._action || "").toLowerCase();
+      const ref = String(entry.day || entry.deadlineId || entry.expenseId || entry._id || "—");
+      const dt = formatDateTime(entry.at || entry.ts || entry.timestamp || entry.createdAt);
+      const details = payloadSummary(entry, entry._source);
+      const sourceText = String(entry._source || "—");
+
+      const tr = document.createElement("tr");
+
+      // td1: source (trusted internal value from SOURCES constant)
+      const td1 = document.createElement("td");
+      const srcSpan = document.createElement("span");
+      srcSpan.className = "al-source";
+      srcSpan.textContent = sourceText;
+      td1.appendChild(srcSpan);
+
+      // td2: action badge (class derived from fixed set, text from Firestore but textContent-safe)
+      const td2 = document.createElement("td");
+      const badgeSpan = document.createElement("span");
+      badgeSpan.className = "al-badge " + badgeClass(action);
+      badgeSpan.textContent = action || "—";
+      td2.appendChild(badgeSpan);
+
+      // td3: reference key (Firestore doc id / date key — safe as textContent)
+      const td3 = document.createElement("td");
+      td3.textContent = ref;
+
+      // td4: formatted timestamp
+      const td4 = document.createElement("td");
+      td4.style.whiteSpace = "nowrap";
+      td4.textContent = dt;
+
+      // td5: payload summary
+      const td5 = document.createElement("td");
+      td5.className = "al-payload";
+      td5.textContent = details;
+
+      tr.append(td1, td2, td3, td4, td5);
+      return tr;
+    }
+
+    function applyFilters() {
+      const src = alSource.value;
+      const act = alAction.value.toLowerCase();
+      const from = alDateFrom.value ? new Date(alDateFrom.value + "T00:00:00") : null;
+      const to = alDateTo.value ? new Date(alDateTo.value + "T23:59:59") : null;
+
+      return allEntries.filter(e => {
+        if (src && e._source !== src) return false;
+        const eAct = String(e.action || "").toLowerCase();
+        if (act && eAct !== act && eAct !== act.replace("_","")) return false;
+        if (from || to) {
+          let d;
+          const ts = e.at || e.ts || e.timestamp || e.createdAt;
+          if (ts && typeof ts.toDate === "function") d = ts.toDate();
+          else if (ts && ts.seconds) d = new Date(ts.seconds * 1000);
+          else d = new Date(ts);
+          if (from && d < from) return false;
+          if (to && d > to) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderTable() {
+      const filtered = applyFilters();
+      displayedCount = Math.min(PAGE_SIZE, filtered.length);
+      alBody.innerHTML = "";
+      if (!filtered.length) {
+        alBody.innerHTML = `<tr><td colspan="5" class="al-empty">Nessun evento trovato.</td></tr>`;
+        alMoreWrap.style.display = "none";
+        return;
+      }
+      for (let i = 0; i < displayedCount; i++) alBody.appendChild(renderRow(filtered[i]));
+      alMoreWrap.style.display = filtered.length > displayedCount ? "" : "none";
+      alMore.onclick = () => {
+        const end = Math.min(displayedCount + PAGE_SIZE, filtered.length);
+        for (let i = displayedCount; i < end; i++) alBody.appendChild(renderRow(filtered[i]));
+        displayedCount = end;
+        if (displayedCount >= filtered.length) alMoreWrap.style.display = "none";
+      };
+    }
+
+    async function loadAll() {
+      alBody.innerHTML = `<tr><td colspan="5" class="al-loading">Caricamento…</td></tr>`;
+      allEntries = [];
+
+      const chosen = alSource.value ? [alSource.value] : SOURCES;
+      const promises = chosen.map(async (src) => {
+        try {
+          const q = query(collection(db, src), orderBy("at","desc"), limit(500));
+          const snap = await getDocs(q);
+          snap.forEach(d => allEntries.push({ ...d.data(), _source: src, _id: d.id }));
+        } catch (_) {
+          // Collection may not exist yet — silent skip
+        }
+      });
+      await Promise.all(promises);
+
+      allEntries.sort((a, b) => {
+        const ta = a.at || a.ts || a.createdAt;
+        const tb = b.at || b.ts || b.createdAt;
+        const da = ta?.seconds ? ta.seconds : (ta ? new Date(ta).getTime() / 1000 : 0);
+        const db2 = tb?.seconds ? tb.seconds : (tb ? new Date(tb).getTime() / 1000 : 0);
+        return db2 - da;
+      });
+
+      renderTable();
+    }
+
+    alRefresh.addEventListener("click", loadAll);
+    alSource.addEventListener("change", renderTable);
+    alAction.addEventListener("change", renderTable);
+    alDateFrom.addEventListener("change", renderTable);
+    alDateTo.addEventListener("change", renderTable);
+
+    loadAll();
+  </script>
+  <script type="module" src="/nav.js?v=16_2026031207"></script>
+  <script src="scripts/dashboard-menu.js?v=16_2026031207"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "DCR GROUP Gestionale",
+  "short_name": "DCR GROUP",
+  "description": "Gestionale commerciale DCR GROUP",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

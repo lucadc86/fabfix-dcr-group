@@ -28,6 +28,11 @@ function monthFromISO(iso) {
   return Number(String(iso || "").slice(5, 7)) || new Date().getMonth() + 1;
 }
 
+/**
+ * Compute income KPIs for a given reference date.
+ * @param {string|object} refDateInput - ISO date string or {todayISO, year, month}
+ * @returns {Promise<object>} KPI values: incassoOggi, incassoMese, incassoAnno, fatturatoMese, …
+ */
 export async function getIncassiKpis(refDateInput = todayISO()) {
   const refDateISO = typeof refDateInput === "object"
     ? String(refDateInput.todayISO || `${refDateInput.year}-${String(refDateInput.month || 1).padStart(2,"0")}-01`)
@@ -80,6 +85,11 @@ export async function getIncassiKpis(refDateInput = todayISO()) {
   };
 }
 
+/**
+ * Compute expense KPIs for a given reference month.
+ * @param {string} refDateISO - ISO date string (YYYY-MM-DD)
+ * @returns {Promise<{speseMese: number, speseAnno: number}>}
+ */
 export async function getSpeseKpis(refDateISO = todayISO()) {
   const y = yearFromISO(refDateISO);
   const ym = ymFromISO(refDateISO);
@@ -90,6 +100,11 @@ export async function getSpeseKpis(refDateISO = todayISO()) {
   return { speseMese: Number(mese.toFixed(2)), speseAnno: Number(anno.toFixed(2)) };
 }
 
+/**
+ * Compute deadline KPIs for a given reference month.
+ * @param {string} refDateISO - ISO date string (YYYY-MM-DD)
+ * @returns {Promise<{scadenzeMese: number, scadenzeAnno: number}>}
+ */
 export async function getScadenzeKpis(refDateISO = todayISO()) {
   const y = yearFromISO(refDateISO);
   const ym = ymFromISO(refDateISO);
@@ -100,6 +115,11 @@ export async function getScadenzeKpis(refDateISO = todayISO()) {
   return { scadenzeMese: Number(mese.toFixed(2)), scadenzeAnno: Number(anno.toFixed(2)) };
 }
 
+/**
+ * Compute orders KPIs for a given reference month.
+ * @param {string} refDateISO - ISO date string (YYYY-MM-DD)
+ * @returns {Promise<{ordiniFatturatoMese: number, ordiniFatturatoAnno: number}>}
+ */
 export async function getOrdersKpis(refDateISO = todayISO()) {
   const y = yearFromISO(refDateISO);
   const ym = ymFromISO(refDateISO);
