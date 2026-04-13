@@ -52,7 +52,6 @@ self.addEventListener('fetch', (event) => {
 
   // Only handle same-origin GET requests
   if (request.method !== 'GET') return;
-  if (url.origin !== self.location.origin && BYPASS_PATTERNS.some((p) => p.test(request.url))) return;
   if (BYPASS_PATTERNS.some((p) => p.test(request.url))) return;
 
   const isNavigation = request.mode === 'navigate';

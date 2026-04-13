@@ -230,12 +230,14 @@ saveBtn?.addEventListener("click", async ()=>{
   const note = String(noteEl.value || "").trim();
   const amount = toNum(amountEl.value);
   let hasError = false;
+  // Reject explicit negative or non-numeric amounts (amount=0 is valid for reminders)
   if(amountEl.value.trim() !== "" && (Number.isNaN(amount) || amount < 0)){
     amountEl.classList.add("field-error");
     if(amountError){ amountError.textContent = "Inserisci un importo valido (≥ 0)"; amountError.style.display = "block"; }
     hasError = true;
   }
-  if(!note && !(amount > 0)){
+  // Require at least a note OR a positive amount (amount=0 alone is not meaningful)
+  if(!note && amount <= 0){
     noteEl.classList.add("field-error");
     if(noteError){ noteError.textContent = "Aggiungi una nota o un importo"; noteError.style.display = "block"; }
     hasError = true;

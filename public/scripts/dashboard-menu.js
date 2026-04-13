@@ -56,8 +56,8 @@
       item.appendChild(txtDiv);
       item.addEventListener("click", ()=>{
         const url = o.value;
-        // Only allow relative URLs (no protocol injection)
-        if (url && /^[A-Za-z0-9._\-/?=#&%]+$/.test(url)) window.location.href = url;
+        // Only allow safe relative URLs: must start with a letter or single slash, not //
+        if (url && /^[A-Za-z0-9._\-/?=#&%]+$/.test(url) && !url.startsWith('//')) window.location.href = url;
       });
       grid.appendChild(item);
     });

@@ -142,18 +142,42 @@
 
     function renderRow(entry) {
       const action = String(entry.action || entry._action || "").toLowerCase();
-      const badge = `<span class="al-badge ${badgeClass(action)}">${action || "—"}</span>`;
-      const ref = entry.day || entry.deadlineId || entry.expenseId || entry._id || "—";
+      const ref = String(entry.day || entry.deadlineId || entry.expenseId || entry._id || "—");
       const dt = formatDateTime(entry.at || entry.ts || entry.timestamp || entry.createdAt);
       const details = payloadSummary(entry, entry._source);
-      const src = `<span class="al-source">${entry._source || "—"}</span>`;
+      const sourceText = String(entry._source || "—");
 
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${src}</td><td>${badge}</td><td>${String(ref).replace(/</g,"&lt;")}</td><td style="white-space:nowrap">${dt}</td>`;
+
+      // td1: source (trusted internal value from SOURCES constant)
+      const td1 = document.createElement("td");
+      const srcSpan = document.createElement("span");
+      srcSpan.className = "al-source";
+      srcSpan.textContent = sourceText;
+      td1.appendChild(srcSpan);
+
+      // td2: action badge (class derived from fixed set, text from Firestore but textContent-safe)
+      const td2 = document.createElement("td");
+      const badgeSpan = document.createElement("span");
+      badgeSpan.className = "al-badge " + badgeClass(action);
+      badgeSpan.textContent = action || "—";
+      td2.appendChild(badgeSpan);
+
+      // td3: reference key (Firestore doc id / date key — safe as textContent)
+      const td3 = document.createElement("td");
+      td3.textContent = ref;
+
+      // td4: formatted timestamp
+      const td4 = document.createElement("td");
+      td4.style.whiteSpace = "nowrap";
+      td4.textContent = dt;
+
+      // td5: payload summary
       const td5 = document.createElement("td");
       td5.className = "al-payload";
       td5.textContent = details;
-      tr.appendChild(td5);
+
+      tr.append(td1, td2, td3, td4, td5);
       return tr;
     }
 
