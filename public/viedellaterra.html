@@ -93,6 +93,11 @@ tbody tr:hover{background:#f6f8ff}
 
 .price-table thead th:nth-child(1), .price-table tbody td:nth-child(1){width:70%}
 .price-table thead th:nth-child(2), .price-table tbody td:nth-child(2){width:30.0%}
+/* Dark mode */
+:root:not(.theme-light){--bg:#0f172a;--card:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--line:rgba(255,255,255,.12)}
+:root:not(.theme-light) thead th{background:#1e293b;color:#94a3b8;border-bottom-color:rgba(255,255,255,.10)}
+:root:not(.theme-light) tbody td{border-bottom-color:rgba(255,255,255,.08)}
+:root:not(.theme-light) tbody tr:hover{background:rgba(255,255,255,.04)}
   </style>
 </head>
 <body>

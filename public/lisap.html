@@ -20,6 +20,12 @@
     .totalbar{ display:flex; justify-content:flex-end; gap:14px; align-items:center; padding: 12px 0; }
     .totalbar b{ font-size: 20px; }
     .sticky-actions{ position:sticky; bottom: calc(env(safe-area-inset-bottom) + 10px); display:flex; justify-content:flex-end; padding: 10px 0; background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,.6)); z-index:15;} .top-actions{position:sticky; top:calc(env(safe-area-inset-top) + 76px); z-index:16; justify-content:flex-end; background:rgba(255,255,255,.96); backdrop-filter: blur(8px); border-bottom:1px solid rgba(0,0,0,.06);} .compact th,.compact td{ padding:6px 8px; font-size:12px; } .compact .qty{ width:72px; } .lisap-meta{ font-size:11px; opacity:.72; margin-top:2px; } .fixed-actions{position:fixed; right:16px; bottom:16px; z-index:60; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; max-width:min(820px, calc(100vw - 32px)); background:rgba(255,255,255,.97); border:1px solid rgba(0,0,0,.08); border-radius:18px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.16);} @media (max-width:760px){ .fixed-actions{left:10px; right:10px; bottom:10px; justify-content:space-between;} .fixed-actions .btn{flex:1 1 calc(50% - 8px);} }
+    /* Dark mode */
+    :root:not(.theme-light) .lisap-table-container{background:#1e293b !important;border-color:rgba(255,255,255,.10) !important}
+    :root:not(.theme-light) .lisap-table th{background:#1e293b;color:#94a3b8;border-bottom-color:rgba(255,255,255,.10)}
+    :root:not(.theme-light) .lisap-table td{border-bottom-color:rgba(255,255,255,.08)}
+    :root:not(.theme-light) .lisap-table tbody tr:hover td{background:rgba(255,255,255,.04)}
+    :root:not(.theme-light) .fixed-actions{background:rgba(30,41,59,.97);border-color:rgba(255,255,255,.10)}
   </style>
   <script type="module" src="/auth-guard.js"></script>
 </head>
@@ -43,7 +49,7 @@
           <button class="btn" id="btnReset" type="button">Reset quantità</button>
         </div>
       </div>
-      <div style="margin-top:14px; overflow:auto; border-radius: 14px; border:1px solid rgba(0,0,0,.08); background:#fff;">
+      <div class="lisap-table-container" style="margin-top:14px; overflow:auto; border-radius: 14px; border:1px solid rgba(0,0,0,.08); background:#fff;">
         <table class="lisap-table compact" aria-label="Listino LISAP">
           <thead>
             <tr><th style="min-width:260px;">Prodotto</th><th>Codice</th><th>Linea</th><th>Vol.</th><th class="right">Prezzo</th><th class="right">Conf.</th><th class="right">Pallet</th><th>Barcode</th><th class="right">Qta</th><th class="right">Totale</th></tr>
